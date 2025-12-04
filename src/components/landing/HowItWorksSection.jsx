@@ -1,22 +1,22 @@
 import React from 'react';
-import { Search, BarChart2, MessageSquare } from 'lucide-react';
+import { Calendar, Layers, CheckCircle } from 'lucide-react';
 
 const HowItWorksSection = () => {
     const steps = [
         {
-            icon: <Search className="w-8 h-8 text-primary-orange" />,
-            title: "1. Discover",
-            description: "Filter influencers by location, budget range, and platform. Find exactly who you need for your campaign."
+            icon: <Calendar className="w-8 h-8 text-primary-orange" />,
+            title: "1. Add Your Bookings",
+            description: "Input your shoot details, locations, and times. Sync your entire schedule in one easy-to-view calendar."
         },
         {
-            icon: <BarChart2 className="w-8 h-8 text-primary-orange" />,
-            title: "2. Analyze",
-            description: "View detailed metrics across all platforms. See real content and verified engagement data before you connect."
+            icon: <Layers className="w-8 h-8 text-primary-orange" />,
+            title: "2. Plan Your Content",
+            description: "Schedule your uploads for each campaign. Set deadlines for Instagram, TikTok, and YouTube deliverables."
         },
         {
-            icon: <MessageSquare className="w-8 h-8 text-primary-orange" />,
-            title: "3. Connect",
-            description: "Chat directly, negotiate deals, and manage campaigns all in one place with secure tools."
+            icon: <CheckCircle className="w-8 h-8 text-primary-orange" />,
+            title: "3. Stay Organized",
+            description: "Get reminders for upcoming shoots and uploads. Mark tasks as completed and keep your workflow smooth."
         }
     ];
 

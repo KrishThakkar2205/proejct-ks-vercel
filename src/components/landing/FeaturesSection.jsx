@@ -4,28 +4,28 @@ import { BarChart, DollarSign, MessageCircle, ShieldCheck } from 'lucide-react';
 const FeaturesSection = () => {
     const features = [
         {
-            title: "Multi-Platform Analytics",
-            description: "View Instagram, YouTube, TikTok, and LinkedIn metrics in one unified profile. Understand true reach and engagement.",
+            title: "Smart Calendar Management",
+            description: "Visualize your entire month at a glance. Drag and drop shoots, set availability, and never double-book yourself again.",
             icon: <BarChart className="w-6 h-6 text-white" />,
-            image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=2426"
+            image: "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&q=80&w=2368"
         },
         {
-            title: "Budget-First Filtering",
-            description: "Find influencers that fit your budget before wasting time. Filter by price range for posts, stories, and reels.",
+            title: "Upload Scheduling",
+            description: "Track every deliverable. Know exactly what to post and when, across all your platforms like Instagram, TikTok, and YouTube.",
+            icon: <MessageCircle className="w-6 h-6 text-white" />,
+            image: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?auto=format&fit=crop&q=80&w=2372"
+        },
+        {
+            title: "Shoot Details & Logistics",
+            description: "Keep all your shoot info in one place. Access location maps, brand notes, campaign details, and call times instantly.",
+            icon: <ShieldCheck className="w-6 h-6 text-white" />,
+            image: "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&q=80&w=2370"
+        },
+        {
+            title: "Completion Tracking",
+            description: "Mark shoots and uploads as completed with a single click. Track your progress and ensure you get paid on time.",
             icon: <DollarSign className="w-6 h-6 text-white" />,
             image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&q=80&w=2626"
-        },
-        {
-            title: "Direct Communication",
-            description: "Built-in messaging, file sharing, and deal management. No more lost emails or DMs.",
-            icon: <MessageCircle className="w-6 h-6 text-white" />,
-            image: "https://images.unsplash.com/photo-1577563908411-5077b6dc7624?auto=format&fit=crop&q=80&w=2370"
-        },
-        {
-            title: "Verified Profiles",
-            description: "Authentic metrics, no fake followers, real engagement data. We verify every influencer on our platform.",
-            icon: <ShieldCheck className="w-6 h-6 text-white" />,
-            image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=2370"
         }
     ];
 
@@ -34,10 +34,10 @@ const FeaturesSection = () => {
             <div className="container mx-auto px-4">
                 <div className="text-center mb-20">
                     <h2 className="text-3xl md:text-4xl font-bebas tracking-wide font-bold text-deep-black mb-4">
-                        Everything You Need to Scale
+                        Everything You Need to Stay Organized
                     </h2>
                     <p className="text-medium-gray max-w-2xl mx-auto">
-                        Powerful tools designed for modern influencer marketing teams.
+                        Powerful tools designed to help you manage your time and content workflow.
                     </p>
                 </div>
 
@@ -55,7 +55,7 @@ const FeaturesSection = () => {
                                     {feature.description}
                                 </p>
                                 <ul className="space-y-3">
-                                    {['Real-time data', 'Exportable reports', 'Team collaboration'].map((item, i) => (
+                                    {['Stay organized', 'Never miss a deadline', 'Manage multiple campaigns'].map((item, i) => (
                                         <li key={i} className="flex items-center text-gray-700">
                                             <div className="w-2 h-2 rounded-full bg-primary-orange mr-3" />
                                             {item}

@@ -3,6 +3,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Card from '../../components/ui/Card';
+import MultiSelect from '../../components/ui/MultiSelect';
 import { Linkedin, Briefcase, Camera } from 'lucide-react';
 
 const SignupPage = () => {
@@ -13,6 +14,9 @@ const SignupPage = () => {
         email: '',
         password: '',
         confirmPassword: '',
+        priceMin: '',
+        priceMax: '',
+        categories: [],
         agreeTerms: false,
     });
 
@@ -95,6 +99,63 @@ const SignupPage = () => {
                             placeholder="••••••••"
                             value={formData.confirmPassword}
                             onChange={handleChange}
+                        />
+
+                        {/* Price Range */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Price Range (₹) *
+                            </label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <Input
+                                    type="number"
+                                    name="priceMin"
+                                    required
+                                    placeholder="Min (e.g., 5000)"
+                                    value={formData.priceMin}
+                                    onChange={handleChange}
+                                    min="0"
+                                />
+                                <Input
+                                    type="number"
+                                    name="priceMax"
+                                    required
+                                    placeholder="Max (e.g., 50000)"
+                                    value={formData.priceMax}
+                                    onChange={handleChange}
+                                    min="0"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Categories */}
+                        <MultiSelect
+                            label="Category of Operation"
+                            name="categories"
+                            value={formData.categories}
+                            onChange={handleChange}
+                            options={[
+                                'Fashion',
+                                'Beauty & Makeup',
+                                'Lifestyle',
+                                'Fitness & Wellness',
+                                'Food & Cooking',
+                                'Travel',
+                                'Technology',
+                                'Gaming',
+                                'Education',
+                                'Entertainment',
+                                'Sports',
+                                'Music',
+                                'Art & Design',
+                                'Business',
+                                'Parenting',
+                                'Home & Decor',
+                                'Photography',
+                                'Sustainability'
+                            ]}
+                            placeholder="Select your categories"
+                            required
                         />
 
                         <div className="flex items-center">

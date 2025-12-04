@@ -6,39 +6,22 @@ const CTASection = () => {
     return (
         <section className="py-20 bg-white">
             <div className="container mx-auto px-4">
-                <div className="bg-deep-black rounded-3xl overflow-hidden relative">
+                <div className="bg-deep-black rounded-3xl overflow-hidden relative py-16 px-8 md:px-16 text-center">
                     {/* Abstract Background */}
-                    <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-gray-800 to-transparent opacity-50" />
+                    <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-l from-gray-800 to-transparent opacity-30 pointer-events-none" />
 
-                    <div className="grid md:grid-cols-2 gap-0 relative z-10">
-                        <div className="p-12 md:p-16 border-b md:border-b-0 md:border-r border-gray-800">
-                            <h3 className="text-3xl font-bebas tracking-wide font-bold text-white mb-6">
-                                Looking for Influencers?
-                            </h3>
-                            <ul className="space-y-4 mb-8 text-gray-400">
-                                <li className="flex items-center">✓ Access 5,000+ verified profiles</li>
-                                <li className="flex items-center">✓ Secure payment protection</li>
-                                <li className="flex items-center">✓ Detailed performance analytics</li>
-                            </ul>
-                            <Link to="/signup?type=brand">
-                                <Button className="w-full md:w-auto">
-                                    Sign Up as Brand
-                                </Button>
-                            </Link>
-                        </div>
+                    <div className="relative z-10 max-w-3xl mx-auto">
+                        <h3 className="text-4xl md:text-5xl font-bebas tracking-wide font-bold text-white mb-6">
+                            Ready to Take Control of Your Schedule?
+                        </h3>
+                        <p className="text-gray-400 text-lg mb-10 leading-relaxed">
+                            Join thousands of creators who are saving time, hitting deadlines, and staying organized with our professional tools.
+                        </p>
 
-                        <div className="p-12 md:p-16 bg-gray-900/50">
-                            <h3 className="text-3xl font-bebas tracking-wide font-bold text-white mb-6">
-                                Are You an Influencer?
-                            </h3>
-                            <ul className="space-y-4 mb-8 text-gray-400">
-                                <li className="flex items-center">✓ Connect with premium brands</li>
-                                <li className="flex items-center">✓ Guaranteed payments</li>
-                                <li className="flex items-center">✓ Professional media kit</li>
-                            </ul>
-                            <Link to="/signup?type=influencer">
-                                <Button variant="white" className="w-full md:w-auto">
-                                    Join as Influencer
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                            <Link to="/signup">
+                                <Button size="lg" className="w-full sm:w-auto shadow-lg shadow-orange-500/20">
+                                    Join Now - It's Free
                                 </Button>
                             </Link>
                         </div>

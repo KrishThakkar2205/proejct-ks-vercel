@@ -15,8 +15,6 @@ const Header = () => {
 
                 {/* Desktop Navigation */}
                 <nav className="hidden md:flex items-center space-x-8">
-                    <Link to="/how-it-works" className="text-deep-black hover:text-primary-orange transition-colors">How It Works</Link>
-                    <Link to="/features" className="text-deep-black hover:text-primary-orange transition-colors">Features</Link>
                     <Link to="/login" className="text-deep-black hover:text-primary-orange transition-colors">Log In</Link>
                     <Link to="/signup" className="bg-primary-orange text-white px-6 py-2 rounded-lg hover:bg-opacity-90 transition-colors">
                         Get Started
@@ -59,20 +57,7 @@ const Header = () => {
                 </div>
 
                 <div className="flex flex-col p-4 space-y-4">
-                    <Link
-                        to="/how-it-works"
-                        className="text-deep-black hover:text-primary-orange transition-colors py-2 px-2 rounded-md hover:bg-gray-50"
-                        onClick={() => setIsMenuOpen(false)}
-                    >
-                        How It Works
-                    </Link>
-                    <Link
-                        to="/features"
-                        className="text-deep-black hover:text-primary-orange transition-colors py-2 px-2 rounded-md hover:bg-gray-50"
-                        onClick={() => setIsMenuOpen(false)}
-                    >
-                        Features
-                    </Link>
+
                     <Link
                         to="/login"
                         className="text-deep-black hover:text-primary-orange transition-colors py-2 px-2 rounded-md hover:bg-gray-50"
