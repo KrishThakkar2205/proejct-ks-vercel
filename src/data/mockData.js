@@ -583,5 +583,97 @@ export const MOCK_INFLUENCER_DATA = {
             notes: 'Share recipe in caption',
             shootDate: '2025-12-10'
         }
+    ],
+
+    reviews: [
+        {
+            id: 1,
+            clientName: 'EcoWear Fashion',
+            clientEmail: 'marketing@ecowear.com',
+            rating: 5,
+            reviewText: 'Sarah was absolutely amazing to work with! Her professionalism and creativity brought our sustainable fashion campaign to life. The content she created exceeded our expectations and resonated perfectly with our target audience. Highly recommend!',
+            projectType: 'Brand Campaign',
+            isVerified: true,
+            isPublished: true,
+            createdAt: '2025-11-15T10:30:00'
+        },
+        {
+            id: 2,
+            clientName: 'GreenBeauty Co',
+            clientEmail: 'team@greenbeauty.com',
+            rating: 5,
+            reviewText: 'Working with Sarah was a dream! She understood our brand values immediately and created stunning content that showcased our natural skincare line beautifully. Her engagement rates are incredible and she delivered everything on time.',
+            projectType: 'Product Review',
+            isVerified: true,
+            isPublished: true,
+            createdAt: '2025-10-22T14:15:00'
+        },
+        {
+            id: 3,
+            clientName: 'UrbanStyle Co',
+            clientEmail: null,
+            rating: 4,
+            reviewText: 'Great experience overall! Sarah brought fresh ideas to our street fashion campaign and her photography skills are top-notch. The only minor issue was a slight delay in delivery, but the quality made up for it.',
+            projectType: 'Brand Campaign',
+            isVerified: false,
+            isPublished: true,
+            createdAt: '2025-10-05T09:45:00'
+        },
+        {
+            id: 4,
+            clientName: 'FitLife Nutrition',
+            clientEmail: 'collabs@fitlife.com',
+            rating: 5,
+            reviewText: 'Sarah\'s authentic approach to fitness content is exactly what we needed. Her followers trust her recommendations and we saw a significant boost in sales after her posts. Professional, reliable, and results-driven!',
+            projectType: 'Sponsored Post',
+            isVerified: true,
+            isPublished: true,
+            createdAt: '2025-09-18T16:20:00'
+        },
+        {
+            id: 5,
+            clientName: 'LuxeAccessories',
+            clientEmail: 'partnerships@luxeacc.com',
+            rating: 4,
+            reviewText: 'Very happy with the collaboration! Sarah styled our jewelry pieces beautifully and her aesthetic perfectly matched our luxury brand image. Would definitely work with her again.',
+            projectType: 'Product Placement',
+            isVerified: true,
+            isPublished: true,
+            createdAt: '2025-09-01T11:00:00'
+        },
+        {
+            id: 6,
+            clientName: 'Wellness Hub',
+            clientEmail: null,
+            rating: 5,
+            reviewText: 'Outstanding work! Sarah created a series of yoga content that perfectly captured the essence of our brand. Her attention to detail and creative vision made this campaign one of our most successful.',
+            projectType: 'Brand Campaign',
+            isVerified: false,
+            isPublished: true,
+            createdAt: '2025-08-12T13:30:00'
+        },
+        {
+            id: 7,
+            clientName: 'TechGear Pro',
+            clientEmail: 'marketing@techgear.com',
+            rating: 4,
+            reviewText: 'Good collaboration! Sarah did a great job reviewing our smart watch. Her tech knowledge surprised us and she explained features in a way that was easy for her audience to understand.',
+            projectType: 'Product Review',
+            isVerified: true,
+            isPublished: true,
+            createdAt: '2025-07-25T15:45:00'
+        },
+        {
+            id: 8,
+            clientName: 'Organic Eats',
+            clientEmail: null,
+            rating: 5,
+            reviewText: 'Fantastic experience from start to finish! Sarah\'s passion for sustainable living shines through in her content. The farm-to-table campaign she created for us was authentic and engaging.',
+            projectType: 'Sponsored Content',
+            isVerified: false,
+            isPublished: true,
+            createdAt: '2025-07-10T10:15:00'
+        }
     ]
 };
+

@@ -17,6 +17,7 @@ import InfluencerProfilePage from './pages/influencer/InfluencerProfile';
 import ShootingCalendar from './pages/influencer/ShootingCalendar';
 import Schedule from './pages/influencer/Schedule';
 import InfluencerMessages from './pages/influencer/InfluencerMessages';
+import InfluencerReviews from './pages/influencer/InfluencerReviews';
 import PlaceholderPage from './pages/PlaceholderPage';
 import NotFound from './pages/NotFound';
 import ScrollToTop from './components/ScrollToTop';
@@ -55,6 +56,7 @@ function App() {
                     <Route path="calendar" element={<ShootingCalendar />} />
                     <Route path="schedule" element={<Schedule />} />
                     <Route path="messages" element={<InfluencerMessages />} />
+                    <Route path="reviews" element={<InfluencerReviews />} />
                 </Route>
 
                 {/* 404 Route */}

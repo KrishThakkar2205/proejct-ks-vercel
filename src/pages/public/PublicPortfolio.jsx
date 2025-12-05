@@ -2,12 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
-import { Instagram, Facebook, Youtube, MapPin, TrendingUp, Users, Heart, MessageCircle, Eye, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import StarRating from '../../components/ui/StarRating';
+import { Instagram, Facebook, Youtube, MapPin, TrendingUp, Users, Heart, MessageCircle, Eye, X, ChevronLeft, ChevronRight, Star, ShieldCheck } from 'lucide-react';
 import { MOCK_INFLUENCER_DATA } from '../../data/mockData';
 
 const PublicPortfolio = () => {
     const { username } = useParams();
-    const { profile, socialMedia } = MOCK_INFLUENCER_DATA;
+    const { profile, socialMedia, reviews } = MOCK_INFLUENCER_DATA;
     const [selectedMedia, setSelectedMedia] = useState(null);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isClosing, setIsClosing] = useState(false);
@@ -355,6 +356,105 @@ const PublicPortfolio = () => {
                             </div>
                         </Card>
                     </div>
+                </div>
+
+                {/* Client Reviews Section */}
+                <div>
+                    <h2 className="text-3xl font-bebas tracking-wide text-deep-black mb-6">Client Reviews</h2>
+
+                    {/* Reviews Stats */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <Card className="p-6 bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-primary-orange">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600 mb-2">Average Rating</p>
+                                    <div className="flex items-center gap-3">
+                                        <h3 className="text-5xl font-bebas tracking-wide text-deep-black">
+                                            {reviews.length > 0
+                                                ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+                                                : '0.0'
+                                            }
+                                        </h3>
+                                        <StarRating
+                                            rating={reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0}
+                                            size="lg"
+                                        />
+                                    </div>
+                                    <p className="text-xs text-gray-600 mt-2">Based on {reviews.filter(r => r.isPublished).length} reviews</p>
+                                </div>
+                                <div className="w-20 h-20 bg-gradient-to-br from-primary-orange to-orange-600 rounded-full flex items-center justify-center shadow-lg">
+                                    <Star className="text-white" size={40} fill="currentColor" />
+                                </div>
+                            </div>
+                        </Card>
+
+                        <Card className="p-6">
+                            <h3 className="text-lg font-bebas tracking-wide text-deep-black mb-4">
+                                Rating Distribution
+                            </h3>
+                            <div className="space-y-3">
+                                {[5, 4, 3, 2, 1].map((stars) => {
+                                    const count = reviews.filter(r => r.rating === stars).length;
+                                    const percentage = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
+
+                                    return (
+                                        <div key={stars} className="flex items-center gap-3">
+                                            <div className="flex items-center gap-1 w-16">
+                                                <span className="text-sm font-medium text-gray-700">{stars}</span>
+                                                <Star className="text-primary-orange" size={14} fill="currentColor" />
+                                            </div>
+                                            <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-primary-orange rounded-full transition-all duration-300"
+                                                    style={{ width: `${percentage}%` }}
+                                                />
+                                            </div>
+                                            <span className="text-sm text-gray-600 w-12 text-right">{count}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </Card>
+                    </div>
+
+                    {/* Recent Reviews */}
+                    {reviews.filter(r => r.isPublished).length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {reviews
+                                .filter(r => r.isPublished)
+                                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                                .slice(0, 4)
+                                .map((review) => (
+                                    <Card key={review.id} className="p-6 hover:shadow-lg transition-shadow">
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <h4 className="font-semibold text-deep-black">{review.clientName}</h4>
+                                                    {review.isVerified && (
+                                                        <ShieldCheck className="text-blue-600" size={16} title="Verified Client" />
+                                                    )}
+                                                </div>
+                                                <StarRating rating={review.rating} size="sm" showNumber />
+                                            </div>
+                                            {review.projectType && (
+                                                <Badge variant="secondary" className="text-xs">
+                                                    {review.projectType}
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        <p className="text-gray-700 text-sm leading-relaxed line-clamp-3">
+                                            {review.reviewText}
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-3">
+                                            {new Date(review.createdAt).toLocaleDateString('en-US', {
+                                                month: 'short',
+                                                year: 'numeric'
+                                            })}
+                                        </p>
+                                    </Card>
+                                ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* CTA Section */}
