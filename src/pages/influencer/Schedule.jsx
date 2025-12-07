@@ -46,6 +46,25 @@ const Schedule = () => {
             newSet.add(shootId);
             return newSet;
         });
+
+        // Persist completed shoot to localStorage
+        const shoot = bookings.find(b => b.id === shootId);
+        if (shoot) {
+            const completedShootsData = JSON.parse(localStorage.getItem('completedShoots') || '[]');
+
+            // Check if shoot is already in completed list
+            if (!completedShootsData.find(s => s.id === shootId)) {
+                completedShootsData.push({
+                    ...shoot,
+                    completedAt: new Date().toISOString(),
+                    status: 'completed'
+                });
+                localStorage.setItem('completedShoots', JSON.stringify(completedShootsData));
+
+                // Show success notification (optional)
+                console.log('Shoot marked as completed! Visit Completed Shoots page to generate review link.');
+            }
+        }
     };
 
     // Handler for marking upload as completed

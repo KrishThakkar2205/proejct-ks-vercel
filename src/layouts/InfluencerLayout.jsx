@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, User, Calendar, ClipboardList, MessageSquare, Star, Bell, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, User, Calendar, ClipboardList, CheckCircle, MessageSquare, Star, Bell, LogOut, Menu, X } from 'lucide-react';
 
 const InfluencerLayout = () => {
     const location = useLocation();
@@ -12,6 +12,7 @@ const InfluencerLayout = () => {
         { icon: <User size={20} />, label: 'Profile', path: '/influencer/profile' },
         { icon: <Calendar size={20} />, label: 'Calendar', path: '/influencer/calendar' },
         { icon: <ClipboardList size={20} />, label: 'Schedule', path: '/influencer/schedule' },
+        { icon: <CheckCircle size={20} />, label: 'Completed Shoots', path: '/influencer/completed-shoots' },
         { icon: <Star size={20} />, label: 'Reviews', path: '/influencer/reviews' },
     ];
 

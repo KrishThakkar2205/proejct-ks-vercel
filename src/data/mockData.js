@@ -249,6 +249,32 @@ export const MOCK_INFLUENCER_DATA = {
             createdDate: '2025-12-01'
         },
 
+        // Dec 7, 2025 (Today - for testing)
+        {
+            id: 15,
+            brandName: 'Sunset Photography',
+            brandLogo: null,
+            campaign: 'Golden Hour Portrait Series',
+            shootDate: '2025-12-07',
+            shootTime: '9:00 AM - 10:30 AM',
+            location: 'Malibu Pier',
+            status: 'confirmed',
+            notes: 'Bring white and cream outfits',
+            createdDate: '2025-12-02'
+        },
+        {
+            id: 16,
+            brandName: 'Urban Lifestyle Co',
+            brandLogo: null,
+            campaign: 'City Explorer Collection',
+            shootDate: '2025-12-07',
+            shootTime: '2:00 PM - 3:30 PM',
+            location: 'Downtown LA',
+            status: 'confirmed',
+            notes: 'Street style casual wear',
+            createdDate: '2025-12-03'
+        },
+
         // Past booking
         {
             id: 10,

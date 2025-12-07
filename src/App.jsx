@@ -4,6 +4,7 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
 import SignupPage from './pages/auth/SignupPage';
 import PublicPortfolio from './pages/public/PublicPortfolio';
+import ClientReviewPage from './pages/public/ClientReviewPage';
 import DashboardLayout from './layouts/DashboardLayout';
 import BrandDashboard from './pages/brand/BrandDashboard';
 import DiscoverInfluencers from './pages/brand/DiscoverInfluencers';
@@ -16,6 +17,7 @@ import InfluencerDashboard from './pages/influencer/InfluencerDashboard';
 import InfluencerProfilePage from './pages/influencer/InfluencerProfile';
 import ShootingCalendar from './pages/influencer/ShootingCalendar';
 import Schedule from './pages/influencer/Schedule';
+import CompletedShoots from './pages/influencer/CompletedShoots';
 import InfluencerMessages from './pages/influencer/InfluencerMessages';
 import InfluencerReviews from './pages/influencer/InfluencerReviews';
 import PlaceholderPage from './pages/PlaceholderPage';
@@ -38,6 +40,9 @@ function App() {
                 {/* Portfolio Route */}
                 <Route path="/portfolio/:username" element={<PublicPortfolio />} />
 
+                {/* Review Submission Route */}
+                <Route path="/review/:token" element={<ClientReviewPage />} />
+
                 {/* Dashboard Routes */}
                 <Route path="/brand" element={<DashboardLayout />}>
                     <Route index element={<BrandDashboard />} />
@@ -55,6 +60,7 @@ function App() {
                     <Route path="profile" element={<InfluencerProfilePage />} />
                     <Route path="calendar" element={<ShootingCalendar />} />
                     <Route path="schedule" element={<Schedule />} />
+                    <Route path="completed-shoots" element={<CompletedShoots />} />
                     <Route path="messages" element={<InfluencerMessages />} />
                     <Route path="reviews" element={<InfluencerReviews />} />
                 </Route>
