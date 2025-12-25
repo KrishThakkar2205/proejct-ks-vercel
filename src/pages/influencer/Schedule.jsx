@@ -3,7 +3,10 @@ import { createPortal } from 'react-dom';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
-import { Calendar, Clock, MapPin, Search, Upload, Video, X } from 'lucide-react';
+import RescheduleModal from '../../components/dashboard/RescheduleModal';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import SuccessAlert from '../../components/ui/SuccessAlert';
+import { Calendar, Clock, MapPin, Search, Upload, Video, X, Trash2 } from 'lucide-react';
 import { calendarEvents } from '../../data/demoData';
 
 const Schedule = () => {
@@ -13,6 +16,11 @@ const Schedule = () => {
     const [completedUploads, setCompletedUploads] = useState(new Set());
     const [selectedShoot, setSelectedShoot] = useState(null);
     const [isModalClosing, setIsModalClosing] = useState(false);
+    const [rescheduleModal, setRescheduleModal] = useState({ isOpen: false, event: null });
+    const [rescheduledEvents, setRescheduledEvents] = useState({});
+    const [deletedItems, setDeletedItems] = useState(new Set());
+    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, itemId: null });
+    const [successAlert, setSuccessAlert] = useState({ isOpen: false, message: '' });
 
     // Get today's date string
     const getTodayStr = () => {
@@ -123,6 +131,67 @@ const Schedule = () => {
         }
     };
 
+    // Reschedule handlers
+    const handleReschedule = (event) => {
+        setRescheduleModal({ isOpen: true, event });
+    };
+
+    const handleCloseRescheduleModal = () => {
+        setRescheduleModal({ isOpen: false, event: null });
+    };
+
+    const handleRescheduleConfirm = (rescheduleData) => {
+        if (rescheduleModal.event && rescheduleData) {
+            // Convert 24-hour time to 12-hour format for display
+            const [hours, minutes] = rescheduleData.time.split(':');
+            const hour = parseInt(hours);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour % 12 || 12;
+            const displayTime = `${displayHour}:${minutes} ${ampm}`;
+
+            setRescheduledEvents(prev => ({
+                ...prev,
+                [rescheduleModal.event.id]: {
+                    date: rescheduleData.date,
+                    time: rescheduleData.time,
+                    displayTime: displayTime
+                }
+            }));
+
+            // Show success alert
+            setSuccessAlert({
+                isOpen: true,
+                message: 'Event rescheduled successfully!'
+            });
+
+            // Auto-hide success alert after 3 seconds
+            setTimeout(() => {
+                setSuccessAlert({ isOpen: false, message: '' });
+            }, 3000);
+        }
+        handleCloseRescheduleModal();
+    };
+
+    // Delete handlers
+    const handleDelete = (itemId) => {
+        setDeleteConfirm({ isOpen: true, itemId });
+    };
+
+    const handleConfirmDelete = () => {
+        if (deleteConfirm.itemId) {
+            setDeletedItems(prev => {
+                const newSet = new Set(prev);
+                newSet.add(deleteConfirm.itemId);
+                return newSet;
+            });
+        }
+        setDeleteConfirm({ isOpen: false, itemId: null });
+    };
+
+    const handleCancelDelete = () => {
+        setDeleteConfirm({ isOpen: false, itemId: null });
+    };
+
     // Modal handlers
     const openShootModal = (shoot) => {
         setSelectedShoot(shoot);
@@ -136,36 +205,42 @@ const Schedule = () => {
         }, 300); // Match animation duration
     };
 
-    // Filter shoots by search
-    const filterShoot = () => {
-        let filtered = todaysShoot;
-
+    // Filter functions
+    const filterShoots = () => {
+        let filtered = todaysShoot.filter(b => !deletedItems.has(b.id));
         if (searchQuery) {
-            filtered = filtered.filter(b =>
-                b.brandName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                b.campaign.toLowerCase().includes(searchQuery.toLowerCase())
+            const query = searchQuery.toLowerCase();
+            filtered = filtered.filter(booking =>
+                booking.brandName?.toLowerCase().includes(query) ||
+                booking.campaign?.toLowerCase().includes(query) ||
+                booking.location?.toLowerCase().includes(query) ||
+                booking.status?.toLowerCase().includes(query) ||
+                booking.shootDate?.toLowerCase().includes(query) ||
+                booking.shootTime?.toLowerCase().includes(query) ||
+                booking.notes?.toLowerCase().includes(query)
             );
         }
-
         return filtered.sort((a, b) => a.shootTime.localeCompare(b.shootTime));
     };
 
-    // Filter uploads by search
     const filterUploads = () => {
-        let filtered = todaysUploads;
-
+        let filtered = todaysUploads.filter(u => !deletedItems.has(u.id));
         if (searchQuery) {
-            filtered = filtered.filter(u =>
-                u.brandName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                u.campaign.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                u.platform.toLowerCase().includes(searchQuery.toLowerCase())
+            const query = searchQuery.toLowerCase();
+            filtered = filtered.filter(upload =>
+                upload.brandName?.toLowerCase().includes(query) ||
+                upload.campaign?.toLowerCase().includes(query) ||
+                upload.platform?.toLowerCase().includes(query) ||
+                upload.contentType?.toLowerCase().includes(query) ||
+                upload.status?.toLowerCase().includes(query) ||
+                upload.uploadTime?.toLowerCase().includes(query) ||
+                upload.notes?.toLowerCase().includes(query)
             );
         }
-
         return filtered.sort((a, b) => a.uploadTime.localeCompare(b.uploadTime));
     };
 
-    const filteredShoot = filterShoot();
+    const filteredShoot = filterShoots();
     const filteredUploads = filterUploads();
 
     const getStatusVariant = (status) => {
@@ -290,24 +365,48 @@ const Schedule = () => {
                                     </div>
                                 )}
 
-                                <div className="flex flex-col sm:flex-row gap-2">
-                                    <Button
-                                        variant="secondary"
-                                        size="sm"
-                                        className="flex-1 w-full sm:w-auto"
-                                        onClick={() => openShootModal(booking)}
-                                    >
-                                        View Details
-                                    </Button>
-                                    <Button
-                                        variant={completedShoots.has(booking.id) ? "outline" : "primary"}
-                                        size="sm"
-                                        className="flex-1 w-full sm:w-auto"
-                                        onClick={() => handleMarkShootComplete(booking.id)}
-                                        disabled={completedShoots.has(booking.id)}
-                                    >
-                                        {completedShoots.has(booking.id) ? 'Done' : 'Mark as Completed'}
-                                    </Button>
+                                <div className="flex flex-col gap-2 mt-4">
+                                    {/* First row: Reschedule and Delete side by side */}
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="flex-1"
+                                            onClick={() => handleReschedule(booking)}
+                                            disabled={completedShoots.has(booking.id)}
+                                        >
+                                            Reschedule
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="text-red-600 hover:bg-red-50 hover:border-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            onClick={() => handleDelete(booking.id)}
+                                            disabled={completedShoots.has(booking.id)}
+                                        >
+                                            <Trash2 size={16} />
+                                        </Button>
+                                    </div>
+                                    {/* Second row: View Details and Mark as Completed */}
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            className="flex-1"
+                                            onClick={() => openShootModal(booking)}
+                                        >
+                                            View Details
+                                        </Button>
+                                        <Button
+                                            variant={completedShoots.has(booking.id) ? "outline" : "primary"}
+                                            size="sm"
+                                            className="flex-1"
+                                            onClick={() => handleMarkShootComplete(booking.id)}
+                                            disabled={completedShoots.has(booking.id)}
+                                        >
+                                            {completedShoots.has(booking.id) ? 'Done' : 'Mark as Completed'}
+                                        </Button>
+                                    </div>
                                 </div>
                             </Card>
                         ))
@@ -364,12 +463,33 @@ const Schedule = () => {
                                     </div>
                                 )}
 
-                                <div className="flex flex-col sm:flex-row gap-2">
-
+                                <div className="flex flex-col gap-2 mt-4">
+                                    {/* First row: Reschedule and Delete side by side */}
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="flex-1"
+                                            onClick={() => handleReschedule(upload)}
+                                            disabled={completedUploads.has(upload.id)}
+                                        >
+                                            Reschedule
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="text-red-600 hover:bg-red-50 hover:border-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            onClick={() => handleDelete(upload.id)}
+                                            disabled={completedUploads.has(upload.id)}
+                                        >
+                                            <Trash2 size={16} />
+                                        </Button>
+                                    </div>
+                                    {/* Second row: Mark as Completed */}
                                     <Button
                                         variant={completedUploads.has(upload.id) ? "outline" : "primary"}
                                         size="sm"
-                                        className="flex-1 w-full sm:w-auto"
+                                        className="w-full"
                                         onClick={() => handleMarkUploadComplete(upload.id)}
                                         disabled={completedUploads.has(upload.id)}
                                     >
@@ -497,6 +617,36 @@ const Schedule = () => {
                 </div>,
                 document.body
             )}
+
+            {/* Reschedule Modal */}
+            {createPortal(
+                <RescheduleModal
+                    isOpen={rescheduleModal.isOpen}
+                    event={rescheduleModal.event}
+                    onClose={handleCloseRescheduleModal}
+                    onConfirm={handleRescheduleConfirm}
+                />,
+                document.body
+            )}
+
+            {/* Delete Confirmation Dialog */}
+            <ConfirmDialog
+                isOpen={deleteConfirm.isOpen}
+                title="Delete Item"
+                message="Are you sure you want to delete this item? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                variant="danger"
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+            />
+
+            {/* Success Alert */}
+            <SuccessAlert
+                isOpen={successAlert.isOpen}
+                message={successAlert.message}
+                onClose={() => setSuccessAlert({ isOpen: false, message: '' })}
+            />
         </div>
     );
 };

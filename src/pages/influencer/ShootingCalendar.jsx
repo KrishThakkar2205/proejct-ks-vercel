@@ -6,7 +6,10 @@ import Badge from '../../components/ui/Badge';
 import Select from '../../components/ui/Select';
 import DateInput from '../../components/ui/DateInput';
 import TimeInput from '../../components/ui/TimeInput';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Upload, Video } from 'lucide-react';
+import RescheduleModal from '../../components/dashboard/RescheduleModal';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import SuccessAlert from '../../components/ui/SuccessAlert';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Upload, Video, Trash2, AlertTriangle } from 'lucide-react';
 import { calendarEvents } from '../../data/demoData';
 
 const ShootingCalendar = () => {
@@ -14,6 +17,11 @@ const ShootingCalendar = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
     const [scheduleType, setScheduleType] = useState('shoot'); // 'shoot' or 'upload'
+    const [rescheduleModal, setRescheduleModal] = useState({ isOpen: false, event: null });
+    const [rescheduledEvents, setRescheduledEvents] = useState({});
+    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, itemId: null });
+    const [deletedItems, setDeletedItems] = useState(new Set());
+    const [successAlert, setSuccessAlert] = useState({ isOpen: false, message: '' });
 
     const closeModal = () => {
         setIsClosing(true);
@@ -146,8 +154,46 @@ const ShootingCalendar = () => {
     }
 
     const [selectedDate, setSelectedDate] = useState(new Date().getDate());
-    const selectedBookings = selectedDate ? getBookingsForDate(selectedDate) : [];
-    const selectedUploads = selectedDate ? getUploadsForDate(selectedDate) : [];
+
+    // Get today's date for comparison
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Get selected date as Date object
+    const getSelectedDateObj = () => {
+        const date = new Date(year, month, selectedDate);
+        date.setHours(0, 0, 0, 0);
+        return date;
+    };
+
+    const selectedDateObj = getSelectedDateObj();
+    const isPastDate = selectedDateObj < today;
+
+    // Categorize events for selected date
+    const categorizeEvents = () => {
+        const allBookings = getBookingsForDate(selectedDate).filter(b => !deletedItems.has(b.id));
+        const allUploads = getUploadsForDate(selectedDate).filter(u => !deletedItems.has(u.id));
+
+        if (isPastDate) {
+            // For past dates, separate delayed (incomplete) from completed
+            return {
+                shoots: allBookings.filter(b => b.status === 'completed'),
+                uploads: allUploads.filter(u => u.status === 'uploaded'),
+                delayedShoots: allBookings.filter(b => b.status !== 'completed'),
+                delayedUploads: allUploads.filter(u => u.status !== 'uploaded')
+            };
+        } else {
+            // For today/future, all are editable
+            return {
+                shoots: allBookings,
+                uploads: allUploads,
+                delayedShoots: [],
+                delayedUploads: []
+            };
+        }
+    };
+
+    const { shoots: selectedBookings, uploads: selectedUploads, delayedShoots, delayedUploads } = categorizeEvents();
 
     // Form handlers
     const handleInputChange = (e) => {
@@ -180,6 +226,73 @@ const ShootingCalendar = () => {
         const today = new Date();
         const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
         setFormData(prev => ({ ...prev, date: dateStr }));
+    };
+
+    // Reschedule handlers
+    const handleReschedule = (event) => {
+        setRescheduleModal({ isOpen: true, event });
+    };
+
+    const handleCloseRescheduleModal = () => {
+        setRescheduleModal({ isOpen: false, event: null });
+    };
+
+    const handleRescheduleConfirm = (rescheduleData) => {
+        if (rescheduleModal.event && rescheduleData) {
+            const [hours, minutes] = rescheduleData.time.split(':');
+            const hour = parseInt(hours);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour % 12 || 12;
+            const displayTime = `${displayHour}:${minutes} ${ampm}`;
+
+            setRescheduledEvents(prev => ({
+                ...prev,
+                [rescheduleModal.event.id]: {
+                    date: rescheduleData.date,
+                    time: rescheduleData.time,
+                    displayTime: displayTime
+                }
+            }));
+
+            setSuccessAlert({
+                isOpen: true,
+                message: 'Event rescheduled successfully!'
+            });
+
+            setTimeout(() => {
+                setSuccessAlert({ isOpen: false, message: '' });
+            }, 3000);
+        }
+        handleCloseRescheduleModal();
+    };
+
+    // Delete handlers
+    const handleDelete = (itemId) => {
+        setDeleteConfirm({ isOpen: true, itemId });
+    };
+
+    const handleConfirmDelete = () => {
+        if (deleteConfirm.itemId) {
+            setDeletedItems(prev => {
+                const newSet = new Set(prev);
+                newSet.add(deleteConfirm.itemId);
+                return newSet;
+            });
+
+            setSuccessAlert({
+                isOpen: true,
+                message: 'Event deleted successfully!'
+            });
+
+            setTimeout(() => {
+                setSuccessAlert({ isOpen: false, message: '' });
+            }, 3000);
+        }
+        setDeleteConfirm({ isOpen: false, itemId: null });
+    };
+
+    const handleCancelDelete = () => {
+        setDeleteConfirm({ isOpen: false, itemId: null });
     };
 
 
@@ -366,6 +479,28 @@ const ShootingCalendar = () => {
                                                         </div>
                                                     )}
                                                 </div>
+
+                                                {/* Action Buttons */}
+                                                <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="flex-1"
+                                                        onClick={() => handleReschedule(booking)}
+                                                        disabled={isPastDate && booking.status === 'completed'}
+                                                    >
+                                                        Reschedule
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="text-red-600 hover:bg-red-50 hover:border-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        onClick={() => handleDelete(booking.id)}
+                                                        disabled={isPastDate && booking.status === 'completed'}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </Button>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -418,14 +553,126 @@ const ShootingCalendar = () => {
                                                         </div>
                                                     )}
                                                 </div>
+
+                                                {/* Action Buttons */}
+                                                <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="flex-1"
+                                                        onClick={() => handleReschedule(upload)}
+                                                        disabled={isPastDate && upload.status === 'uploaded'}
+                                                    >
+                                                        Reschedule
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="text-red-600 hover:bg-red-50 hover:border-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        onClick={() => handleDelete(upload.id)}
+                                                        disabled={isPastDate && upload.status === 'uploaded'}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </Button>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
                             )}
 
-                            {selectedBookings.length === 0 && selectedUploads.length === 0 && (
-                                <p className="text-sm text-gray-500">No shoots or uploads for this date</p>
+                            {/* Delayed Section - Only show for past dates */}
+                            {isPastDate && (delayedShoots.length > 0 || delayedUploads.length > 0) && (
+                                <div className="mt-6">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <AlertTriangle size={16} className="text-red-600" />
+                                        <p className="text-sm font-semibold text-red-600">
+                                            Delayed ({delayedShoots.length + delayedUploads.length})
+                                        </p>
+                                    </div>
+                                    <div className="space-y-4 max-h-64 overflow-y-auto">
+                                        {/* Delayed Shoots */}
+                                        {delayedShoots.map((shoot, idx) => (
+                                            <div key={shoot.id} className="pb-4 border-b border-gray-200">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <p className="text-xs text-red-600 font-semibold">Delayed Shoot</p>
+                                                    <Badge variant="error">Delayed</Badge>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <div>
+                                                        <p className="text-xs text-gray-500">Brand</p>
+                                                        <p className="font-medium text-deep-black text-sm">{shoot.brandName}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs text-gray-500">Campaign</p>
+                                                        <p className="text-sm text-gray-700">{shoot.campaign}</p>
+                                                    </div>
+                                                </div>
+                                                {/* Action Buttons for Delayed */}
+                                                <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="flex-1"
+                                                        onClick={() => handleReschedule(shoot)}
+                                                    >
+                                                        Reschedule
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="text-red-600 hover:bg-red-50 hover:border-red-600"
+                                                        onClick={() => handleDelete(shoot.id)}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {/* Delayed Uploads */}
+                                        {delayedUploads.map((upload, idx) => (
+                                            <div key={upload.id} className="pb-4 border-b border-gray-200">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <p className="text-xs text-orange-600 font-semibold">Delayed Upload</p>
+                                                    <Badge variant="warning">Delayed</Badge>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <div>
+                                                        <p className="text-xs text-gray-500">Brand</p>
+                                                        <p className="font-medium text-deep-black text-sm">{upload.brandName}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs text-gray-500">Campaign</p>
+                                                        <p className="text-sm text-gray-700">{upload.campaign}</p>
+                                                    </div>
+                                                </div>
+                                                {/* Action Buttons for Delayed */}
+                                                <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="flex-1"
+                                                        onClick={() => handleReschedule(upload)}
+                                                    >
+                                                        Reschedule
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="text-red-600 hover:bg-red-50 hover:border-red-600"
+                                                        onClick={() => handleDelete(upload.id)}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {selectedBookings.length === 0 && selectedUploads.length === 0 && delayedShoots.length === 0 && delayedUploads.length === 0 && (
+                                <p className="text-sm text-gray-500">No events for this date</p>
                             )}
                         </Card>
                     )}
@@ -623,6 +870,36 @@ const ShootingCalendar = () => {
                 </div>,
                 document.body
             )}
+
+            {/* Reschedule Modal */}
+            {createPortal(
+                <RescheduleModal
+                    isOpen={rescheduleModal.isOpen}
+                    event={rescheduleModal.event}
+                    onClose={handleCloseRescheduleModal}
+                    onConfirm={handleRescheduleConfirm}
+                />,
+                document.body
+            )}
+
+            {/* Delete Confirmation Dialog */}
+            <ConfirmDialog
+                isOpen={deleteConfirm.isOpen}
+                title="Delete Event"
+                message="Are you sure you want to delete this event? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                variant="danger"
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+            />
+
+            {/* Success Alert */}
+            <SuccessAlert
+                isOpen={successAlert.isOpen}
+                message={successAlert.message}
+                onClose={() => setSuccessAlert({ isOpen: false, message: '' })}
+            />
         </div>
     );
 };

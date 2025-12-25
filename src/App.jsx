@@ -18,6 +18,7 @@ import InfluencerProfilePage from './pages/influencer/InfluencerProfile';
 import ShootingCalendar from './pages/influencer/ShootingCalendar';
 import Schedule from './pages/influencer/Schedule';
 import CompletedShoots from './pages/influencer/CompletedShoots';
+import DelayedPage from './pages/influencer/DelayedPage';
 import InfluencerMessages from './pages/influencer/InfluencerMessages';
 import InfluencerReviews from './pages/influencer/InfluencerReviews';
 import PlaceholderPage from './pages/PlaceholderPage';
@@ -61,6 +62,7 @@ function App() {
                     <Route path="calendar" element={<ShootingCalendar />} />
                     <Route path="schedule" element={<Schedule />} />
                     <Route path="completed-shoots" element={<CompletedShoots />} />
+                    <Route path="delayed" element={<DelayedPage />} />
                     <Route path="messages" element={<InfluencerMessages />} />
                     <Route path="reviews" element={<InfluencerReviews />} />
                 </Route>

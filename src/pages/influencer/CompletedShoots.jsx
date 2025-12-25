@@ -9,6 +9,7 @@ const CompletedShoots = () => {
     const [completedUploads, setCompletedUploads] = useState([]);
     const [activeTab, setActiveTab] = useState('shoots');
     const [searchQuery, setSearchQuery] = useState('');
+    const [dateFilter, setDateFilter] = useState('');
     const [copiedToken, setCopiedToken] = useState(null);
 
     useEffect(() => {
@@ -58,21 +59,59 @@ const CompletedShoots = () => {
     };
 
     const filterShoots = () => {
-        if (!searchQuery) return completedShoots;
+        if (!searchQuery && !dateFilter) return completedShoots;
 
-        return completedShoots.filter(shoot =>
-            shoot.brandName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            shoot.campaign.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+        const query = searchQuery.toLowerCase();
+        return completedShoots.filter(shoot => {
+            // Text search filter
+            const matchesSearch = !searchQuery || (
+                shoot.brandName?.toLowerCase().includes(query) ||
+                shoot.campaign?.toLowerCase().includes(query) ||
+                shoot.location?.toLowerCase().includes(query) ||
+                shoot.status?.toLowerCase().includes(query) ||
+                shoot.shootDate?.toLowerCase().includes(query) ||
+                shoot.shootTime?.toLowerCase().includes(query)
+            );
+
+            // Date filter (exact date match)
+            let matchesDate = true;
+            if (dateFilter) {
+                const shootDate = new Date(shoot.shootDate || shoot.completedAt);
+                const filterDate = new Date(dateFilter);
+                // Compare only the date part (ignore time)
+                matchesDate = shootDate.toDateString() === filterDate.toDateString();
+            }
+
+            return matchesSearch && matchesDate;
+        });
     };
 
     const filterUploads = () => {
-        if (!searchQuery) return completedUploads;
+        if (!searchQuery && !dateFilter) return completedUploads;
 
-        return completedUploads.filter(upload =>
-            upload.brandName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            upload.campaign.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+        const query = searchQuery.toLowerCase();
+        return completedUploads.filter(upload => {
+            // Text search filter
+            const matchesSearch = !searchQuery || (
+                upload.brandName?.toLowerCase().includes(query) ||
+                upload.campaign?.toLowerCase().includes(query) ||
+                upload.platform?.toLowerCase().includes(query) ||
+                upload.contentType?.toLowerCase().includes(query) ||
+                upload.status?.toLowerCase().includes(query) ||
+                upload.uploadTime?.toLowerCase().includes(query)
+            );
+
+            // Date filter (exact date match)
+            let matchesDate = true;
+            if (dateFilter) {
+                const uploadDate = new Date(upload.uploadDate || upload.completedAt);
+                const filterDate = new Date(dateFilter);
+                // Compare only the date part (ignore time)
+                matchesDate = uploadDate.toDateString() === filterDate.toDateString();
+            }
+
+            return matchesSearch && matchesDate;
+        });
     };
 
     const filteredShoots = filterShoots();
@@ -127,17 +166,44 @@ const CompletedShoots = () => {
                 </div>
             </Card>
 
-            {/* Search */}
+            {/* Search and Filters */}
             <Card className="p-4">
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                    <input
-                        type="text"
-                        placeholder="Search by brand or campaign..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent"
-                    />
+                <div className="flex flex-col gap-3">
+                    {/* Search */}
+                    <div className="relative w-full">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                        <input
+                            type="text"
+                            placeholder={`Search ${activeTab === 'shoots' ? 'shoots' : 'uploads'}...`}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent"
+                        />
+                    </div>
+
+                    {/* Date Filter */}
+                    <div className="flex gap-2">
+                        <div className="relative flex-1">
+                            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                            <input
+                                type="date"
+                                value={dateFilter}
+                                onChange={(e) => setDateFilter(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent text-sm"
+                                placeholder="Filter by date"
+                            />
+                        </div>
+                        {dateFilter && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setDateFilter('')}
+                                className="whitespace-nowrap"
+                            >
+                                Clear
+                            </Button>
+                        )}
+                    </div>
                 </div>
             </Card>
 

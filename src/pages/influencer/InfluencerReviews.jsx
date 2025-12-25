@@ -1,12 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
+import Button from '../../components/ui/Button';
 import StarRating from '../../components/ui/StarRating';
-import { Star, ShieldCheck, Calendar } from 'lucide-react';
+import { Star, ShieldCheck, Calendar, Search } from 'lucide-react';
 import { MOCK_INFLUENCER_DATA } from '../../data/mockData';
 
 const InfluencerReviews = () => {
     const { reviews } = MOCK_INFLUENCER_DATA;
+    const [searchQuery, setSearchQuery] = useState('');
+    const [ratingFilter, setRatingFilter] = useState('');
+    const [dateFilter, setDateFilter] = useState('');
 
     // Calculate average rating
     const averageRating = reviews.length > 0
@@ -16,8 +20,31 @@ const InfluencerReviews = () => {
     // Filter published reviews
     const publishedReviews = reviews.filter(review => review.isPublished);
 
+    // Apply filters
+    const filteredReviews = publishedReviews.filter(review => {
+        // Search filter
+        const matchesSearch = !searchQuery || (
+            review.clientName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            review.reviewText?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            review.projectType?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+
+        // Rating filter
+        const matchesRating = !ratingFilter || review.rating === parseInt(ratingFilter);
+
+        // Date filter
+        let matchesDate = true;
+        if (dateFilter) {
+            const reviewDate = new Date(review.createdAt);
+            const filterDate = new Date(dateFilter);
+            matchesDate = reviewDate.toDateString() === filterDate.toDateString();
+        }
+
+        return matchesSearch && matchesRating && matchesDate;
+    });
+
     // Sort reviews by date (newest first)
-    const sortedReviews = [...publishedReviews].sort(
+    const sortedReviews = [...filteredReviews].sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
     );
 
@@ -97,6 +124,71 @@ const InfluencerReviews = () => {
                     </div>
                 </Card>
             )}
+
+            {/* Search and Filters */}
+            <Card className="p-4">
+                <div className="flex flex-col gap-3">
+                    {/* Search */}
+                    <div className="relative w-full">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                        <input
+                            type="text"
+                            placeholder="Search reviews by client, project, or content..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent"
+                        />
+                    </div>
+
+                    {/* Filters */}
+                    <div className="flex flex-wrap gap-2">
+                        {/* Rating Filter */}
+                        <div className="relative flex-1 min-w-[140px]">
+                            <Star className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                            <select
+                                value={ratingFilter}
+                                onChange={(e) => setRatingFilter(e.target.value)}
+                                className="w-full pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent text-sm appearance-none bg-white cursor-pointer"
+                            >
+                                <option value="">All Ratings</option>
+                                <option value="5">5 Stars</option>
+                                <option value="4">4 Stars</option>
+                                <option value="3">3 Stars</option>
+                                <option value="2">2 Stars</option>
+                                <option value="1">1 Star</option>
+                            </select>
+                        </div>
+
+                        {/* Date Filter */}
+                        <div className="relative flex-1 min-w-[140px]">
+                            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                            <input
+                                type="date"
+                                value={dateFilter}
+                                onChange={(e) => setDateFilter(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent text-sm"
+                                placeholder="Filter by date"
+                            />
+                        </div>
+
+                        {/* Clear Filters Button */}
+                        {(searchQuery || ratingFilter || dateFilter) && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    setSearchQuery('');
+                                    setRatingFilter('');
+                                    setDateFilter('');
+                                }}
+                                className="whitespace-nowrap"
+                            >
+                                Clear All
+                            </Button>
+                        )}
+                    </div>
+                </div>
+            </Card>
 
             {/* Reviews List */}
             <div>
