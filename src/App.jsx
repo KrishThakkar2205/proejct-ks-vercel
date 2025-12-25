@@ -13,6 +13,7 @@ import ClosedDeals from './pages/brand/ClosedDeals';
 import ActiveDeals from './pages/brand/ActiveDeals';
 import Messages from './pages/brand/Messages';
 import InfluencerLayout from './layouts/InfluencerLayout';
+import InfluencerDashboard from './pages/influencer/InfluencerDashboard';
 import InfluencerProfilePage from './pages/influencer/InfluencerProfile';
 import ShootingCalendar from './pages/influencer/ShootingCalendar';
 import Schedule from './pages/influencer/Schedule';
@@ -55,7 +56,7 @@ function App() {
 
                 {/* Influencer Routes */}
                 <Route path="/influencer" element={<InfluencerLayout />}>
-                    <Route index element={<Navigate to="/influencer/profile" replace />} />
+                    <Route index element={<InfluencerDashboard />} />
                     <Route path="profile" element={<InfluencerProfilePage />} />
                     <Route path="calendar" element={<ShootingCalendar />} />
                     <Route path="schedule" element={<Schedule />} />

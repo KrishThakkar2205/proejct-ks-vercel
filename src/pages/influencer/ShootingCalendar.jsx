@@ -7,7 +7,7 @@ import Select from '../../components/ui/Select';
 import DateInput from '../../components/ui/DateInput';
 import TimeInput from '../../components/ui/TimeInput';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Upload, Video } from 'lucide-react';
-import { MOCK_INFLUENCER_DATA } from '../../data/mockData';
+import { calendarEvents } from '../../data/demoData';
 
 const ShootingCalendar = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -32,7 +32,34 @@ const ShootingCalendar = () => {
         contentType: '',
         notes: ''
     });
-    const { bookings, uploadSchedule, calendar } = MOCK_INFLUENCER_DATA;
+
+    // Convert calendar events to booking format
+    const bookings = calendarEvents.filter(event => event.type === 'shoot').map(event => ({
+        id: event.id,
+        brandName: event.brand,
+        campaign: event.campaign,
+        shootDate: event.date,
+        shootTime: event.displayTime,
+        location: event.location,
+        status: event.status,
+        notes: event.description
+    }));
+
+    const uploadSchedule = calendarEvents.filter(event => event.type === 'upload').map(event => ({
+        id: event.id,
+        brandName: event.brand,
+        campaign: event.campaign,
+        uploadDate: event.date,
+        uploadTime: event.displayTime,
+        platform: event.platform,
+        contentType: 'Video',
+        status: event.status,
+        notes: event.description
+    }));
+
+    const calendar = {
+        unavailableDates: [] // No unavailable dates in demo
+    };
 
     // Calendar logic
     const year = currentDate.getFullYear();

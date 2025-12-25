@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { User, Calendar, ClipboardList, CheckCircle, Star, Bell, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, User, Calendar, ClipboardList, CheckCircle, Star, Bell, LogOut, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const InfluencerLayout = () => {
     const location = useLocation();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
     const isActive = (path) => location.pathname === path;
 
     const navItems = [
+        { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/influencer' },
         { icon: <User size={20} />, label: 'Profile', path: '/influencer/profile' },
         { icon: <Calendar size={20} />, label: 'Calendar', path: '/influencer/calendar' },
         { icon: <ClipboardList size={20} />, label: 'Schedule', path: '/influencer/schedule' },
@@ -15,14 +17,16 @@ const InfluencerLayout = () => {
         { icon: <Star size={20} />, label: 'Reviews', path: '/influencer/reviews' },
     ];
 
-    const SidebarContent = () => (
+    const SidebarContent = ({ showBrand = true, isCollapsed = false }) => (
         <>
-            <div className="p-6 border-b border-gray-100">
-                <Link to="/" className="text-2xl flex items-center gap-1" onClick={() => setIsMobileMenuOpen(false)}>
-                    <span className="font-bebas text-3xl tracking-wide text-deep-black">SYNC</span>
-                    <span className="font-bebas text-3xl tracking-wide text-primary-orange">KONNECTSPHERE</span>
-                </Link>
-            </div>
+            {showBrand && (
+                <div className="p-6 border-b border-gray-100">
+                    <Link to="/" className="text-2xl flex items-center gap-1" onClick={() => setIsMobileMenuOpen(false)}>
+                        <span className="font-bebas text-3xl tracking-wide text-deep-black">INFLU</span>
+                        <span className="font-bebas text-3xl tracking-wide text-primary-orange">RUNNER</span>
+                    </Link>
+                </div>
+            )}
 
             <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
                 {navItems.map((item) => (
@@ -30,13 +34,20 @@ const InfluencerLayout = () => {
                         key={item.path}
                         to={item.path}
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive(item.path)
+                        className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive(item.path)
                             ? 'bg-orange-50 text-primary-orange'
                             : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                             }`}
+                        title={isCollapsed ? item.label : ''}
                     >
-                        {item.icon}
-                        {item.label}
+                        <span className={!isCollapsed ? 'animate-icon-bounce' : ''}>
+                            {item.icon}
+                        </span>
+                        {!isCollapsed && (
+                            <span className="animate-fade-in-slide whitespace-nowrap">
+                                {item.label}
+                            </span>
+                        )}
                     </Link>
                 ))}
             </nav>
@@ -47,10 +58,17 @@ const InfluencerLayout = () => {
                         localStorage.removeItem('currentUser');
                         window.location.href = '/login';
                     }}
-                    className="flex items-center gap-3 px-3 py-2.5 w-full text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 w-full text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors`}
+                    title={isCollapsed ? 'Logout' : ''}
                 >
-                    <LogOut size={20} />
-                    Logout
+                    <span className={!isCollapsed ? 'animate-icon-bounce' : ''}>
+                        <LogOut size={20} />
+                    </span>
+                    {!isCollapsed && (
+                        <span className="animate-fade-in-slide whitespace-nowrap">
+                            Logout
+                        </span>
+                    )}
                 </button>
             </div>
         </>
@@ -62,8 +80,12 @@ const InfluencerLayout = () => {
     return (
         <div className="flex h-screen bg-light-gray font-sans">
             {/* Desktop Sidebar */}
-            <aside className="w-64 bg-white border-r border-gray-200 hidden md:flex flex-col">
-                <SidebarContent />
+            <aside
+                className={`${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 hidden md:flex flex-col transition-all duration-300 relative`}
+                onMouseEnter={() => setIsSidebarCollapsed(false)}
+                onMouseLeave={() => setIsSidebarCollapsed(true)}
+            >
+                <SidebarContent showBrand={false} isCollapsed={isSidebarCollapsed} />
             </aside>
 
             {/* Mobile Sidebar Overlay */}
@@ -79,7 +101,7 @@ const InfluencerLayout = () => {
                 className={`fixed top-0 left-0 h-full w-64 bg-white shadow-xl flex flex-col transform transition-transform duration-300 ease-in-out md:hidden z-[60] ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
                     }`}
             >
-                <SidebarContent />
+                <SidebarContent showBrand={true} />
             </aside>
 
             <div className="flex-1 flex flex-col overflow-hidden">
@@ -100,15 +122,10 @@ const InfluencerLayout = () => {
                 {/* Top Header */}
                 <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shadow-sm z-40 flex-shrink-0">
                     <div className="flex items-center gap-4">
-                        <Link to="/influencer/profile" className="md:pointer-events-none">
-                            <h1 className="flex items-center gap-1 cursor-pointer md:cursor-default">
-                                <span className="md:hidden font-bebas text-2xl tracking-wide text-deep-black">SYNC</span>
-                                <span className="md:hidden font-bebas text-2xl tracking-wide text-primary-orange">KONNECTSPHERE</span>
-                                <span className="hidden md:inline text-2xl font-bebas tracking-wide text-deep-black">
-                                    {navItems.find(i => i.path === location.pathname)?.label || 'Dashboard'}
-                                </span>
-                            </h1>
-                        </Link>
+                        <h1 className="flex items-center gap-1">
+                            <span className="font-bebas text-2xl tracking-wide text-deep-black">INFLU</span>
+                            <span className="font-bebas text-2xl tracking-wide text-primary-orange">RUNNER</span>
+                        </h1>
                     </div>
 
                     <div className="flex items-center space-x-4">

@@ -475,7 +475,7 @@ const PublicPortfolio = () => {
             {/* Footer */}
             <div className="bg-deep-black text-white py-8 text-center">
                 <p className="text-sm text-gray-400">
-                    Powered by <span className="font-bebas text-primary-orange">SYNC KONNECTSPHERE</span>
+                    Powered by <span className="font-bebas text-primary-orange">INFLURUNNER</span>
                 </p>
             </div>
 

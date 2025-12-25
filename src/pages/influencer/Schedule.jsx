@@ -4,7 +4,7 @@ import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import { Calendar, Clock, MapPin, Search, Upload, Video, X } from 'lucide-react';
-import { MOCK_INFLUENCER_DATA } from '../../data/mockData';
+import { calendarEvents } from '../../data/demoData';
 
 const Schedule = () => {
     const [activeTab, setActiveTab] = useState('shoots');
@@ -13,7 +13,6 @@ const Schedule = () => {
     const [completedUploads, setCompletedUploads] = useState(new Set());
     const [selectedShoot, setSelectedShoot] = useState(null);
     const [isModalClosing, setIsModalClosing] = useState(false);
-    const { bookings, uploadSchedule } = MOCK_INFLUENCER_DATA;
 
     // Get today's date string
     const getTodayStr = () => {
@@ -22,6 +21,35 @@ const Schedule = () => {
     };
 
     const todayStr = getTodayStr();
+
+    // Convert calendar events to booking format for shoots
+    const bookings = calendarEvents
+        .filter(event => event.type === 'shoot' && event.date === todayStr)
+        .map(event => ({
+            id: event.id,
+            brandName: event.brand,
+            campaign: event.campaign,
+            shootDate: event.date,
+            shootTime: event.displayTime,
+            location: event.location,
+            status: event.status,
+            notes: event.description
+        }));
+
+    // Convert calendar events to upload format
+    const uploadSchedule = calendarEvents
+        .filter(event => event.type === 'upload' && event.date === todayStr)
+        .map(event => ({
+            id: event.id,
+            brandName: event.brand,
+            campaign: event.campaign,
+            uploadDate: event.date,
+            uploadTime: event.displayTime,
+            platform: event.platform || 'YouTube',
+            contentType: 'Video',
+            status: event.status,
+            notes: event.description
+        }));
 
     // Get today's shoots
     const getTodaysShoot = () => {
@@ -74,6 +102,25 @@ const Schedule = () => {
             newSet.add(uploadId);
             return newSet;
         });
+
+        // Persist completed upload to localStorage
+        const upload = uploadSchedule.find(u => u.id === uploadId);
+        if (upload) {
+            const completedUploadsData = JSON.parse(localStorage.getItem('completedUploads') || '[]');
+
+            // Check if upload is already in completed list
+            if (!completedUploadsData.find(u => u.id === uploadId)) {
+                completedUploadsData.push({
+                    ...upload,
+                    completedAt: new Date().toISOString(),
+                    status: 'uploaded'
+                });
+                localStorage.setItem('completedUploads', JSON.stringify(completedUploadsData));
+
+                // Show success notification (optional)
+                console.log('Upload marked as completed!');
+            }
+        }
     };
 
     // Modal handlers

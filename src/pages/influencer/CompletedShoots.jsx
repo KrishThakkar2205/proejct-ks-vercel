@@ -6,13 +6,17 @@ import Badge from '../../components/ui/Badge';
 
 const CompletedShoots = () => {
     const [completedShoots, setCompletedShoots] = useState([]);
+    const [completedUploads, setCompletedUploads] = useState([]);
+    const [activeTab, setActiveTab] = useState('shoots');
     const [searchQuery, setSearchQuery] = useState('');
     const [copiedToken, setCopiedToken] = useState(null);
 
     useEffect(() => {
-        // Load completed shoots from localStorage
+        // Load completed shoots and uploads from localStorage
         const shoots = JSON.parse(localStorage.getItem('completedShoots') || '[]');
+        const uploads = JSON.parse(localStorage.getItem('completedUploads') || '[]');
         setCompletedShoots(shoots);
+        setCompletedUploads(uploads);
     }, []);
 
     const generateReviewToken = () => {
@@ -62,27 +66,60 @@ const CompletedShoots = () => {
         );
     };
 
+    const filterUploads = () => {
+        if (!searchQuery) return completedUploads;
+
+        return completedUploads.filter(upload =>
+            upload.brandName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            upload.campaign.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    };
+
     const filteredShoots = filterShoots();
+    const filteredUploads = filterUploads();
 
     const hasReviewSubmitted = (shootId) => {
         const reviews = JSON.parse(localStorage.getItem('reviews') || '[]');
         return reviews.some(review => review.shootId === shootId);
     };
 
+    const activeData = activeTab === 'shoots' ? filteredShoots : filteredUploads;
+    const activeCount = activeTab === 'shoots' ? completedShoots.length : completedUploads.length;
+
     return (
         <div className="space-y-8">
             {/* Header - Mobile Only */}
             <div className="md:hidden">
-                <h1 className="text-3xl font-bebas tracking-wide text-deep-black">Completed Shoots</h1>
-                <p className="text-gray-600 text-sm mt-1">Manage review links for completed shoots</p>
+                <h1 className="text-3xl font-bebas tracking-wide text-deep-black">Completed Shoots & Uploads</h1>
+                <p className="text-gray-600 text-sm mt-1">Manage completed shoots and uploads</p>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex flex-wrap gap-2">
+                {['shoots', 'uploads'].map((tab) => (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === tab
+                            ? 'bg-primary-orange text-white shadow-md'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                    >
+                        {tab === 'shoots'
+                            ? `Completed Shoots (${completedShoots.length})`
+                            : `Completed Uploads (${completedUploads.length})`}
+                    </button>
+                ))}
             </div>
 
             {/* Stats Card */}
             <Card className="p-6 bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-500">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h2 className="text-xl font-bebas tracking-wide text-deep-black mb-1">Total Completed Shoots</h2>
-                        <p className="text-4xl font-bold text-green-600">{completedShoots.length}</p>
+                        <h2 className="text-xl font-bebas tracking-wide text-deep-black mb-1">
+                            {activeTab === 'shoots' ? 'Total Completed Shoots' : 'Total Completed Uploads'}
+                        </h2>
+                        <p className="text-4xl font-bold text-green-600">{activeCount}</p>
                     </div>
                     <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
                         <CheckCircle className="text-white" size={32} />
@@ -104,146 +141,204 @@ const CompletedShoots = () => {
                 </div>
             </Card>
 
-            {/* Completed Shoots List */}
-            {filteredShoots.length > 0 ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {filteredShoots.map((shoot) => {
-                        const reviewSubmitted = hasReviewSubmitted(shoot.id);
-                        const hasReviewLink = !!shoot.reviewToken;
+            {/* Completed Items List */}
+            {activeTab === 'shoots' ? (
+                // Shoots Tab
+                filteredShoots.length > 0 ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {filteredShoots.map((shoot) => {
+                            const reviewSubmitted = hasReviewSubmitted(shoot.id);
+                            const hasReviewLink = !!shoot.reviewToken;
 
-                        return (
-                            <Card key={shoot.id} className="p-6 hover:shadow-lg transition-shadow border-l-4 border-l-green-500">
-                                {/* Header */}
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-12 h-12 bg-green-100 rounded-lg flex-shrink-0 flex items-center justify-center">
-                                            <CheckCircle className="text-green-600" size={24} />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-semibold text-deep-black text-lg">{shoot.brandName}</h3>
-                                            <p className="text-sm text-gray-600">{shoot.campaign}</p>
-                                        </div>
-                                    </div>
-                                    {reviewSubmitted && (
-                                        <Badge variant="success">Review Received</Badge>
-                                    )}
-                                </div>
-
-                                {/* Shoot Details */}
-                                <div className="space-y-2 mb-4 pb-4 border-b border-gray-200">
-                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                        <Calendar size={16} className="text-gray-400" />
-                                        {new Date(shoot.shootDate).toLocaleDateString('en-US', {
-                                            weekday: 'short',
-                                            year: 'numeric',
-                                            month: 'short',
-                                            day: 'numeric'
-                                        })}
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                        <Clock size={16} className="text-gray-400" />
-                                        {shoot.shootTime}
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                        <MapPin size={16} className="text-gray-400" />
-                                        {shoot.location}
-                                    </div>
-                                </div>
-
-                                {/* Review Link Section */}
-                                {hasReviewLink ? (
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Link2 size={16} className="text-primary-orange" />
-                                            <span className="text-xs font-semibold text-primary-orange uppercase">Review Link Generated</span>
-                                        </div>
-
-                                        <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                                            <p className="text-xs text-gray-500 mb-1">Review Link:</p>
-                                            <div className="flex items-center gap-2">
-                                                <code className="text-xs text-gray-700 flex-1 truncate">
-                                                    {shoot.reviewLink}
-                                                </code>
-                                                <button
-                                                    onClick={() => copyToClipboard(shoot.reviewLink, shoot.reviewToken)}
-                                                    className="text-primary-orange hover:text-orange-600 transition-colors flex-shrink-0"
-                                                    title="Copy link"
-                                                >
-                                                    {copiedToken === shoot.reviewToken ? (
-                                                        <CheckCircle size={18} className="text-green-500" />
-                                                    ) : (
-                                                        <Copy size={18} />
-                                                    )}
-                                                </button>
+                            return (
+                                <Card key={shoot.id} className="p-6 hover:shadow-lg transition-shadow border-l-4 border-l-green-500">
+                                    {/* Header */}
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-12 h-12 bg-green-100 rounded-lg flex-shrink-0 flex items-center justify-center">
+                                                <CheckCircle className="text-green-600" size={24} />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-semibold text-deep-black text-lg">{shoot.brandName}</h3>
+                                                <p className="text-sm text-gray-600">{shoot.campaign}</p>
                                             </div>
                                         </div>
-
-                                        <div className="flex gap-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="flex-1"
-                                                onClick={() => copyToClipboard(shoot.reviewLink, shoot.reviewToken)}
-                                            >
-                                                <Copy size={16} className="mr-2" />
-                                                {copiedToken === shoot.reviewToken ? 'Copied!' : 'Copy Link'}
-                                            </Button>
-                                            <Button
-                                                variant="secondary"
-                                                size="sm"
-                                                className="flex-1"
-                                                onClick={() => window.open(shoot.reviewLink, '_blank')}
-                                            >
-                                                <ExternalLink size={16} className="mr-2" />
-                                                Preview
-                                            </Button>
-                                        </div>
-
-                                        <p className="text-xs text-gray-500 text-center">
-                                            Generated {new Date(shoot.reviewLinkGeneratedAt).toLocaleDateString()}
-                                        </p>
+                                        {reviewSubmitted && (
+                                            <Badge variant="success">Review Received</Badge>
+                                        )}
                                     </div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        <div className="bg-orange-50 p-4 rounded-lg border border-orange-200 text-center">
-                                            <p className="text-sm text-gray-700 mb-3">
-                                                Generate a review link to share with your client
+
+                                    {/* Shoot Details */}
+                                    <div className="space-y-2 mb-4 pb-4 border-b border-gray-200">
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                            <Calendar size={16} className="text-gray-400" />
+                                            {new Date(shoot.shootDate).toLocaleDateString('en-US', {
+                                                weekday: 'short',
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric'
+                                            })}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                            <Clock size={16} className="text-gray-400" />
+                                            {shoot.shootTime}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                            <MapPin size={16} className="text-gray-400" />
+                                            {shoot.location}
+                                        </div>
+                                    </div>
+
+                                    {/* Review Link Section */}
+                                    {hasReviewLink ? (
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Link2 size={16} className="text-primary-orange" />
+                                                <span className="text-xs font-semibold text-primary-orange uppercase">Review Link Generated</span>
+                                            </div>
+
+                                            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                                <p className="text-xs text-gray-500 mb-1">Review Link:</p>
+                                                <div className="flex items-center gap-2">
+                                                    <code className="text-xs text-gray-700 flex-1 truncate">
+                                                        {shoot.reviewLink}
+                                                    </code>
+                                                    <button
+                                                        onClick={() => copyToClipboard(shoot.reviewLink, shoot.reviewToken)}
+                                                        className="text-primary-orange hover:text-orange-600 transition-colors flex-shrink-0"
+                                                        title="Copy link"
+                                                    >
+                                                        {copiedToken === shoot.reviewToken ? (
+                                                            <CheckCircle size={18} className="text-green-500" />
+                                                        ) : (
+                                                            <Copy size={18} />
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="flex-1"
+                                                    onClick={() => copyToClipboard(shoot.reviewLink, shoot.reviewToken)}
+                                                >
+                                                    <Copy size={16} className="mr-2" />
+                                                    {copiedToken === shoot.reviewToken ? 'Copied!' : 'Copy Link'}
+                                                </Button>
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    className="flex-1"
+                                                    onClick={() => window.open(shoot.reviewLink, '_blank')}
+                                                >
+                                                    <ExternalLink size={16} className="mr-2" />
+                                                    Preview
+                                                </Button>
+                                            </div>
+
+                                            <p className="text-xs text-gray-500 text-center">
+                                                Generated {new Date(shoot.reviewLinkGeneratedAt).toLocaleDateString()}
                                             </p>
-                                            <Button
-                                                variant="primary"
-                                                size="sm"
-                                                className="w-full"
-                                                onClick={() => handleGenerateLink(shoot.id)}
-                                            >
-                                                <Link2 size={16} className="mr-2" />
-                                                Generate Review Link
-                                            </Button>
                                         </div>
-                                    </div>
-                                )}
-                            </Card>
-                        );
-                    })}
-                </div>
-            ) : (
-                <Card className="p-12 text-center">
-                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <CheckCircle size={40} className="text-gray-400" />
+                                    ) : (
+                                        <div className="space-y-3">
+                                            <div className="bg-orange-50 p-4 rounded-lg border border-orange-200 text-center">
+                                                <p className="text-sm text-gray-700 mb-3">
+                                                    Generate a review link to share with your client
+                                                </p>
+                                                <Button
+                                                    variant="primary"
+                                                    size="sm"
+                                                    className="w-full"
+                                                    onClick={() => handleGenerateLink(shoot.id)}
+                                                >
+                                                    <Link2 size={16} className="mr-2" />
+                                                    Generate Review Link
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </Card>
+                            );
+                        })}
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                        {searchQuery ? 'No shoots found' : 'No completed shoots yet'}
-                    </h3>
-                    <p className="text-sm text-gray-500 mb-6">
-                        {searchQuery
-                            ? 'Try adjusting your search query'
-                            : 'Mark shoots as completed from the Schedule page to see them here'}
-                    </p>
-                    {!searchQuery && (
-                        <Button variant="primary" onClick={() => window.location.href = '/influencer/schedule'}>
-                            Go to Schedule
-                        </Button>
-                    )}
-                </Card>
+                ) : (
+                    <Card className="p-12 text-center">
+                        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <CheckCircle size={40} className="text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                            {searchQuery ? 'No shoots found' : 'No completed shoots yet'}
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-6">
+                            {searchQuery
+                                ? 'Try adjusting your search query'
+                                : 'Mark shoots as completed from the Schedule page to see them here'}
+                        </p>
+                        {!searchQuery && (
+                            <Button variant="primary" onClick={() => window.location.href = '/influencer/schedule'}>
+                                Go to Schedule
+                            </Button>
+                        )}
+                    </Card>
+                )
+            ) : (
+                // Uploads Tab
+                filteredUploads.length > 0 ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {filteredUploads.map((upload) => (
+                            <Card key={upload.id} className="p-6 hover:shadow-lg transition-shadow border-l-4 border-l-blue-500">
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="flex-1">
+                                        <h3 className="text-lg font-semibold text-deep-black mb-1">{upload.brandName}</h3>
+                                        <p className="text-sm text-gray-600">{upload.campaign}</p>
+                                    </div>
+                                    <Badge variant="success">Uploaded</Badge>
+                                </div>
+
+                                <div className="space-y-3 mb-4">
+                                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                                        <Clock size={16} className="text-gray-400" />
+                                        <span>Uploaded: {new Date(upload.completedAt).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                                        <ExternalLink size={16} className="text-gray-400" />
+                                        <span>Platform: {upload.platform}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                                        <Calendar size={16} className="text-gray-400" />
+                                        <span>Scheduled: {upload.uploadTime}</span>
+                                    </div>
+                                </div>
+
+                                <div className="pt-4 border-t border-gray-200">
+                                    <p className="text-xs text-gray-500">Content Type: {upload.contentType}</p>
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+                ) : (
+                    <Card className="p-12 text-center">
+                        <div className="flex flex-col items-center">
+                            <CheckCircle size={40} className="text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                            {searchQuery ? 'No uploads found' : 'No completed uploads yet'}
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-6">
+                            {searchQuery
+                                ? 'Try adjusting your search query'
+                                : 'Mark uploads as completed from the Schedule page to see them here'}
+                        </p>
+                        {!searchQuery && (
+                            <Button variant="primary" onClick={() => window.location.href = '/influencer/schedule'}>
+                                Go to Schedule
+                            </Button>
+                        )}
+                    </Card>
+                )
             )}
         </div>
     );

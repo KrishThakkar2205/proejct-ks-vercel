@@ -9,8 +9,8 @@ const Header = () => {
         <header className="bg-white border-b border-light-gray sticky top-0 z-50">
             <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                 <Link to="/" className="text-2xl flex items-center gap-1">
-                    <span className="font-bebas text-3xl tracking-wide text-deep-black">SYNC</span>
-                    <span className="font-bebas text-3xl tracking-wide text-primary-orange">KONNECTSPHERE</span>
+                    <span className="font-bebas text-3xl tracking-wide text-deep-black">INFLU</span>
+                    <span className="font-bebas text-3xl tracking-wide text-primary-orange">RUNNER</span>
                 </Link>
 
                 {/* Desktop Navigation */}
@@ -51,8 +51,8 @@ const Header = () => {
             >
                 <div className="p-6 border-b border-gray-100">
                     <Link to="/" className="text-2xl flex items-center gap-1" onClick={() => setIsMenuOpen(false)}>
-                        <span className="font-bebas text-3xl tracking-wide text-deep-black">SYNC</span>
-                        <span className="font-bebas text-3xl tracking-wide text-primary-orange">KONNECTSPHERE</span>
+                        <span className="font-bebas text-3xl tracking-wide text-deep-black">INFLU</span>
+                        <span className="font-bebas text-3xl tracking-wide text-primary-orange">RUNNER</span>
                     </Link>
                 </div>
 

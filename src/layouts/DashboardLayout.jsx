@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Search, Users, Briefcase, MessageSquare, Heart, Bell, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Search, Users, Briefcase, MessageSquare, Heart, Bell, LogOut, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const DashboardLayout = () => {
     const location = useLocation();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const isActive = (path) => location.pathname === path;
 
     const navItems = [
@@ -15,14 +16,16 @@ const DashboardLayout = () => {
         { icon: <MessageSquare size={20} />, label: 'Messages', path: '/brand/messages' },
     ];
 
-    const SidebarContent = () => (
+    const SidebarContent = ({ showBrand = true, isCollapsed = false }) => (
         <>
-            <div className="p-6 border-b border-gray-100">
-                <Link to="/" className="text-2xl flex items-center gap-1" onClick={() => setIsMobileMenuOpen(false)}>
-                    <span className="font-bebas text-3xl tracking-wide text-deep-black">SYNC</span>
-                    <span className="font-bebas text-3xl tracking-wide text-primary-orange">KONNECTSPHERE</span>
-                </Link>
-            </div>
+            {showBrand && (
+                <div className="p-6 border-b border-gray-100">
+                    <Link to="/" className="text-2xl flex items-center gap-1" onClick={() => setIsMobileMenuOpen(false)}>
+                        <span className="font-bebas text-3xl tracking-wide text-deep-black">INFLU</span>
+                        <span className="font-bebas text-3xl tracking-wide text-primary-orange">RUNNER</span>
+                    </Link>
+                </div>
+            )}
 
             <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
                 {navItems.map((item) => (
@@ -30,13 +33,14 @@ const DashboardLayout = () => {
                         key={item.path}
                         to={item.path}
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive(item.path)
+                        className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive(item.path)
                             ? 'bg-orange-50 text-primary-orange'
                             : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                             }`}
+                        title={isCollapsed ? item.label : ''}
                     >
                         {item.icon}
-                        {item.label}
+                        {!isCollapsed && <span>{item.label}</span>}
                     </Link>
                 ))}
             </nav>
@@ -47,10 +51,11 @@ const DashboardLayout = () => {
                         localStorage.removeItem('currentUser');
                         window.location.href = '/login';
                     }}
-                    className="flex items-center gap-3 px-3 py-2.5 w-full text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 w-full text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors`}
+                    title={isCollapsed ? 'Logout' : ''}
                 >
                     <LogOut size={20} />
-                    Logout
+                    {!isCollapsed && <span>Logout</span>}
                 </button>
             </div>
         </>
@@ -59,8 +64,16 @@ const DashboardLayout = () => {
     return (
         <div className="flex h-screen bg-light-gray font-sans">
             {/* Desktop Sidebar */}
-            <aside className="w-64 bg-white border-r border-gray-200 hidden md:flex flex-col">
-                <SidebarContent />
+            <aside className={`${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 hidden md:flex flex-col transition-all duration-300 relative`}>
+                <SidebarContent showBrand={false} isCollapsed={isSidebarCollapsed} />
+                {/* Toggle Button */}
+                <button
+                    onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                    className="absolute -right-3 top-8 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:text-primary-orange hover:border-primary-orange transition-colors shadow-sm z-10"
+                    aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                >
+                    {isSidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+                </button>
             </aside>
 
             {/* Mobile Sidebar Overlay */}
@@ -76,7 +89,7 @@ const DashboardLayout = () => {
                 className={`fixed top-0 left-0 h-full w-64 bg-white shadow-xl flex flex-col transform transition-transform duration-300 ease-in-out md:hidden z-[60] ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
                     }`}
             >
-                <SidebarContent />
+                <SidebarContent showBrand={true} />
             </aside>
 
             <div className="flex-1 flex flex-col overflow-hidden">
@@ -95,11 +108,11 @@ const DashboardLayout = () => {
                 </button>
 
                 {/* Top Header - Fixed */}
-                <header className="fixed top-0 left-0 md:left-64 right-0 bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shadow-sm z-40">
+                <header className={`fixed top-0 left-0 ${isSidebarCollapsed ? 'md:left-20' : 'md:left-64'} right-0 bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shadow-sm z-40 transition-all duration-300`}>
                     <div className="flex items-center gap-4">
                         <h1 className="flex items-center gap-1">
-                            <span className="md:hidden font-bebas text-2xl tracking-wide text-deep-black">SYNC</span>
-                            <span className="md:hidden font-bebas text-2xl tracking-wide text-primary-orange">KONNECTSPHERE</span>
+                            <span className="md:hidden font-bebas text-2xl tracking-wide text-deep-black">INFLU</span>
+                            <span className="md:hidden font-bebas text-2xl tracking-wide text-primary-orange">RUNNER</span>
                             <span className="hidden md:inline text-2xl font-bebas tracking-wide text-deep-black">{navItems.find(i => i.path === location.pathname)?.label || 'Dashboard'}</span>
                         </h1>
                     </div>
