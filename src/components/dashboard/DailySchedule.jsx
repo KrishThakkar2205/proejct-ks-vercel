@@ -213,11 +213,11 @@ const DailySchedule = ({ onMarkComplete }) => {
                     {displayEvents.map((item) => (
                         <div
                             key={item.id}
-                            className="flex gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md hover:border-primary-orange transition-all group"
+                            className="flex flex-col sm:flex-row gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md hover:border-primary-orange transition-all group"
                         >
                             {/* Time */}
-                            <div className="flex-shrink-0 text-center">
-                                <div className="w-16 h-16 bg-orange-50 rounded-lg flex flex-col items-center justify-center border-2 border-primary-orange group-hover:scale-105 transition-transform">
+                            <div className="flex-shrink-0 text-center sm:text-left">
+                                <div className="w-16 h-16 bg-orange-50 rounded-lg flex flex-col items-center justify-center border-2 border-primary-orange group-hover:scale-105 transition-transform mx-auto sm:mx-0">
                                     <Clock className="w-4 h-4 text-primary-orange mb-1" />
                                     <span className="text-xs font-semibold text-deep-black">
                                         {rescheduledEvents[item.id]?.displayTime || item.time}
@@ -230,7 +230,7 @@ const DailySchedule = ({ onMarkComplete }) => {
 
                             {/* Details */}
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-2 mb-2">
+                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
                                     <div className="flex items-center gap-2 flex-wrap">
                                         {item.type === 'shoot' ? (
                                             <Camera className="w-4 h-4 text-primary-orange flex-shrink-0" />
