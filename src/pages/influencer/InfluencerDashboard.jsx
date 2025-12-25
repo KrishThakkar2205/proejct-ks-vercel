@@ -205,7 +205,7 @@ const InfluencerDashboard = () => {
 
                     {/* Recent Reviews */}
                     <div className="lg:h-[700px]">
-                        <Card className="p-6 h-full flex flex-col">
+                        <Card className="p-6 h-auto lg:h-full flex flex-col">
                             <div className="flex items-center justify-between mb-6 flex-shrink-0">
                                 <div>
                                     <h2 className="text-xl font-bebas tracking-wide text-deep-black">Recent Reviews</h2>
@@ -216,7 +216,7 @@ const InfluencerDashboard = () => {
                                 </div>
                             </div>
 
-                            <div className="space-y-4 flex-1 overflow-y-auto pr-2">
+                            <div className="space-y-4 flex-1 lg:overflow-y-auto pr-2">
                                 {[
                                     {
                                         id: 1,

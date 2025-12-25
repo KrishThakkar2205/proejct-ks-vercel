@@ -28,7 +28,7 @@ const CompletedShootsToday = ({ completedShoots = [] }) => {
     };
 
     return (
-        <Card className="p-6 h-full flex flex-col">
+        <Card className="p-6 h-auto lg:h-full flex flex-col">
             <div className="flex items-center justify-between mb-6 flex-shrink-0">
                 <div>
                     <h2 className="text-xl font-bebas tracking-wide text-deep-black">Completed Today</h2>
@@ -59,7 +59,7 @@ const CompletedShootsToday = ({ completedShoots = [] }) => {
                     <p className="text-xs text-gray-400 mt-1">Keep going!</p>
                 </div>
             ) : (
-                <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                <div className="space-y-3 lg:max-h-[600px] lg:overflow-y-auto pr-2">
                     {completedShoots.map((shoot) => (
                         <div
                             key={shoot.id}

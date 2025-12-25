@@ -183,7 +183,7 @@ const DailySchedule = ({ onMarkComplete }) => {
     const displayEvents = getEarliestEvents();
 
     return (
-        <Card className="p-6 h-full flex flex-col">
+        <Card className="p-6 h-auto lg:h-full flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between mb-6 flex-shrink-0">
                 <div>
@@ -209,7 +209,7 @@ const DailySchedule = ({ onMarkComplete }) => {
                     <p className="text-sm text-gray-400 mt-1">Enjoy your free time!</p>
                 </div>
             ) : (
-                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                <div className="space-y-4 lg:max-h-[600px] lg:overflow-y-auto pr-2">
                     {displayEvents.map((item) => (
                         <div
                             key={item.id}
