@@ -213,93 +213,99 @@ const DailySchedule = ({ onMarkComplete }) => {
                     {displayEvents.map((item) => (
                         <div
                             key={item.id}
-                            className="flex flex-col sm:flex-row gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md hover:border-primary-orange transition-all group"
+                            className="p-3 sm:p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md hover:border-primary-orange transition-all"
                         >
-                            {/* Time */}
-                            <div className="flex-shrink-0 text-center sm:text-left">
-                                <div className="w-16 h-16 bg-orange-50 rounded-lg flex flex-col items-center justify-center border-2 border-primary-orange group-hover:scale-105 transition-transform mx-auto sm:mx-0">
-                                    <Clock className="w-4 h-4 text-primary-orange mb-1" />
-                                    <span className="text-xs font-semibold text-deep-black">
+                            {/* Mobile: Compact Header */}
+                            <div className="flex items-start justify-between gap-2 mb-3">
+                                {/* Time Badge - Compact for Mobile */}
+                                <div className="flex items-center gap-2 bg-orange-50 px-3 py-1.5 rounded-lg border border-primary-orange">
+                                    <Clock className="w-3.5 h-3.5 text-primary-orange flex-shrink-0" />
+                                    <span className="text-sm font-semibold text-deep-black whitespace-nowrap">
                                         {rescheduledEvents[item.id]?.displayTime || item.time}
                                     </span>
+                                    {rescheduledEvents[item.id] && (
+                                        <span className="text-[9px] text-green-600 font-medium">✓</span>
+                                    )}
                                 </div>
-                                {rescheduledEvents[item.id] && (
-                                    <span className="text-[10px] text-green-600 font-medium mt-1 block">Rescheduled</span>
-                                )}
+
+                                {/* Status Badge */}
+                                <Badge variant={getStatusBadge(item.status)} className="flex-shrink-0">
+                                    {item.status === 'in-progress' ? 'In Progress' : item.status}
+                                </Badge>
+                            </div>
+
+                            {/* Title & Type */}
+                            <div className="mb-2">
+                                <div className="flex items-start gap-2 mb-1">
+                                    {item.type === 'shoot' ? (
+                                        <Camera className="w-4 h-4 text-primary-orange flex-shrink-0 mt-0.5" />
+                                    ) : (
+                                        <Video className="w-4 h-4 text-primary-orange flex-shrink-0 mt-0.5" />
+                                    )}
+                                    <h4 className="font-semibold text-deep-black text-sm sm:text-base leading-tight flex-1">
+                                        {item.title}
+                                    </h4>
+                                </div>
+                                <div className="flex items-center gap-2 ml-6">
+                                    <Badge
+                                        variant={item.type === 'shoot' ? 'default' : 'secondary'}
+                                        className={`text-xs ${item.type === 'shoot'
+                                            ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                            : 'bg-blue-50 text-blue-700 border-blue-200'
+                                            }`}
+                                    >
+                                        {item.type === 'shoot' ? 'Shoot' : 'Upload'}
+                                    </Badge>
+                                    {rescheduledEvents[item.id] && (
+                                        <span className="text-[10px] text-green-600 font-medium">Rescheduled</span>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Details */}
-                            <div className="flex-1 min-w-0">
-                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        {item.type === 'shoot' ? (
-                                            <Camera className="w-4 h-4 text-primary-orange flex-shrink-0" />
-                                        ) : (
-                                            <Video className="w-4 h-4 text-primary-orange flex-shrink-0" />
-                                        )}
-                                        <h4 className="font-semibold text-deep-black truncate">
-                                            {item.title}
-                                        </h4>
-                                        {/* Type Badge */}
-                                        <Badge
-                                            variant={item.type === 'shoot' ? 'default' : 'secondary'}
-                                            className={item.type === 'shoot'
-                                                ? 'bg-purple-50 text-purple-700 border-purple-200'
-                                                : 'bg-blue-50 text-blue-700 border-blue-200'
-                                            }
-                                        >
-                                            {item.type === 'shoot' ? 'Shoot' : 'Upload'}
-                                        </Badge>
+                            <div className="space-y-1.5 mb-3 ml-6 text-xs sm:text-sm text-gray-600">
+                                {item.type === 'shoot' && item.brand && (
+                                    <div className="font-medium text-primary-orange">
+                                        {item.brand}
                                     </div>
-                                    <Badge variant={getStatusBadge(item.status)}>
-                                        {item.status === 'in-progress' ? 'In Progress' : item.status}
-                                    </Badge>
-                                </div>
+                                )}
 
-                                <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-                                    {item.type === 'shoot' && item.brand && (
-                                        <span className="font-medium text-primary-orange">
-                                            {item.brand}
+                                {item.location && (
+                                    <div className="flex items-center gap-1.5">
+                                        <MapPin className="w-3 h-3 flex-shrink-0" />
+                                        <span className="line-clamp-1">{item.location}</span>
+                                    </div>
+                                )}
+
+                                {item.platform && (
+                                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs ${getPlatformBadge(item.platform)}`}>
+                                        {getPlatformIcon(item.platform)}
+                                        <span className="font-medium capitalize">
+                                            {item.platform}
                                         </span>
-                                    )}
+                                    </div>
+                                )}
+                            </div>
 
-                                    {item.location && (
-                                        <div className="flex items-center gap-1">
-                                            <MapPin className="w-3 h-3" />
-                                            <span>{item.location}</span>
-                                        </div>
-                                    )}
-
-                                    {item.platform && (
-                                        <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full border ${getPlatformBadge(item.platform)}`}>
-                                            {getPlatformIcon(item.platform)}
-                                            <span className="text-xs font-medium capitalize">
-                                                {item.platform}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Action Buttons */}
-                                <div className="mt-3 flex gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleReschedule(item)}
-                                        className="flex-1 text-xs"
-                                    >
-                                        Reschedule
-                                    </Button>
-                                    <Button
-                                        variant={completedEvents.includes(item.id) ? "success" : "primary"}
-                                        size="sm"
-                                        onClick={() => handleMarkComplete(item)}
-                                        className="flex-1 text-xs"
-                                        disabled={completedEvents.includes(item.id)}
-                                    >
-                                        {completedEvents.includes(item.id) ? 'Completed' : 'Mark Complete'}
-                                    </Button>
-                                </div>
+                            {/* Action Buttons */}
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleReschedule(item)}
+                                    className="flex-1 text-xs sm:text-sm"
+                                >
+                                    Reschedule
+                                </Button>
+                                <Button
+                                    variant={completedEvents.includes(item.id) ? "success" : "primary"}
+                                    size="sm"
+                                    onClick={() => handleMarkComplete(item)}
+                                    className="flex-1 text-xs sm:text-sm"
+                                    disabled={completedEvents.includes(item.id)}
+                                >
+                                    {completedEvents.includes(item.id) ? 'Completed' : 'Mark Complete'}
+                                </Button>
                             </div>
                         </div>
                     ))}
