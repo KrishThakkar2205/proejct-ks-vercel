@@ -132,28 +132,28 @@ const InfluencerDashboard = () => {
             </div>
 
             {/* Share Portfolio & Quick Actions Row */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+            <div className="flex md:grid md:grid-cols-5 gap-2 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:overflow-visible scrollbar-hide">
                 {/* Share Portfolio Button */}
                 <button
                     onClick={handleCopyPortfolioLink}
-                    className="p-3 bg-gradient-to-r from-primary-orange to-orange-600 border border-orange-700 rounded-lg flex flex-col items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                    className="p-3 bg-gradient-to-r from-primary-orange to-orange-600 border border-orange-700 rounded-lg flex flex-col items-center justify-center gap-2 hover:opacity-90 transition-opacity min-w-[140px] md:min-w-0 flex-shrink-0"
                 >
                     <div className="flex-shrink-0">
                         {copied ? <Check size={20} className="text-white" /> : <Share2 size={20} className="text-white" />}
                     </div>
-                    <h4 className="font-semibold text-base text-white text-center">
+                    <h4 className="font-semibold text-sm md:text-base text-white text-center whitespace-nowrap">
                         {copied ? 'Link Copied!' : 'Share Portfolio'}
                     </h4>
                 </button>
 
                 {/* Quick Actions */}
                 {quickActions.map((action, index) => (
-                    <Link key={index} to={action.path}>
-                        <Card className={`p-3 flex flex-col items-center justify-center gap-2 hover:border-primary-orange transition-all cursor-pointer group ${action.color}`}>
+                    <Link key={index} to={action.path} className="flex-shrink-0 min-w-[140px] md:min-w-0">
+                        <Card className={`p-3 h-full flex flex-col items-center justify-center gap-2 hover:border-primary-orange transition-all cursor-pointer group ${action.color}`}>
                             <div className="flex-shrink-0">
                                 {React.cloneElement(action.icon, { size: 20 })}
                             </div>
-                            <h4 className="font-semibold text-base text-center">{action.label}</h4>
+                            <h4 className="font-semibold text-sm md:text-base text-center whitespace-nowrap">{action.label}</h4>
                         </Card>
                     </Link>
                 ))}
