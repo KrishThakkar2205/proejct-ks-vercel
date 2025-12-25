@@ -12,7 +12,26 @@ const InfluencerProfile = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState(profile);
 
-    const categories = ['Fashion', 'Lifestyle', 'Tech', 'Beauty', 'Travel', 'Food', 'Fitness', 'Gaming', 'Sustainability'];
+    const categories = [
+        'Fashion',
+        'Beauty & Makeup',
+        'Lifestyle',
+        'Fitness & Wellness',
+        'Food & Cooking',
+        'Travel',
+        'Technology',
+        'Gaming',
+        'Education',
+        'Entertainment',
+        'Sports',
+        'Music',
+        'Art & Design',
+        'Business',
+        'Parenting',
+        'Home & Decor',
+        'Photography',
+        'Sustainability'
+    ];
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -150,6 +169,17 @@ const InfluencerProfile = () => {
                                 value={formData.email}
                                 disabled={true}
                                 helperText="Email cannot be changed"
+                            />
+
+                            <Input
+                                label="Phone Number"
+                                name="phone"
+                                type="tel"
+                                value={formData.phone || ''}
+                                onChange={handleChange}
+                                disabled={!isEditing}
+                                placeholder="9876543210"
+                                maxLength="10"
                             />
 
                             <div>

@@ -3,6 +3,7 @@ import PublicLayout from './layouts/PublicLayout';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
 import SignupPage from './pages/auth/SignupPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import PublicPortfolio from './pages/public/PublicPortfolio';
 import ClientReviewPage from './pages/public/ClientReviewPage';
 import DashboardLayout from './layouts/DashboardLayout';
@@ -35,7 +36,7 @@ function App() {
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/signup" element={<SignupPage />} />
-                    <Route path="/signup" element={<SignupPage />} />
+                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 </Route>
 
                 {/* Portfolio Route */}
