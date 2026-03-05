@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Card from '../../components/ui/Card';
 import MultiSelect from '../../components/ui/MultiSelect';
-import { Check, Eye, EyeOff } from 'lucide-react';
+import { Check, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { signupInitiate, verifyOtp, signupFinal, clearError } from '../../store/slices/authSlice';
 
 const SignupPage = () => {
     const [searchParams] = useSearchParams();
@@ -16,6 +18,10 @@ const SignupPage = () => {
     const [verificationMethod, setVerificationMethod] = useState('email');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const { loading, error } = useSelector((state) => state.auth);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -37,6 +43,11 @@ const SignupPage = () => {
         }
     }, [searchParams]);
 
+    // Clear errors when step changes
+    useEffect(() => {
+        dispatch(clearError());
+    }, [currentStep, dispatch]);
+
     // OTP Timer
     useEffect(() => {
         if (currentStep === 2 && otpTimer > 0) {
@@ -51,8 +62,6 @@ const SignupPage = () => {
         const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
         setFormData({ ...formData, [e.target.name]: value });
     };
-
-    const navigate = useNavigate();
 
     const validateStep1 = () => {
         if (!formData.name || !formData.email || !formData.phone || !formData.password || !formData.confirmPassword) {
@@ -75,19 +84,6 @@ const SignupPage = () => {
         const phoneRegex = /^[0-9]{10}$/;
         if (!phoneRegex.test(formData.phone)) {
             alert('Please enter a valid 10-digit phone number');
-            return false;
-        }
-        return true;
-    };
-
-    const validateStep2 = () => {
-        if (otp.length !== 6) {
-            alert('Please enter a valid 6-digit OTP');
-            return false;
-        }
-        // Mock OTP verification - in production, verify with backend
-        if (otp !== '123456') {
-            alert('Invalid OTP. For demo, use: 123456');
             return false;
         }
         return true;
@@ -117,13 +113,34 @@ const SignupPage = () => {
         return true;
     };
 
-    const handleNext = () => {
+    const handleNext = async () => {
         if (currentStep === 1 && validateStep1()) {
-            setCurrentStep(2);
-            // Mock: Send OTP to email
-            console.log('OTP sent to email:', formData.email);
-        } else if (currentStep === 2 && validateStep2()) {
-            setCurrentStep(3);
+            const result = await dispatch(signupInitiate({
+                email: formData.email,
+                phone: formData.phone,
+                name: formData.name,
+                password: formData.password,
+            }));
+
+            if (!result.error) {
+                setCurrentStep(2);
+                setOtpTimer(60);
+                setCanResendOtp(false);
+            }
+        } else if (currentStep === 2) {
+            if (otp.length !== 6) {
+                alert('Please enter a valid 6-digit OTP');
+                return;
+            }
+
+            const result = await dispatch(verifyOtp({
+                email: formData.email,
+                otp: otp,
+            }));
+
+            if (!result.error) {
+                setCurrentStep(3);
+            }
         }
     };
 
@@ -133,18 +150,33 @@ const SignupPage = () => {
         }
     };
 
-    const handleResendOtp = () => {
+    const handleResendOtp = async () => {
         setOtpTimer(60);
         setCanResendOtp(false);
         setOtp('');
-        console.log('OTP resent to email:', formData.email);
+        // Re-call signup-initiate to resend OTP
+        await dispatch(signupInitiate({
+            email: formData.email,
+            phone: formData.phone,
+            name: formData.name,
+            password: formData.password,
+        }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (validateStep3()) {
-            console.log('Signup complete:', { ...formData, userType });
-            navigate('/influencer');
+            const result = await dispatch(signupFinal({
+                email: formData.email,
+                priceMin: formData.priceMin,
+                priceMax: formData.priceMax,
+                categories: formData.categories,
+                location: formData.location,
+            }));
+
+            if (!result.error) {
+                navigate('/influencer');
+            }
         }
     };
 
@@ -169,6 +201,14 @@ const SignupPage = () => {
                         Create your influencer account to get started
                     </p>
                 </div>
+
+                {/* Error Display */}
+                {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm animate-fade-in-slide">
+                        <p className="font-medium">Error</p>
+                        <p>{typeof error === 'string' ? error : 'Something went wrong. Please try again.'}</p>
+                    </div>
+                )}
 
                 {/* Step Indicator */}
                 <div className="flex items-center justify-between px-4">
@@ -270,8 +310,20 @@ const SignupPage = () => {
                             </button>
                         </div>
 
-                        <Button type="button" onClick={handleNext} className="w-full shadow-lg shadow-orange-100">
-                            Next
+                        <Button
+                            type="button"
+                            onClick={handleNext}
+                            className="w-full shadow-lg shadow-orange-100"
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <Loader2 size={18} className="animate-spin" />
+                                    Sending OTP...
+                                </span>
+                            ) : (
+                                'Next'
+                            )}
                         </Button>
                     </div>
                 )}
@@ -309,23 +361,32 @@ const SignupPage = () => {
                                 <button
                                     type="button"
                                     onClick={handleResendOtp}
-                                    className="text-primary-orange hover:underline font-medium"
+                                    disabled={loading}
+                                    className="text-primary-orange hover:underline font-medium disabled:opacity-50"
                                 >
-                                    Resend OTP
+                                    {loading ? 'Resending...' : 'Resend OTP'}
                                 </button>
                             )}
                         </div>
 
-                        <div className="text-xs text-center text-gray-500 bg-blue-50 p-3 rounded-lg">
-                            💡 Demo OTP: <span className="font-mono font-semibold">123456</span>
-                        </div>
-
                         <div className="flex gap-3">
-                            <Button type="button" onClick={handleBack} variant="outline" className="flex-1">
+                            <Button type="button" onClick={handleBack} variant="outline" className="flex-1" disabled={loading}>
                                 Back
                             </Button>
-                            <Button type="button" onClick={handleNext} className="flex-1 shadow-lg shadow-orange-100">
-                                Verify
+                            <Button
+                                type="button"
+                                onClick={handleNext}
+                                className="flex-1 shadow-lg shadow-orange-100"
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <Loader2 size={18} className="animate-spin" />
+                                        Verifying...
+                                    </span>
+                                ) : (
+                                    'Verify'
+                                )}
                             </Button>
                         </div>
                     </div>
@@ -418,11 +479,18 @@ const SignupPage = () => {
                         </div>
 
                         <div className="flex gap-3">
-                            <Button type="button" onClick={handleBack} variant="outline" className="flex-1">
+                            <Button type="button" onClick={handleBack} variant="outline" className="flex-1" disabled={loading}>
                                 Back
                             </Button>
-                            <Button type="submit" className="flex-1 shadow-lg shadow-orange-100">
-                                Create Account
+                            <Button type="submit" className="flex-1 shadow-lg shadow-orange-100" disabled={loading}>
+                                {loading ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <Loader2 size={18} className="animate-spin" />
+                                        Creating Account...
+                                    </span>
+                                ) : (
+                                    'Create Account'
+                                )}
                             </Button>
                         </div>
                     </form>

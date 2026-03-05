@@ -3,9 +3,9 @@ import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Badge from '../ui/Badge';
 import RescheduleModal from './RescheduleModal';
-import { AlertTriangle, Clock, Calendar, AlertCircle } from 'lucide-react';
+import { AlertTriangle, Clock, Calendar, AlertCircle, CheckCircle } from 'lucide-react';
 
-const DelayedShootsToday = ({ onMarkComplete }) => {
+const DelayedShootsToday = ({ delayedShoots: apiShoots = [], delayedUploads: apiUploads = [], onMarkComplete }) => {
     const [rescheduleModal, setRescheduleModal] = useState({ isOpen: false, event: null });
     const [completedShoots, setCompletedShoots] = useState([]);
     const [rescheduledShoots, setRescheduledShoots] = useState({});
@@ -23,8 +23,7 @@ const DelayedShootsToday = ({ onMarkComplete }) => {
     // Handle reschedule confirmation
     const handleRescheduleConfirm = (rescheduleData) => {
         // In production, this would call an API to update the event
-        const shootId = rescheduleModal.event.id;
-        console.log('Rescheduling delayed shoot:', shootId, 'to', rescheduleData);
+        const shootId = rescheduleModal.event.originalId;
 
         // Convert 24-hour time to 12-hour format for display
         const [hours, minutes] = rescheduleData.time.split(':');
@@ -44,7 +43,7 @@ const DelayedShootsToday = ({ onMarkComplete }) => {
     // Handle marking shoot as complete
     const handleMarkComplete = (shoot) => {
         // Add to completed list locally
-        setCompletedShoots(prev => [...prev, shoot.id]);
+        setCompletedShoots(prev => [...prev, shoot.originalId]);
 
         // Call parent handler to add to completed shoots
         if (onMarkComplete) {
@@ -52,43 +51,49 @@ const DelayedShootsToday = ({ onMarkComplete }) => {
         }
     };
 
-    // Mock data - in production, this would come from API
-    // Delayed shoots are those scheduled for today or earlier that haven't been completed
-    const mockDelayedShoots = [
-        {
-            id: 1,
-            brand: 'StyleHub',
-            campaign: 'Winter Collection',
-            type: 'shoot', // 'shoot' or 'upload'
-            scheduledTime: '8:00 AM',
-            time: '08:00',
-            scheduledDate: '2025-12-18',
-            delayHours: 3,
-            reason: 'Equipment delay'
-        },
-        {
-            id: 2,
-            brand: 'FitLife',
-            campaign: 'Yoga Series',
-            type: 'upload',
-            scheduledTime: '9:30 AM',
-            time: '09:30',
-            scheduledDate: '2025-12-24',
-            delayHours: 1.5,
-            reason: 'Editing pending'
-        },
-        {
-            id: 3,
-            brand: 'TechReview',
-            campaign: 'Smartphone Unboxing',
-            type: 'shoot',
-            scheduledTime: '7:00 AM',
-            time: '07:00',
-            scheduledDate: '2025-12-23',
-            delayHours: 30,
-            reason: 'Product not delivered'
+    const parseDelayHours = (dateStr, timeStr) => {
+        if (!dateStr) return 24; // fallback 1 day if unknown
+        const dt = new Date(dateStr);
+        if (timeStr) {
+            // Very naive parse, e.g. "10:00 AM"
+            const [time, period] = timeStr.split(' ');
+            if (time && period) {
+                let [h, m] = time.split(':').map(Number);
+                if (period === 'PM' && h !== 12) h += 12;
+                if (period === 'AM' && h === 12) h = 0;
+                dt.setHours(h, m || 0, 0, 0);
+            }
         }
-    ];
+        const now = new Date();
+        const diffMs = now - dt;
+        const diffHrs = diffMs / (1000 * 60 * 60);
+        return Math.max(0, diffHrs);
+    }
+
+    const compiledDelayedShoots = [
+        ...apiShoots.map(s => ({
+            id: `shoot-${s.id}`,
+            originalId: s.id,
+            brand: s.brand_name || 'Untitled Brand',
+            campaign: s.campaign,
+            type: 'shoot',
+            scheduledTime: s.shoot_time || '12:00 PM',
+            scheduledDate: s.shoot_date,
+            delayHours: parseDelayHours(s.shoot_date, s.shoot_time),
+            notes: s.notes
+        })),
+        ...apiUploads.map(u => ({
+            id: `upload-${u.id}`,
+            originalId: u.id,
+            brand: u.brand_name || 'Untitled Brand',
+            campaign: u.campaign,
+            type: 'upload',
+            scheduledTime: u.upload_time || '12:00 PM',
+            scheduledDate: u.upload_date,
+            delayHours: parseDelayHours(u.upload_date, u.upload_time),
+            notes: u.notes
+        }))
+    ].sort((a, b) => b.delayHours - a.delayHours);
 
     const calculateDelay = (hours) => {
         if (hours < 1) return `${Math.round(hours * 60)} minutes`;
@@ -104,8 +109,8 @@ const DelayedShootsToday = ({ onMarkComplete }) => {
     };
 
     // Filter out completed shoots and rescheduled shoots
-    const delayedShoots = mockDelayedShoots.filter(shoot =>
-        !completedShoots.includes(shoot.id) && !rescheduledShoots[shoot.id]
+    const delayedShoots = compiledDelayedShoots.filter(shoot =>
+        !completedShoots.includes(shoot.originalId) && !rescheduledShoots[shoot.originalId]
     );
 
     return (
@@ -122,10 +127,10 @@ const DelayedShootsToday = ({ onMarkComplete }) => {
             </div>
 
             {delayedShoots.length === 0 ? (
-                <div className="text-center py-8">
-                    <CheckCircle size={40} className="mx-auto text-gray-300 mb-3" />
-                    <p className="text-gray-500 text-sm">No delayed tasks</p>
-                    <p className="text-xs text-gray-400 mt-1">All on track!</p>
+                <div className="flex-1 flex flex-col items-center justify-center min-h-[250px] text-gray-400">
+                    <CheckCircle size={48} className="mb-4 text-green-400" strokeWidth={1.5} />
+                    <p className="text-gray-600 font-medium text-lg">No delayed tasks</p>
+                    <p className="text-sm mt-1">All on track!</p>
                 </div>
             ) : (
                 <div className="space-y-4 lg:max-h-[600px] lg:overflow-y-auto pr-2">
@@ -172,49 +177,57 @@ const DelayedShootsToday = ({ onMarkComplete }) => {
                             return (
                                 <div
                                     key={shoot.id}
-                                    className={`p-4 ${colors.bg} border-2 ${colors.border} rounded-lg hover:shadow-md transition-shadow`}
+                                    className={`p-4 ${colors.bg} border-2 ${colors.border} rounded-xl`}
                                 >
                                     <div className="flex items-start gap-3 mb-3">
-                                        <div className={`w-8 h-8 ${colors.icon} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                                            <AlertTriangle className="w-5 h-5 text-white" />
+                                        <div className={`w-9 h-9 ${colors.icon} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                                            <AlertTriangle className="w-4 h-4 text-white" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h4 className="font-semibold text-deep-black text-sm truncate">
+                                            {/* Brand + Type Badge row */}
+                                            <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                                                <h4 className="font-bold text-deep-black text-sm uppercase tracking-wide truncate">
                                                     {shoot.brand}
                                                 </h4>
-                                                {/* Type Badge */}
                                                 <Badge
                                                     variant={shoot.type === 'shoot' ? 'default' : 'secondary'}
                                                     className={shoot.type === 'shoot'
-                                                        ? 'bg-purple-50 text-purple-700 border-purple-200 text-xs'
-                                                        : 'bg-blue-50 text-blue-700 border-blue-200 text-xs'
+                                                        ? 'bg-purple-50 text-purple-700 border-purple-200 text-xs flex-shrink-0'
+                                                        : 'bg-blue-50 text-blue-700 border-blue-200 text-xs flex-shrink-0'
                                                     }
                                                 >
                                                     {shoot.type === 'shoot' ? 'Shoot' : 'Upload'}
                                                 </Badge>
                                             </div>
-                                            <p className="text-xs text-gray-600 truncate">
-                                                {shoot.campaign}
-                                            </p>
-                                        </div>
-                                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${colors.badge}`}>
-                                            {calculateDelay(shoot.delayHours)} late
-                                        </span>
-                                    </div>
-
-                                    <div className="space-y-2 text-xs text-gray-600 mb-3">
-                                        <div className="flex items-center gap-2">
-                                            <Calendar className="w-3 h-3" />
-                                            <span>Scheduled: {new Date(shoot.scheduledDate).toLocaleDateString()}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Clock className="w-3 h-3" />
-                                            <span>Time: {shoot.scheduledTime}</span>
+                                            {/* Delay badge below the title */}
+                                            <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${colors.badge} mb-1`}>
+                                                {calculateDelay(shoot.delayHours)} late
+                                            </span>
+                                            {shoot.campaign && (
+                                                <p className="text-xs text-gray-600 truncate">
+                                                    {shoot.campaign}
+                                                </p>
+                                            )}
+                                            {shoot.notes && (
+                                                <div className="mt-1.5 p-1.5 bg-white/60 border border-black/5 rounded text-xs text-gray-600 italic line-clamp-2">
+                                                    {shoot.notes}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600 mb-3">
+                                        <div className="flex items-center gap-1.5">
+                                            <Calendar className="w-3 h-3 flex-shrink-0" />
+                                            <span>{new Date(shoot.scheduledDate).toLocaleDateString()}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <Clock className="w-3 h-3 flex-shrink-0" />
+                                            <span>{shoot.scheduledTime}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col xs:flex-row gap-2">
                                         <Button
                                             variant="outline"
                                             size="sm"
@@ -249,12 +262,5 @@ const DelayedShootsToday = ({ onMarkComplete }) => {
         </Card>
     );
 };
-
-// Import CheckCircle for the empty state
-const CheckCircle = ({ className }) => (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-);
 
 export default DelayedShootsToday;

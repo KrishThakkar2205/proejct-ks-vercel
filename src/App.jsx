@@ -1,5 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import PublicLayout from './layouts/PublicLayout';
+import ProtectedRoute from './components/ProtectedRoute';
+import RedirectIfAuthenticated from './components/RedirectIfAuthenticated';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
 import SignupPage from './pages/auth/SignupPage';
@@ -31,41 +33,49 @@ function App() {
         <Router>
             <ScrollToTop />
             <Routes>
-                {/* Public Routes */}
+                {/* Public Routes (landing page always accessible) */}
                 <Route element={<PublicLayout />}>
                     <Route path="/" element={<LandingPage />} />
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/signup" element={<SignupPage />} />
-                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+
+                    {/* Auth pages — redirect to dashboard if already logged in */}
+                    <Route element={<RedirectIfAuthenticated />}>
+                        <Route path="/login" element={<LoginPage />} />
+                        <Route path="/signup" element={<SignupPage />} />
+                        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                    </Route>
                 </Route>
 
-                {/* Portfolio Route */}
-                <Route path="/portfolio/:username" element={<PublicPortfolio />} />
+                {/* Portfolio Route (public) */}
+                <Route path="/portfolio/:influencerId" element={<PublicPortfolio />} />
 
-                {/* Review Submission Route */}
+                {/* Review Submission Route (public) */}
                 <Route path="/review/:token" element={<ClientReviewPage />} />
 
-                {/* Dashboard Routes */}
-                <Route path="/brand" element={<DashboardLayout />}>
-                    <Route index element={<BrandDashboard />} />
-                    <Route path="discover" element={<DiscoverInfluencers />} />
-                    <Route path="influencer/:id" element={<InfluencerProfile />} />
-                    <Route path="closed-deals" element={<ClosedDeals />} />
-                    <Route path="deals" element={<ActiveDeals />} />
-                    <Route path="messages" element={<Messages />} />
-                    <Route path="saved" element={<PlaceholderPage title="Saved Influencers" />} />
+                {/* Protected: Brand Dashboard Routes */}
+                <Route element={<ProtectedRoute />}>
+                    <Route path="/brand" element={<DashboardLayout />}>
+                        <Route index element={<BrandDashboard />} />
+                        <Route path="discover" element={<DiscoverInfluencers />} />
+                        <Route path="influencer/:id" element={<InfluencerProfile />} />
+                        <Route path="closed-deals" element={<ClosedDeals />} />
+                        <Route path="deals" element={<ActiveDeals />} />
+                        <Route path="messages" element={<Messages />} />
+                        <Route path="saved" element={<PlaceholderPage title="Saved Influencers" />} />
+                    </Route>
                 </Route>
 
-                {/* Influencer Routes */}
-                <Route path="/influencer" element={<InfluencerLayout />}>
-                    <Route index element={<InfluencerDashboard />} />
-                    <Route path="profile" element={<InfluencerProfilePage />} />
-                    <Route path="calendar" element={<ShootingCalendar />} />
-                    <Route path="schedule" element={<Schedule />} />
-                    <Route path="completed-shoots" element={<CompletedShoots />} />
-                    <Route path="delayed" element={<DelayedPage />} />
-                    <Route path="messages" element={<InfluencerMessages />} />
-                    <Route path="reviews" element={<InfluencerReviews />} />
+                {/* Protected: Influencer Routes */}
+                <Route element={<ProtectedRoute />}>
+                    <Route path="/influencer" element={<InfluencerLayout />}>
+                        <Route index element={<InfluencerDashboard />} />
+                        <Route path="profile" element={<InfluencerProfilePage />} />
+                        <Route path="calendar" element={<ShootingCalendar />} />
+                        <Route path="schedule" element={<Schedule />} />
+                        <Route path="completed-shoots" element={<CompletedShoots />} />
+                        <Route path="delayed" element={<DelayedPage />} />
+                        <Route path="messages" element={<InfluencerMessages />} />
+                        <Route path="reviews" element={<InfluencerReviews />} />
+                    </Route>
                 </Route>
 
                 {/* 404 Route */}

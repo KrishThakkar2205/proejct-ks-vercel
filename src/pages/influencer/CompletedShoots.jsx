@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Link2, Copy, CheckCircle, Calendar, MapPin, Clock, Search, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link2, Copy, CheckCircle, Calendar, MapPin, Clock, Search, Loader2 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
+import api from '../../utils/api';
 
 const CompletedShoots = () => {
     const [completedShoots, setCompletedShoots] = useState([]);
@@ -10,106 +11,141 @@ const CompletedShoots = () => {
     const [activeTab, setActiveTab] = useState('shoots');
     const [searchQuery, setSearchQuery] = useState('');
     const [dateFilter, setDateFilter] = useState('');
-    const [copiedToken, setCopiedToken] = useState(null);
+    const [copiedLink, setCopiedLink] = useState(null);
+    const [generatingFor, setGeneratingFor] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    useEffect(() => {
-        // Load completed shoots and uploads from localStorage
-        const shoots = JSON.parse(localStorage.getItem('completedShoots') || '[]');
-        const uploads = JSON.parse(localStorage.getItem('completedUploads') || '[]');
-        setCompletedShoots(shoots);
-        setCompletedUploads(uploads);
+    // Helper to convert HH:MM:SS or HH:MM to display time
+    const toDisplayTime = (timeStr) => {
+        if (!timeStr) return '';
+        const [hours, minutes] = timeStr.split(':');
+        const hour = parseInt(hours);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour % 12 || 12;
+        return `${displayHour}:${minutes} ${ampm}`;
+    };
+
+    // Fetch completed shoots, uploads, and reviews
+    const fetchData = useCallback(async (silent = false) => {
+        try {
+            if (!silent) setLoading(true);
+            setError(null);
+
+            const [shootsRes, uploadsRes] = await Promise.all([
+                api.get('/api/shoots', { params: { completed: true } }),
+                api.get('/api/uploads', { params: { completed: true } }),
+            ]);
+
+            setCompletedShoots(Array.isArray(shootsRes.data) ? shootsRes.data : []);
+            setCompletedUploads(Array.isArray(uploadsRes.data) ? uploadsRes.data : []);
+        } catch (err) {
+            if (!silent) {
+                const msg =
+                    err.response?.data?.detail?.[0]?.msg ||
+                    err.response?.data?.detail ||
+                    'Failed to load completed shoots data.';
+                setError(msg);
+            }
+        } finally {
+            if (!silent) setLoading(false);
+        }
     }, []);
 
-    const generateReviewToken = () => {
-        // Generate a unique token (in production, this would be done server-side)
-        return `review_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    };
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
-    const handleGenerateLink = (shootId) => {
-        const token = generateReviewToken();
-        const reviewLink = `${window.location.origin}/review/${token}`;
+    // Map API data to component format
+    const shootsList = completedShoots.map(s => ({
+        id: s.id,
+        brandName: s.brand_name || '',
+        campaign: s.name || '',
+        shootDate: s.shoot_date,
+        shootTime: toDisplayTime(s.shoot_time),
+        location: s.location || '',
+        completedAt: s.completed_at,
+        notes: s.notes || '',
+        reviewGenerated: s.review_generated || false,
+        reviewId: s.review_id || '',
+    }));
 
-        // Update the shoot with the review token
-        const updatedShoots = completedShoots.map(shoot => {
-            if (shoot.id === shootId) {
-                return {
-                    ...shoot,
-                    reviewToken: token,
-                    reviewLink: reviewLink,
-                    reviewLinkGeneratedAt: new Date().toISOString()
-                };
+    const uploadsList = completedUploads.map(u => ({
+        id: u.id,
+        brandName: u.brand_name || '',
+        campaign: u.name || '',
+        uploadDate: u.upload_date,
+        uploadTime: toDisplayTime(u.upload_time),
+        platform: u.platform || '',
+        completedAt: u.completed_at,
+        notes: u.notes || '',
+    }));
+
+
+
+    // Generate review link via API
+    const handleGenerateLink = async (shootId) => {
+        setGeneratingFor(shootId);
+        try {
+            const response = await api.post(`/api/reviews/generate/${shootId}`);
+            const reviewLink = response.data?.review_link;
+
+            if (reviewLink) {
+                copyToClipboard(reviewLink, shootId);
             }
-            return shoot;
-        });
 
-        setCompletedShoots(updatedShoots);
-        localStorage.setItem('completedShoots', JSON.stringify(updatedShoots));
-
-        // Auto-copy to clipboard
-        copyToClipboard(reviewLink, token);
+            // Refresh data to get the updated review_generated flag
+            fetchData(true);
+        } catch (err) {
+            alert(err.response?.data?.detail || 'Failed to generate review link.');
+        } finally {
+            setGeneratingFor(null);
+        }
     };
 
-    const copyToClipboard = (link, token) => {
+    const copyToClipboard = (link, id) => {
         navigator.clipboard.writeText(link).then(() => {
-            setCopiedToken(token);
-            setTimeout(() => setCopiedToken(null), 2000);
+            setCopiedLink(id);
+            setTimeout(() => setCopiedLink(null), 2000);
         }).catch(err => {
             console.error('Failed to copy:', err);
         });
     };
 
+    // Filter functions
     const filterShoots = () => {
-        if (!searchQuery && !dateFilter) return completedShoots;
-
+        if (!searchQuery && !dateFilter) return shootsList;
         const query = searchQuery.toLowerCase();
-        return completedShoots.filter(shoot => {
-            // Text search filter
+        return shootsList.filter(shoot => {
             const matchesSearch = !searchQuery || (
                 shoot.brandName?.toLowerCase().includes(query) ||
                 shoot.campaign?.toLowerCase().includes(query) ||
                 shoot.location?.toLowerCase().includes(query) ||
-                shoot.status?.toLowerCase().includes(query) ||
                 shoot.shootDate?.toLowerCase().includes(query) ||
                 shoot.shootTime?.toLowerCase().includes(query)
             );
-
-            // Date filter (exact date match)
             let matchesDate = true;
             if (dateFilter) {
-                const shootDate = new Date(shoot.shootDate || shoot.completedAt);
-                const filterDate = new Date(dateFilter);
-                // Compare only the date part (ignore time)
-                matchesDate = shootDate.toDateString() === filterDate.toDateString();
+                matchesDate = shoot.shootDate === dateFilter;
             }
-
             return matchesSearch && matchesDate;
         });
     };
 
     const filterUploads = () => {
-        if (!searchQuery && !dateFilter) return completedUploads;
-
+        if (!searchQuery && !dateFilter) return uploadsList;
         const query = searchQuery.toLowerCase();
-        return completedUploads.filter(upload => {
-            // Text search filter
+        return uploadsList.filter(upload => {
             const matchesSearch = !searchQuery || (
                 upload.brandName?.toLowerCase().includes(query) ||
                 upload.campaign?.toLowerCase().includes(query) ||
                 upload.platform?.toLowerCase().includes(query) ||
-                upload.contentType?.toLowerCase().includes(query) ||
-                upload.status?.toLowerCase().includes(query) ||
                 upload.uploadTime?.toLowerCase().includes(query)
             );
-
-            // Date filter (exact date match)
             let matchesDate = true;
             if (dateFilter) {
-                const uploadDate = new Date(upload.uploadDate || upload.completedAt);
-                const filterDate = new Date(dateFilter);
-                // Compare only the date part (ignore time)
-                matchesDate = uploadDate.toDateString() === filterDate.toDateString();
+                matchesDate = upload.uploadDate === dateFilter;
             }
-
             return matchesSearch && matchesDate;
         });
     };
@@ -117,13 +153,30 @@ const CompletedShoots = () => {
     const filteredShoots = filterShoots();
     const filteredUploads = filterUploads();
 
-    const hasReviewSubmitted = (shootId) => {
-        const reviews = JSON.parse(localStorage.getItem('reviews') || '[]');
-        return reviews.some(review => review.shootId === shootId);
-    };
+    // Loading state
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center">
+                    <Loader2 size={40} className="animate-spin text-primary-orange mx-auto mb-4" />
+                    <p className="text-gray-600">Loading completed shoots...</p>
+                </div>
+            </div>
+        );
+    }
 
-    const activeData = activeTab === 'shoots' ? filteredShoots : filteredUploads;
-    const activeCount = activeTab === 'shoots' ? completedShoots.length : completedUploads.length;
+    // Error state
+    if (error) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <Card className="p-8 text-center max-w-md">
+                    <p className="text-red-600 font-medium mb-2">Error</p>
+                    <p className="text-gray-600 text-sm mb-4">{typeof error === 'string' ? error : 'Something went wrong.'}</p>
+                    <Button onClick={() => fetchData()}>Try Again</Button>
+                </Card>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8">
@@ -145,8 +198,8 @@ const CompletedShoots = () => {
                             }`}
                     >
                         {tab === 'shoots'
-                            ? `Completed Shoots (${completedShoots.length})`
-                            : `Completed Uploads (${completedUploads.length})`}
+                            ? `Completed Shoots (${shootsList.length})`
+                            : `Completed Uploads (${uploadsList.length})`}
                     </button>
                 ))}
             </div>
@@ -158,7 +211,9 @@ const CompletedShoots = () => {
                         <h2 className="text-xl font-bebas tracking-wide text-deep-black mb-1">
                             {activeTab === 'shoots' ? 'Total Completed Shoots' : 'Total Completed Uploads'}
                         </h2>
-                        <p className="text-4xl font-bold text-green-600">{activeCount}</p>
+                        <p className="text-4xl font-bold text-green-600">
+                            {activeTab === 'shoots' ? shootsList.length : uploadsList.length}
+                        </p>
                     </div>
                     <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
                         <CheckCircle className="text-white" size={32} />
@@ -213,8 +268,6 @@ const CompletedShoots = () => {
                 filteredShoots.length > 0 ? (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {filteredShoots.map((shoot) => {
-                            const reviewSubmitted = hasReviewSubmitted(shoot.id);
-                            const hasReviewLink = !!shoot.reviewToken;
 
                             return (
                                 <Card key={shoot.id} className="p-6 hover:shadow-lg transition-shadow border-l-4 border-l-green-500">
@@ -225,12 +278,12 @@ const CompletedShoots = () => {
                                                 <CheckCircle className="text-green-600" size={24} />
                                             </div>
                                             <div>
-                                                <h3 className="font-semibold text-deep-black text-lg">{shoot.brandName}</h3>
+                                                <h3 className="font-semibold text-deep-black text-lg">{shoot.brandName || 'Untitled'}</h3>
                                                 <p className="text-sm text-gray-600">{shoot.campaign}</p>
                                             </div>
                                         </div>
-                                        {reviewSubmitted && (
-                                            <Badge variant="success">Review Received</Badge>
+                                        {shoot.reviewGenerated && (
+                                            <Badge variant="success">Review Generated</Badge>
                                         )}
                                     </div>
 
@@ -245,68 +298,36 @@ const CompletedShoots = () => {
                                                 day: 'numeric'
                                             })}
                                         </div>
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                                            <Clock size={16} className="text-gray-400" />
-                                            {shoot.shootTime}
-                                        </div>
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                                            <MapPin size={16} className="text-gray-400" />
-                                            {shoot.location}
-                                        </div>
+                                        {shoot.shootTime && (
+                                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                <Clock size={16} className="text-gray-400" />
+                                                {shoot.shootTime}
+                                            </div>
+                                        )}
+                                        {shoot.location && (
+                                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                <MapPin size={16} className="text-gray-400" />
+                                                {shoot.location}
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Review Link Section */}
-                                    {hasReviewLink ? (
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <Link2 size={16} className="text-primary-orange" />
-                                                <span className="text-xs font-semibold text-primary-orange uppercase">Review Link Generated</span>
+                                    {shoot.reviewGenerated ? (
+                                        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                                            <div className="flex items-center justify-center gap-2 mb-3">
+                                                <CheckCircle size={18} className="text-green-600" />
+                                                <span className="text-sm font-semibold text-green-700">Review Generated</span>
                                             </div>
-
-                                            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                                                <p className="text-xs text-gray-500 mb-1">Review Link:</p>
-                                                <div className="flex items-center gap-2">
-                                                    <code className="text-xs text-gray-700 flex-1 truncate">
-                                                        {shoot.reviewLink}
-                                                    </code>
-                                                    <button
-                                                        onClick={() => copyToClipboard(shoot.reviewLink, shoot.reviewToken)}
-                                                        className="text-primary-orange hover:text-orange-600 transition-colors flex-shrink-0"
-                                                        title="Copy link"
-                                                    >
-                                                        {copiedToken === shoot.reviewToken ? (
-                                                            <CheckCircle size={18} className="text-green-500" />
-                                                        ) : (
-                                                            <Copy size={18} />
-                                                        )}
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex gap-2">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="flex-1"
-                                                    onClick={() => copyToClipboard(shoot.reviewLink, shoot.reviewToken)}
-                                                >
-                                                    <Copy size={16} className="mr-2" />
-                                                    {copiedToken === shoot.reviewToken ? 'Copied!' : 'Copy Link'}
-                                                </Button>
-                                                <Button
-                                                    variant="secondary"
-                                                    size="sm"
-                                                    className="flex-1"
-                                                    onClick={() => window.open(shoot.reviewLink, '_blank')}
-                                                >
-                                                    <ExternalLink size={16} className="mr-2" />
-                                                    Preview
-                                                </Button>
-                                            </div>
-
-                                            <p className="text-xs text-gray-500 text-center">
-                                                Generated {new Date(shoot.reviewLinkGeneratedAt).toLocaleDateString()}
-                                            </p>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="w-full"
+                                                onClick={() => copyToClipboard(`${window.location.origin}/review/${shoot.reviewId}`, shoot.id)}
+                                            >
+                                                <Copy size={16} className="mr-2" />
+                                                {copiedLink === shoot.id ? 'Copied!' : 'Copy Link'}
+                                            </Button>
                                         </div>
                                     ) : (
                                         <div className="space-y-3">
@@ -319,9 +340,19 @@ const CompletedShoots = () => {
                                                     size="sm"
                                                     className="w-full"
                                                     onClick={() => handleGenerateLink(shoot.id)}
+                                                    disabled={generatingFor === shoot.id}
                                                 >
-                                                    <Link2 size={16} className="mr-2" />
-                                                    Generate Review Link
+                                                    {generatingFor === shoot.id ? (
+                                                        <>
+                                                            <Loader2 size={16} className="animate-spin mr-2" />
+                                                            Generating...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Link2 size={16} className="mr-2" />
+                                                            Generate Review Link
+                                                        </>
+                                                    )}
                                                 </Button>
                                             </div>
                                         </div>
@@ -336,14 +367,14 @@ const CompletedShoots = () => {
                             <CheckCircle size={40} className="text-gray-400" />
                         </div>
                         <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                            {searchQuery ? 'No shoots found' : 'No completed shoots yet'}
+                            {searchQuery || dateFilter ? 'No shoots found' : 'No completed shoots yet'}
                         </h3>
                         <p className="text-sm text-gray-500 mb-6">
-                            {searchQuery
-                                ? 'Try adjusting your search query'
+                            {searchQuery || dateFilter
+                                ? 'Try adjusting your search query or date filter'
                                 : 'Mark shoots as completed from the Schedule page to see them here'}
                         </p>
-                        {!searchQuery && (
+                        {!searchQuery && !dateFilter && (
                             <Button variant="primary" onClick={() => window.location.href = '/influencer/schedule'}>
                                 Go to Schedule
                             </Button>
@@ -358,30 +389,38 @@ const CompletedShoots = () => {
                             <Card key={upload.id} className="p-6 hover:shadow-lg transition-shadow border-l-4 border-l-blue-500">
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="flex-1">
-                                        <h3 className="text-lg font-semibold text-deep-black mb-1">{upload.brandName}</h3>
+                                        <h3 className="text-lg font-semibold text-deep-black mb-1">{upload.brandName || 'Untitled'}</h3>
                                         <p className="text-sm text-gray-600">{upload.campaign}</p>
                                     </div>
                                     <Badge variant="success">Uploaded</Badge>
                                 </div>
 
                                 <div className="space-y-3 mb-4">
-                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                        <Clock size={16} className="text-gray-400" />
-                                        <span>Uploaded: {new Date(upload.completedAt).toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                        <ExternalLink size={16} className="text-gray-400" />
-                                        <span>Platform: {upload.platform}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                        <Calendar size={16} className="text-gray-400" />
-                                        <span>Scheduled: {upload.uploadTime}</span>
-                                    </div>
+                                    {upload.completedAt && (
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                            <Clock size={16} className="text-gray-400" />
+                                            <span>Uploaded: {new Date(upload.completedAt).toLocaleString()}</span>
+                                        </div>
+                                    )}
+                                    {upload.platform && (
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                            <ExternalLink size={16} className="text-gray-400" />
+                                            <span>Platform: {upload.platform}</span>
+                                        </div>
+                                    )}
+                                    {upload.uploadTime && (
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                            <Calendar size={16} className="text-gray-400" />
+                                            <span>Scheduled: {upload.uploadTime}</span>
+                                        </div>
+                                    )}
                                 </div>
 
-                                <div className="pt-4 border-t border-gray-200">
-                                    <p className="text-xs text-gray-500">Content Type: {upload.contentType}</p>
-                                </div>
+                                {upload.notes && (
+                                    <div className="pt-4 border-t border-gray-200">
+                                        <p className="text-xs text-gray-500">{upload.notes}</p>
+                                    </div>
+                                )}
                             </Card>
                         ))}
                     </div>
@@ -391,14 +430,14 @@ const CompletedShoots = () => {
                             <CheckCircle size={40} className="text-gray-400" />
                         </div>
                         <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                            {searchQuery ? 'No uploads found' : 'No completed uploads yet'}
+                            {searchQuery || dateFilter ? 'No uploads found' : 'No completed uploads yet'}
                         </h3>
                         <p className="text-sm text-gray-500 mb-6">
-                            {searchQuery
-                                ? 'Try adjusting your search query'
+                            {searchQuery || dateFilter
+                                ? 'Try adjusting your search query or date filter'
                                 : 'Mark uploads as completed from the Schedule page to see them here'}
                         </p>
-                        {!searchQuery && (
+                        {!searchQuery && !dateFilter && (
                             <Button variant="primary" onClick={() => window.location.href = '/influencer/schedule'}>
                                 Go to Schedule
                             </Button>

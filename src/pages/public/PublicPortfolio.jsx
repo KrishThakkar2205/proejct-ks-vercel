@@ -1,135 +1,153 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
+import Button from '../../components/ui/Button';
 import StarRating from '../../components/ui/StarRating';
-import { Instagram, Facebook, Youtube, MapPin, TrendingUp, Users, Heart, MessageCircle, Eye, X, ChevronLeft, ChevronRight, Star, ShieldCheck } from 'lucide-react';
-import { MOCK_INFLUENCER_DATA } from '../../data/mockData';
+import { MapPin, Star, Loader2, Calendar, X, Eye, Heart, MessageCircle } from 'lucide-react';
+import axios from 'axios';
+import { API_BASE_URL } from '../../utils/api';
 
 const PublicPortfolio = () => {
-    const { username } = useParams();
-    const { profile, socialMedia, reviews } = MOCK_INFLUENCER_DATA;
+    const { influencerId } = useParams();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [portfolio, setPortfolio] = useState(null);
     const [selectedMedia, setSelectedMedia] = useState(null);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [isClosing, setIsClosing] = useState(false);
-    const [touchStart, setTouchStart] = useState(null);
-    const [touchEnd, setTouchEnd] = useState(null);
-    const [slideDirection, setSlideDirection] = useState('right');
+    const [modalVisible, setModalVisible] = useState(false);
+    const modalTimeoutRef = useRef(null);
 
-    const openMediaModal = (media, platform, index) => {
-        setSelectedMedia({ ...media, platform });
-        setCurrentIndex(index);
-        setIsClosing(false);
-        setSlideDirection('right');
-    };
+    // Animate modal in when selectedMedia is set
+    useEffect(() => {
+        if (selectedMedia) {
+            requestAnimationFrame(() => setModalVisible(true));
+        }
+        return () => {
+            if (modalTimeoutRef.current) clearTimeout(modalTimeoutRef.current);
+        };
+    }, [selectedMedia]);
 
-    const closeMediaModal = useCallback(() => {
-        setIsClosing(true);
-        setTimeout(() => {
+    const closeModal = useCallback(() => {
+        setModalVisible(false);
+        modalTimeoutRef.current = setTimeout(() => {
             setSelectedMedia(null);
-            setIsClosing(false);
-        }, 300);
+        }, 200);
     }, []);
 
-    // Swipe handlers
-    const onTouchStart = (e) => {
-        setTouchEnd(null);
-        setTouchStart(e.targetTouches[0].clientX);
-    };
-
-    const onTouchMove = (e) => {
-        setTouchEnd(e.targetTouches[0].clientX);
-    };
-
-    const onTouchEnd = () => {
-        if (!touchStart || !touchEnd) return;
-
-        const distance = touchStart - touchEnd;
-        const isLeftSwipe = distance > 50;
-        const isRightSwipe = distance < -50;
-
-        if (isLeftSwipe) {
-            handleNext();
-        }
-        if (isRightSwipe) {
-            handlePrev();
-        }
-    };
-
-    const handleNext = useCallback(() => {
-        if (!selectedMedia) return;
-
-        const list = selectedMedia.platform === 'instagram'
-            ? socialMedia?.instagram?.recentPosts
-            : socialMedia?.youtube?.recentVideos;
-
-        // Stop at the last item
-        if (list && currentIndex < list.length - 1) {
-            setSlideDirection('right');
-            const nextIndex = currentIndex + 1;
-            setCurrentIndex(nextIndex);
-            setSelectedMedia({ ...list[nextIndex], platform: selectedMedia.platform });
-        }
-    }, [currentIndex, selectedMedia, socialMedia]);
-
-    const handlePrev = useCallback(() => {
-        if (!selectedMedia) return;
-
-        const list = selectedMedia.platform === 'instagram'
-            ? socialMedia?.instagram?.recentPosts
-            : socialMedia?.youtube?.recentVideos;
-
-        // Stop at the first item
-        if (currentIndex > 0) {
-            setSlideDirection('left');
-            const prevIndex = currentIndex - 1;
-            setCurrentIndex(prevIndex);
-            setSelectedMedia({ ...list[prevIndex], platform: selectedMedia.platform });
-        }
-    }, [currentIndex, selectedMedia, socialMedia]);
-
-    // Keyboard navigation
+    // Fetch portfolio data (public endpoint, no auth)
     useEffect(() => {
-        const handleKeyDown = (e) => {
-            if (!selectedMedia) return;
-
-            if (e.key === 'ArrowRight') handleNext();
-            if (e.key === 'ArrowLeft') handlePrev();
-            if (e.key === 'Escape') closeMediaModal();
+        const fetchPortfolio = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                const response = await axios.get(`${API_BASE_URL}/api/portfolio/${influencerId}`);
+                setPortfolio(response.data);
+            } catch (err) {
+                const msg =
+                    err.response?.data?.detail?.[0]?.msg ||
+                    err.response?.data?.detail ||
+                    'Portfolio not found.';
+                setError(msg);
+            } finally {
+                setLoading(false);
+            }
         };
 
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [selectedMedia, handleNext, handlePrev, closeMediaModal]);
+        if (influencerId) {
+            fetchPortfolio();
+        }
+    }, [influencerId]);
+
+    // Loading state
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-orange-50 flex items-center justify-center p-4">
+                <div className="text-center">
+                    <Loader2 size={40} className="animate-spin text-primary-orange mx-auto mb-4" />
+                    <p className="text-gray-600">Loading portfolio...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Error state
+    if (error || !portfolio) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-orange-50 flex items-center justify-center p-4">
+                <Card className="p-8 text-center max-w-md">
+                    <p className="text-red-600 font-medium mb-2">Oops!</p>
+                    <p className="text-gray-600 text-sm mb-4">{typeof error === 'string' ? error : 'Portfolio not found.'}</p>
+                    <Button variant="primary" onClick={() => window.location.reload()}>
+                        Try Again
+                    </Button>
+                </Card>
+            </div>
+        );
+    }
+
+    // Extract data from portfolio response (flat structure)
+    const name = portfolio.name || 'Influencer';
+    const location = portfolio.location || '';
+    const bio = portfolio.bio || '';
+    const categories = portfolio.categories || [];
+    const categoryList = Array.isArray(categories) ? categories : (categories ? [categories] : []);
+    const profilePicture = portfolio.profile_picture || null;
+    const reviews = portfolio.reviews || [];
+
+    // Use server-provided stats
+    const averageRating = portfolio.avg_rating || 0;
+    const totalReviews = portfolio.total_reviews || reviews.length;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-orange-50">
             {/* Hero Section */}
-            <div className="bg-gradient-to-r from-primary-orange to-orange-600 text-white py-16 px-6">
-                <div className="max-w-6xl mx-auto">
+            <div className="relative text-white py-16 px-6 overflow-hidden">
+                {/* Blurred background image */}
+                {profilePicture ? (
+                    <div
+                        className="absolute inset-0 scale-110"
+                        style={{
+                            backgroundImage: `url(${API_BASE_URL}/${profilePicture})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            filter: 'blur(20px) brightness(0.6)',
+                        }}
+                    />
+                ) : (
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary-orange to-orange-600" />
+                )}
+                {/* Semi-transparent overlay for readability */}
+                <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-primary-orange/40" />
+                <div className="max-w-6xl mx-auto relative z-10">
                     <div className="flex flex-col md:flex-row items-center gap-8">
                         {/* Profile Image */}
-                        <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center text-primary-orange text-5xl font-bold shadow-2xl">
-                            {profile.name.charAt(0)}
+                        <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center text-primary-orange text-5xl font-bold shadow-2xl overflow-hidden">
+                            {profilePicture ? (
+                                <img src={`${API_BASE_URL}/${profilePicture}`} alt={name} className="w-full h-full object-cover" />
+                            ) : (
+                                name.charAt(0)
+                            )}
                         </div>
 
                         {/* Profile Info */}
                         <div className="flex-1 text-center md:text-left">
-                            <h1 className="text-4xl md:text-5xl font-bebas tracking-wide mb-2">{profile.name}</h1>
+                            <h1 className="text-4xl md:text-5xl font-bebas tracking-wide mb-2">{name}</h1>
                             <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-4">
-                                <div className="flex items-center gap-2">
-                                    <MapPin size={18} />
-                                    <span className="text-orange-100">{profile.location}</span>
-                                </div>
+                                {location && (
+                                    <div className="flex items-center gap-2">
+                                        <MapPin size={18} />
+                                        <span className="text-orange-100">{location}</span>
+                                    </div>
+                                )}
                                 <div className="flex gap-2">
-                                    {profile.categories.map((cat, idx) => (
+                                    {categoryList.map((cat, idx) => (
                                         <Badge key={idx} className="bg-white/20 text-white border-white/30">
                                             {cat}
                                         </Badge>
                                     ))}
                                 </div>
                             </div>
-                            <p className="text-lg text-orange-100 max-w-2xl">{profile.bio}</p>
+                            {bio && <p className="text-lg text-orange-100 max-w-2xl">{bio}</p>}
                         </div>
                     </div>
                 </div>
@@ -137,325 +155,214 @@ const PublicPortfolio = () => {
 
             {/* Main Content */}
             <div className="max-w-6xl mx-auto px-6 py-12 space-y-12">
-                {/* Social Media Stats */}
+
+                {/* Social Media Reach */}
                 <div>
                     <h2 className="text-3xl font-bebas tracking-wide text-deep-black mb-6">Social Media Reach</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Instagram */}
-                        <Card className="p-6 bg-gradient-to-br from-pink-50 to-orange-50 border-2 border-pink-200">
-                            <div className="flex items-center gap-3 mb-4">
-                                <Instagram size={32} className="text-pink-600" />
+                    <div className="grid grid-cols-1 gap-6">
+                        {/* Instagram Card */}
+                        <Card className="p-6 border border-pink-200 bg-gradient-to-br from-pink-50 to-orange-50">
+                            <div className="flex items-center gap-3 mb-5">
+                                <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-orange-500 rounded-lg flex items-center justify-center">
+                                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+                                    </svg>
+                                </div>
                                 <div>
-                                    <h3 className="font-semibold text-deep-black">Instagram</h3>
-                                    <p className="text-sm text-gray-600">{socialMedia.instagram.username}</p>
+                                    <h3 className="font-bebas tracking-wide text-deep-black">Instagram</h3>
+                                    <p className="text-xs text-gray-500">Coming soon</p>
                                 </div>
                             </div>
                             <div className="space-y-3">
-                                <div className="flex justify-between items-center">
+                                <div className="flex items-center justify-between">
                                     <span className="text-sm text-gray-600">Followers</span>
-                                    <span className="text-xl font-bebas text-deep-black">
-                                        {socialMedia.instagram.followers.toLocaleString()}
-                                    </span>
+                                    <span className="font-semibold text-deep-black">--</span>
                                 </div>
-                                <div className="flex justify-between items-center">
+                                <div className="flex items-center justify-between">
                                     <span className="text-sm text-gray-600">Engagement Rate</span>
-                                    <span className="text-lg font-bold text-pink-600">
-                                        {socialMedia.instagram.engagementRate}%
-                                    </span>
+                                    <span className="font-semibold text-pink-500">--</span>
                                 </div>
-                                <div className="flex justify-between items-center">
+                                <div className="flex items-center justify-between">
                                     <span className="text-sm text-gray-600">Avg Likes</span>
-                                    <span className="text-md font-semibold text-gray-700">
-                                        {socialMedia.instagram.avgLikes.toLocaleString()}
-                                    </span>
-                                </div>
-                            </div>
-                        </Card>
-
-                        {/* Facebook */}
-                        <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200">
-                            <div className="flex items-center gap-3 mb-4">
-                                <Facebook size={32} className="text-blue-600" />
-                                <div>
-                                    <h3 className="font-semibold text-deep-black">Facebook</h3>
-                                    <p className="text-sm text-gray-600">{socialMedia.facebook.username}</p>
-                                </div>
-                            </div>
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">Followers</span>
-                                    <span className="text-xl font-bebas text-deep-black">
-                                        {socialMedia.facebook.followers.toLocaleString()}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">Engagement Rate</span>
-                                    <span className="text-lg font-bold text-blue-600">
-                                        {socialMedia.facebook.engagementRate}%
-                                    </span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">Avg Likes</span>
-                                    <span className="text-md font-semibold text-gray-700">
-                                        {socialMedia.facebook.avgLikes.toLocaleString()}
-                                    </span>
-                                </div>
-                            </div>
-                        </Card>
-
-                        {/* YouTube */}
-                        <Card className="p-6 bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200">
-                            <div className="flex items-center gap-3 mb-4">
-                                <Youtube size={32} className="text-red-600" />
-                                <div>
-                                    <h3 className="font-semibold text-deep-black">YouTube</h3>
-                                    <p className="text-sm text-gray-600">{socialMedia.youtube.username}</p>
-                                </div>
-                            </div>
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">Subscribers</span>
-                                    <span className="text-xl font-bebas text-deep-black">
-                                        {socialMedia.youtube.subscribers.toLocaleString()}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">Engagement Rate</span>
-                                    <span className="text-lg font-bold text-red-600">
-                                        {socialMedia.youtube.engagementRate}%
-                                    </span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">Avg Views</span>
-                                    <span className="text-md font-semibold text-gray-700">
-                                        {socialMedia.youtube.avgViews.toLocaleString()}
-                                    </span>
+                                    <span className="font-semibold text-deep-black">--</span>
                                 </div>
                             </div>
                         </Card>
                     </div>
                 </div>
 
-                {/* Overall Stats */}
+                {/* Performance Highlights */}
                 <div>
                     <h2 className="text-3xl font-bebas tracking-wide text-deep-black mb-6">Performance Highlights</h2>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <Card className="p-6 text-center bg-gradient-to-br from-orange-50 to-orange-100">
-                            <Users className="mx-auto mb-2 text-primary-orange" size={32} />
-                            <p className="text-3xl font-bebas text-deep-black">
-                                {(socialMedia.instagram.followers + socialMedia.facebook.followers + socialMedia.youtube.subscribers).toLocaleString()}
-                            </p>
-                            <p className="text-sm text-gray-600 mt-1">Total Reach</p>
+                        {/* Total Reach */}
+                        <Card className="p-5 text-center bg-orange-50">
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <svg className="w-7 h-7 text-primary-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                                </svg>
+                            </div>
+                            <p className="text-2xl font-bebas tracking-wide text-deep-black">--</p>
+                            <p className="text-xs text-gray-500 mt-1">Total Reach</p>
                         </Card>
-                        <Card className="p-6 text-center bg-gradient-to-br from-pink-50 to-pink-100">
-                            <Heart className="mx-auto mb-2 text-pink-600" size={32} />
-                            <p className="text-3xl font-bebas text-deep-black">
-                                {((socialMedia.instagram.engagementRate + socialMedia.facebook.engagementRate + socialMedia.youtube.engagementRate) / 3).toFixed(1)}%
-                            </p>
-                            <p className="text-sm text-gray-600 mt-1">Avg Engagement</p>
+                        {/* Avg Engagement */}
+                        <Card className="p-5 text-center bg-pink-50">
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <svg className="w-7 h-7 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                                </svg>
+                            </div>
+                            <p className="text-2xl font-bebas tracking-wide text-deep-black">--</p>
+                            <p className="text-xs text-gray-500 mt-1">Avg Engagement</p>
                         </Card>
-                        <Card className="p-6 text-center bg-gradient-to-br from-green-50 to-green-100">
-                            <TrendingUp className="mx-auto mb-2 text-green-600" size={32} />
-                            <p className="text-3xl font-bebas text-deep-black">3</p>
-                            <p className="text-sm text-gray-600 mt-1">Platforms</p>
+                        {/* Platforms */}
+                        <Card className="p-5 text-center bg-green-50">
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <svg className="w-7 h-7 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+                                </svg>
+                            </div>
+                            <p className="text-2xl font-bebas tracking-wide text-deep-black">--</p>
+                            <p className="text-xs text-gray-500 mt-1">Platforms</p>
                         </Card>
-                        <Card className="p-6 text-center bg-gradient-to-br from-blue-50 to-blue-100">
-                            <MessageCircle className="mx-auto mb-2 text-blue-600" size={32} />
-                            <p className="text-3xl font-bebas text-deep-black">
-                                {profile.categories.length}
-                            </p>
-                            <p className="text-sm text-gray-600 mt-1">Categories</p>
+                        {/* Categories */}
+                        <Card className="p-5 text-center bg-blue-50">
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
+                                </svg>
+                            </div>
+                            <p className="text-2xl font-bebas tracking-wide text-deep-black">--</p>
+                            <p className="text-xs text-gray-500 mt-1">Categories</p>
                         </Card>
                     </div>
                 </div>
 
-                {/* Recent Performance */}
+                {/* Recent Content Performance */}
                 <div>
                     <h2 className="text-3xl font-bebas tracking-wide text-deep-black mb-6">Recent Content Performance</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Instagram Posts */}
-                        <Card className="p-6">
-                            <div className="flex items-center gap-2 mb-4">
-                                <Instagram size={24} className="text-pink-600" />
-                                <h3 className="font-semibold text-deep-black">Instagram Posts</h3>
+                    <Card className="p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <svg className="w-5 h-5 text-pink-500" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+                            </svg>
+                            <h3 className="font-bebas tracking-wide text-deep-black">Instagram Posts</h3>
+                        </div>
+                        <div className="space-y-3">
+                            <div
+                                className="flex items-center gap-4 p-3 bg-pink-50 rounded-lg cursor-pointer hover:bg-pink-100 transition-colors"
+                                onClick={() => setSelectedMedia({ platform: 'instagram', date: null, views: '--', likes: '--', comments: '--', engagement: '--' })}
+                            >
+                                <div className="w-16 h-16 bg-gradient-to-br from-pink-200 to-orange-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <svg className="w-6 h-6 text-pink-400" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-500">No posts yet</p>
+                                    <p className="text-xs text-gray-400">Connect Instagram to see content</p>
+                                </div>
                             </div>
-                            <div className="space-y-4">
-                                {socialMedia.instagram.recentPosts.map((post, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="flex gap-3 p-3 bg-pink-50 rounded-lg hover:bg-pink-100 transition-colors cursor-pointer"
-                                        onClick={() => openMediaModal(post, 'instagram', idx)}
-                                    >
-                                        {/* Media Thumbnail */}
-                                        <div className="w-20 h-20 bg-gradient-to-br from-pink-200 to-orange-200 rounded-lg flex-shrink-0 flex items-center justify-center">
-                                            <Instagram size={32} className="text-white opacity-50" />
-                                        </div>
-                                        {/* Content Info */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <span className="text-sm font-medium text-gray-700">
-                                                    {new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                </span>
-                                            </div>
-                                            <div className="flex gap-3 text-sm">
-                                                <span className="flex items-center gap-1">
-                                                    <Heart size={14} className="text-pink-600" />
-                                                    <span className="font-semibold">{post.likes.toLocaleString()}</span>
-                                                </span>
-                                                <span className="flex items-center gap-1">
-                                                    <MessageCircle size={14} className="text-blue-600" />
-                                                    <span className="font-semibold">{post.comments}</span>
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </Card>
-
-                        {/* YouTube Videos */}
-                        <Card className="p-6">
-                            <div className="flex items-center gap-2 mb-4">
-                                <Youtube size={24} className="text-red-600" />
-                                <h3 className="font-semibold text-deep-black">YouTube Videos</h3>
-                            </div>
-                            <div className="space-y-4">
-                                {socialMedia.youtube.recentVideos.map((video, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="flex gap-3 p-3 bg-red-50 rounded-lg hover:bg-red-100 transition-colors cursor-pointer"
-                                        onClick={() => openMediaModal(video, 'youtube', idx)}
-                                    >
-                                        {/* Video Thumbnail */}
-                                        <div className="w-20 h-20 bg-gradient-to-br from-red-200 to-orange-200 rounded-lg flex-shrink-0 flex items-center justify-center relative">
-                                            <Youtube size={32} className="text-white opacity-50" />
-                                            <div className="absolute bottom-1 right-1 bg-black bg-opacity-75 text-white text-[10px] px-1 rounded">
-                                                {Math.floor(Math.random() * 10) + 5}:00
-                                            </div>
-                                        </div>
-                                        {/* Video Info */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <span className="text-sm font-medium text-gray-700">
-                                                    {new Date(video.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                </span>
-                                            </div>
-                                            <div className="flex gap-3 text-sm">
-                                                <span className="flex items-center gap-1">
-                                                    <Eye size={14} className="text-gray-600" />
-                                                    <span className="font-semibold">{video.views.toLocaleString()}</span>
-                                                </span>
-                                                <span className="flex items-center gap-1">
-                                                    <Heart size={14} className="text-red-600" />
-                                                    <span className="font-semibold">{video.likes.toLocaleString()}</span>
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </Card>
-                    </div>
+                        </div>
+                    </Card>
                 </div>
 
-                {/* Client Reviews Section */}
-                <div>
-                    <h2 className="text-3xl font-bebas tracking-wide text-deep-black mb-6">Client Reviews</h2>
+                {reviews.length > 0 && (
+                    <div>
+                        <h2 className="text-3xl font-bebas tracking-wide text-deep-black mb-6">Client Reviews</h2>
 
-                    {/* Reviews Stats */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                        <Card className="p-6 bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-primary-orange">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-gray-600 mb-2">Average Rating</p>
-                                    <div className="flex items-center gap-3">
-                                        <h3 className="text-5xl font-bebas tracking-wide text-deep-black">
-                                            {reviews.length > 0
-                                                ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-                                                : '0.0'
-                                            }
-                                        </h3>
-                                        <StarRating
-                                            rating={reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0}
-                                            size="lg"
-                                        />
-                                    </div>
-                                    <p className="text-xs text-gray-600 mt-2">Based on {reviews.filter(r => r.isPublished).length} reviews</p>
-                                </div>
-                                <div className="w-20 h-20 bg-gradient-to-br from-primary-orange to-orange-600 rounded-full flex items-center justify-center shadow-lg">
-                                    <Star className="text-white" size={40} fill="currentColor" />
-                                </div>
-                            </div>
-                        </Card>
-
-                        <Card className="p-6">
-                            <h3 className="text-lg font-bebas tracking-wide text-deep-black mb-4">
-                                Rating Distribution
-                            </h3>
-                            <div className="space-y-3">
-                                {[5, 4, 3, 2, 1].map((stars) => {
-                                    const count = reviews.filter(r => r.rating === stars).length;
-                                    const percentage = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
-
-                                    return (
-                                        <div key={stars} className="flex items-center gap-3">
-                                            <div className="flex items-center gap-1 w-16">
-                                                <span className="text-sm font-medium text-gray-700">{stars}</span>
-                                                <Star className="text-primary-orange" size={14} fill="currentColor" />
-                                            </div>
-                                            <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-primary-orange rounded-full transition-all duration-300"
-                                                    style={{ width: `${percentage}%` }}
-                                                />
-                                            </div>
-                                            <span className="text-sm text-gray-600 w-12 text-right">{count}</span>
+                        {/* Reviews Stats */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <Card className="p-6 bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-primary-orange">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-600 mb-2">Average Rating</p>
+                                        <div className="flex items-center gap-3">
+                                            <h3 className="text-5xl font-bebas tracking-wide text-deep-black">
+                                                {averageRating.toFixed(1)}
+                                            </h3>
+                                            <StarRating rating={averageRating} size="lg" />
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        </Card>
-                    </div>
+                                        <p className="text-xs text-gray-600 mt-2">Based on {totalReviews} reviews</p>
+                                    </div>
+                                    <div className="w-20 h-20 bg-gradient-to-br from-primary-orange to-orange-600 rounded-full flex items-center justify-center shadow-lg">
+                                        <Star className="text-white" size={40} fill="currentColor" />
+                                    </div>
+                                </div>
+                            </Card>
 
-                    {/* Recent Reviews */}
-                    {reviews.filter(r => r.isPublished).length > 0 && (
+                            <Card className="p-6">
+                                <h3 className="text-lg font-bebas tracking-wide text-deep-black mb-4">
+                                    Rating Distribution
+                                </h3>
+                                <div className="space-y-3">
+                                    {[5, 4, 3, 2, 1].map((stars) => {
+                                        const count = reviews.filter(r => r.rating === stars).length;
+                                        const percentage = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
+
+                                        return (
+                                            <div key={stars} className="flex items-center gap-3">
+                                                <div className="flex items-center gap-1 w-16">
+                                                    <span className="text-sm font-medium text-gray-700">{stars}</span>
+                                                    <Star className="text-primary-orange" size={14} fill="currentColor" />
+                                                </div>
+                                                <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-primary-orange rounded-full transition-all duration-300"
+                                                        style={{ width: `${percentage}%` }}
+                                                    />
+                                                </div>
+                                                <span className="text-sm text-gray-600 w-12 text-right">{count}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </Card>
+                        </div>
+
+                        {/* Recent Reviews */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {reviews
-                                .filter(r => r.isPublished)
-                                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                                .slice(0, 4)
-                                .map((review) => (
-                                    <Card key={review.id} className="p-6 hover:shadow-lg transition-shadow">
+                                .sort((a, b) => new Date(b.created_at || b.submitted_at || 0) - new Date(a.created_at || a.submitted_at || 0))
+                                .map((review, idx) => (
+                                    <Card key={review.id || idx} className="p-6 hover:shadow-lg transition-shadow">
                                         <div className="flex items-start justify-between mb-3">
                                             <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <h4 className="font-semibold text-deep-black">{review.clientName}</h4>
-                                                    {review.isVerified && (
-                                                        <ShieldCheck className="text-blue-600" size={16} title="Verified Client" />
-                                                    )}
-                                                </div>
-                                                <StarRating rating={review.rating} size="sm" showNumber />
+                                                <h4 className="font-semibold text-deep-black mb-1">
+                                                    {review.reviewer_name || 'Anonymous'}
+                                                </h4>
+                                                <StarRating rating={review.rating || 0} size="sm" showNumber />
                                             </div>
-                                            {review.projectType && (
-                                                <Badge variant="secondary" className="text-xs">
-                                                    {review.projectType}
-                                                </Badge>
-                                            )}
+                                            <div className="flex items-center gap-1 text-xs text-gray-500">
+                                                <Calendar size={14} />
+                                                {new Date(review.created_at || review.submitted_at).toLocaleDateString('en-US', {
+                                                    month: 'short',
+                                                    year: 'numeric'
+                                                })}
+                                            </div>
                                         </div>
                                         <p className="text-gray-700 text-sm leading-relaxed line-clamp-3">
-                                            {review.reviewText}
-                                        </p>
-                                        <p className="text-xs text-gray-500 mt-3">
-                                            {new Date(review.createdAt).toLocaleDateString('en-US', {
-                                                month: 'short',
-                                                year: 'numeric'
-                                            })}
+                                            {review.review || ''}
                                         </p>
                                     </Card>
                                 ))}
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
+
+                {/* Empty Reviews State */}
+                {reviews.length === 0 && (
+                    <div>
+                        <h2 className="text-3xl font-bebas tracking-wide text-deep-black mb-6">Client Reviews</h2>
+                        <Card className="p-12 text-center">
+                            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Star className="text-gray-400" size={40} />
+                            </div>
+                            <h3 className="text-xl font-bebas tracking-wide text-gray-700 mb-2">No Reviews Yet</h3>
+                            <p className="text-gray-500 text-sm">Reviews will appear here once clients submit feedback.</p>
+                        </Card>
+                    </div>
+                )}
 
                 {/* CTA Section */}
                 <Card className="p-8 bg-gradient-to-r from-primary-orange to-orange-600 text-white text-center">
@@ -478,172 +385,97 @@ const PublicPortfolio = () => {
                     Powered by <span className="font-bebas text-primary-orange">INFLURUNNER</span>
                 </p>
             </div>
-
-            {/* Media Modal */}
-            {selectedMedia && (
-                <div
-                    className={`fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4 ${isClosing ? 'animate-backdrop-exit' : 'animate-backdrop'}`}
-                    onClick={closeMediaModal}
-                >
+            {/* Media Detail Modal */}
+            {
+                selectedMedia && (
                     <div
-                        className={`bg-white rounded-lg w-full max-w-2xl lg:max-w-6xl max-h-[90vh] lg:h-[85vh] overflow-hidden relative flex flex-col lg:flex-row ${isClosing ? 'animate-popup-exit' : 'animate-popup'}`}
-                        onClick={(e) => e.stopPropagation()}
-                        onTouchStart={onTouchStart}
-                        onTouchMove={onTouchMove}
-                        onTouchEnd={onTouchEnd}
+                        className={`fixed inset-0 z-50 overflow-y-auto backdrop-blur-sm transition-all duration-200 ease-out ${modalVisible ? 'bg-black/60' : 'bg-black/0'
+                            }`}
+                        onClick={closeModal}
                     >
-                        {/* Left Side - Media (Desktop) */}
-                        <div className="hidden lg:flex lg:w-3/5 bg-gray-100 items-center justify-center relative h-full">
-                            {/* Navigation Buttons */}
-                            <button
-                                onClick={(e) => { e.stopPropagation(); handlePrev(); }}
-                                className="absolute left-4 p-2 bg-white/80 hover:bg-white rounded-full text-deep-black transition-all z-10"
-                                disabled={currentIndex === 0}
+                        <div className="flex items-center justify-center min-h-full p-4">
+                            <div
+                                className={`bg-white rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden transition-all duration-200 ease-out ${modalVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                                    }`}
+                                onClick={(e) => e.stopPropagation()}
                             >
-                                <ChevronLeft size={24} />
-                            </button>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); handleNext(); }}
-                                className="absolute right-4 p-2 bg-white/80 hover:bg-white rounded-full text-deep-black transition-all z-10"
-                                disabled={
-                                    currentIndex === (selectedMedia.platform === 'instagram'
-                                        ? socialMedia?.instagram?.recentPosts.length
-                                        : socialMedia?.youtube?.recentVideos.length) - 1
-                                }
-                            >
-                                <ChevronRight size={24} />
-                            </button>
-
-                            {/* Media Preview */}
-                            <div className={`w-full h-full flex items-center justify-center ${selectedMedia.platform === 'instagram'
-                                ? 'bg-gradient-to-br from-pink-200 to-orange-200'
-                                : 'bg-gradient-to-br from-red-200 to-orange-200'
-                                }`}>
-                                {selectedMedia.platform === 'instagram' ? (
-                                    <Instagram size={80} className="text-white opacity-50" />
-                                ) : (
-                                    <Youtube size={80} className="text-white opacity-50" />
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Right Side - Content */}
-                        <div className="flex-1 flex flex-col h-full overflow-hidden">
-                            {/* Modal Header */}
-                            <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
-                                <div className="flex items-center gap-3">
-                                    {selectedMedia.platform === 'instagram' ? (
-                                        <Instagram size={24} className="text-pink-600" />
-                                    ) : (
-                                        <Youtube size={24} className="text-red-600" />
-                                    )}
-                                    <h3 className="text-xl font-bebas tracking-wide text-deep-black">
-                                        {selectedMedia.platform === 'instagram' ? 'Instagram Post' : 'YouTube Video'}
-                                    </h3>
+                                {/* Header - always on top */}
+                                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                                    <div className="flex items-center gap-2">
+                                        <svg className="w-5 h-5 text-pink-500" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z" />
+                                        </svg>
+                                        <h3 className="font-bebas tracking-wide text-lg text-deep-black">Instagram Post</h3>
+                                    </div>
+                                    <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 transition-colors">
+                                        <X size={24} />
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={closeMediaModal}
-                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                                >
-                                    <X size={24} />
-                                </button>
-                            </div>
 
-                            {/* Scrollable Content */}
-                            <div className="flex-1 overflow-y-auto p-6">
-                                <div
-                                    key={currentIndex}
-                                    className={`${slideDirection === 'right' ? 'animate-slide-in-right' : 'animate-slide-in-left'}`}
-                                >
-                                    {/* Mobile Media Preview (Hidden on Desktop) */}
-                                    <div className={`lg:hidden w-full aspect-square rounded-lg flex items-center justify-center mb-6 transition-all duration-300 ${selectedMedia.platform === 'instagram'
-                                        ? 'bg-gradient-to-br from-pink-200 to-orange-200'
-                                        : 'bg-gradient-to-br from-red-200 to-orange-200'
-                                        }`}>
-                                        {selectedMedia.platform === 'instagram' ? (
-                                            <Instagram size={64} className="text-white opacity-50" />
-                                        ) : (
-                                            <Youtube size={64} className="text-white opacity-50" />
-                                        )}
+                                {/* Body: side-by-side on desktop, stacked on mobile */}
+                                <div className="flex flex-col md:flex-row">
+                                    {/* Media Preview */}
+                                    <div className="w-full md:w-1/2 bg-gradient-to-br from-pink-200 to-orange-200 flex items-center justify-center relative min-h-[250px] md:min-h-[450px]">
+                                        <button className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-100">
+                                            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                                            </svg>
+                                        </button>
+                                        <svg className="w-16 h-16 text-pink-300/50" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z" />
+                                        </svg>
+                                        <button className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-100">
+                                            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </button>
                                     </div>
 
-                                    {/* Dots Indicator (Mobile Only) */}
-                                    <div className="lg:hidden flex justify-center gap-2 mb-6">
-                                        {(selectedMedia.platform === 'instagram' ? socialMedia?.instagram?.recentPosts : socialMedia?.youtube?.recentVideos)?.map((_, idx) => (
-                                            <div
-                                                key={idx}
-                                                className={`w-2 h-2 rounded-full transition-all duration-300 ${idx === currentIndex ? 'bg-primary-orange w-4' : 'bg-gray-300'}`}
-                                            />
-                                        ))}
-                                    </div>
-
-                                    {/* Media Info */}
-                                    <div className="space-y-4">
-                                        <div>
-                                            <p className="text-sm text-gray-500 mb-1">Published Date</p>
-                                            <p className="text-lg font-semibold text-deep-black">
-                                                {new Date(selectedMedia.date).toLocaleDateString('en-US', {
-                                                    weekday: 'long',
-                                                    year: 'numeric',
-                                                    month: 'long',
-                                                    day: 'numeric'
-                                                })}
-                                            </p>
+                                    {/* Stats Panel */}
+                                    <div className="w-full md:w-1/2 p-6">
+                                        <div className="mb-6">
+                                            <p className="text-sm text-gray-500">Published Date</p>
+                                            <p className="font-semibold text-deep-black">--</p>
                                         </div>
 
-                                        {/* Metrics */}
-                                        <div className="grid grid-cols-3 gap-4">
-                                            <div className="p-4 bg-gray-50 rounded-lg">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <Eye size={16} className="text-gray-600" />
-                                                    <p className="text-sm text-gray-600">Views</p>
+                                        <div className="grid grid-cols-3 gap-3 mb-6">
+                                            <div className="p-3 bg-gray-50 rounded-lg text-center">
+                                                <div className="flex items-center justify-center gap-1 mb-1">
+                                                    <Eye size={14} className="text-gray-500" />
+                                                    <span className="text-xs text-gray-500">Views</span>
                                                 </div>
-                                                <p className="text-2xl font-bebas text-deep-black">
-                                                    {selectedMedia.views ? selectedMedia.views.toLocaleString() : 'N/A'}
-                                                </p>
+                                                <p className="font-semibold text-deep-black">--</p>
                                             </div>
-                                            <div className={`p-4 rounded-lg ${selectedMedia.platform === 'instagram' ? 'bg-pink-50' : 'bg-red-50'}`}>
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <Heart size={16} className={selectedMedia.platform === 'instagram' ? 'text-pink-600' : 'text-red-600'} />
-                                                    <p className="text-sm text-gray-600">Likes</p>
+                                            <div className="p-3 bg-pink-50 rounded-lg text-center">
+                                                <div className="flex items-center justify-center gap-1 mb-1">
+                                                    <Heart size={14} className="text-pink-500" />
+                                                    <span className="text-xs text-gray-500">Likes</span>
                                                 </div>
-                                                <p className="text-2xl font-bebas text-deep-black">
-                                                    {selectedMedia.likes.toLocaleString()}
-                                                </p>
+                                                <p className="font-semibold text-deep-black">--</p>
                                             </div>
-                                            <div className="p-4 bg-blue-50 rounded-lg">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <MessageCircle size={16} className="text-blue-600" />
-                                                    <p className="text-sm text-gray-600">Comments</p>
+                                            <div className="p-3 bg-blue-50 rounded-lg text-center">
+                                                <div className="flex items-center justify-center gap-1 mb-1">
+                                                    <MessageCircle size={14} className="text-blue-500" />
+                                                    <span className="text-xs text-gray-500">Comments</span>
                                                 </div>
-                                                <p className="text-2xl font-bebas text-deep-black">
-                                                    {selectedMedia.comments}
-                                                </p>
+                                                <p className="font-semibold text-deep-black">--</p>
                                             </div>
                                         </div>
 
-                                        {/* Engagement Rate */}
-                                        <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg border-2 border-primary-orange">
-                                            <p className="text-sm text-gray-600 mb-1">Engagement Rate</p>
-                                            <p className="text-3xl font-bebas text-primary-orange">
-                                                {selectedMedia.platform === 'youtube'
-                                                    ? ((selectedMedia.likes + selectedMedia.comments) / (selectedMedia.views || 1) * 100).toFixed(2)
-                                                    : ((selectedMedia.likes + selectedMedia.comments) / (socialMedia?.instagram?.followers || 1) * 100).toFixed(2)
-                                                }%
-                                            </p>
+                                        <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-primary-orange rounded-lg mb-6">
+                                            <p className="text-sm text-gray-600">Engagement Rate</p>
+                                            <p className="text-2xl font-bebas tracking-wide text-primary-orange">--%</p>
                                         </div>
 
-                                        <p className="text-sm text-gray-500 text-center mt-4">
-                                            * When connected to API, actual media content will be displayed here
-                                        </p>
+                                        <p className="text-xs text-gray-400 text-center">* When connected to API, actual media content will be displayed here</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

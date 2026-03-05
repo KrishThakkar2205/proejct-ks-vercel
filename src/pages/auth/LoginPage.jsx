@@ -1,51 +1,50 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Card from '../../components/ui/Card';
-import { Eye, EyeOff } from 'lucide-react';
-import { MOCK_USERS } from '../../data/mockData';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { login, clearError } from '../../store/slices/authSlice';
 
 const LoginPage = () => {
     const [formData, setFormData] = useState({
         email: '',
         password: '',
     });
-    const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { loading, error } = useSelector((state) => state.auth);
+
+    // Where to go after login — defaults to /influencer
+    const from = location.state?.from?.pathname || '/influencer';
+
+    // Clear auth errors when component mounts or inputs change
+    useEffect(() => {
+        return () => {
+            dispatch(clearError());
+        };
+    }, [dispatch]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
-        setError(''); // Clear error on input change
+        if (error) dispatch(clearError());
     };
 
-    const navigate = useNavigate();
-
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Check if user exists in mock data
-        const user = MOCK_USERS[formData.email];
-
-        if (!user) {
-            setError('Invalid email or password');
-            return;
-        }
-
-        if (user.password !== formData.password) {
-            setError('Invalid email or password');
-            return;
-        }
-
-        // Store user info in localStorage for session management
-        localStorage.setItem('currentUser', JSON.stringify({
+        const result = await dispatch(login({
             email: formData.email,
-            name: user.name,
-            role: user.role
+            password: formData.password,
         }));
 
-        // Navigate to appropriate dashboard
-        navigate(user.redirectTo);
+        if (!result.error) {
+            navigate(from, { replace: true });
+        }
     };
 
     return (
@@ -58,19 +57,13 @@ const LoginPage = () => {
                     <p className="mt-2 text-sm text-gray-600">
                         Sign in to access your dashboard
                     </p>
-                    {/* Test credentials hint */}
-                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-left">
-                        <p className="font-semibold text-blue-900 mb-1">Test Credentials:</p>
-                        <p className="text-blue-700">Brand: brand@test.com / brand123</p>
-                        <p className="text-blue-700">Influencer: influencer@test.com / influencer123</p>
-                        <p className="text-blue-700">Admin: admin@test.com / admin123</p>
-                    </div>
                 </div>
 
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                     {error && (
-                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-                            {error}
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 animate-fade-in-slide">
+                            <p className="font-medium">Error</p>
+                            <p>{typeof error === 'string' ? error : 'Something went wrong. Please try again.'}</p>
                         </div>
                     )}
 
@@ -112,8 +105,15 @@ const LoginPage = () => {
                         </div>
                     </div>
 
-                    <Button type="submit" className="w-full shadow-lg shadow-orange-100">
-                        Log In
+                    <Button type="submit" className="w-full shadow-lg shadow-orange-100" disabled={loading}>
+                        {loading ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <Loader2 size={18} className="animate-spin" />
+                                Logging in...
+                            </span>
+                        ) : (
+                            'Log In'
+                        )}
                     </Button>
                 </form>
 

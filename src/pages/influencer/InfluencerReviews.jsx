@@ -1,32 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import StarRating from '../../components/ui/StarRating';
-import { Star, ShieldCheck, Calendar, Search } from 'lucide-react';
-import { MOCK_INFLUENCER_DATA } from '../../data/mockData';
+import { Star, ShieldCheck, Calendar, Search, Loader2 } from 'lucide-react';
+import api from '../../utils/api';
 
 const InfluencerReviews = () => {
-    const { reviews } = MOCK_INFLUENCER_DATA;
+    const [reviews, setReviews] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [ratingFilter, setRatingFilter] = useState('');
     const [dateFilter, setDateFilter] = useState('');
 
+    // Fetch reviews from API
+    const fetchReviews = useCallback(async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await api.get('/api/reviews');
+            setReviews(Array.isArray(response.data) ? response.data : []);
+        } catch (err) {
+            const msg =
+                err.response?.data?.detail?.[0]?.msg ||
+                err.response?.data?.detail ||
+                'Failed to load reviews.';
+            setError(msg);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchReviews();
+    }, [fetchReviews]);
+
     // Calculate average rating
     const averageRating = reviews.length > 0
-        ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+        ? reviews.reduce((sum, review) => sum + (review.rating || 0), 0) / reviews.length
         : 0;
 
-    // Filter published reviews
-    const publishedReviews = reviews.filter(review => review.isPublished);
-
     // Apply filters
-    const filteredReviews = publishedReviews.filter(review => {
+    const filteredReviews = reviews.filter(review => {
         // Search filter
         const matchesSearch = !searchQuery || (
-            review.clientName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            review.reviewText?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            review.projectType?.toLowerCase().includes(searchQuery.toLowerCase())
+            (review.reviewer_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (review.review || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (review.brand_name || '').toLowerCase().includes(searchQuery.toLowerCase())
         );
 
         // Rating filter
@@ -35,7 +56,7 @@ const InfluencerReviews = () => {
         // Date filter
         let matchesDate = true;
         if (dateFilter) {
-            const reviewDate = new Date(review.createdAt);
+            const reviewDate = new Date(review.created_at || review.submitted_at);
             const filterDate = new Date(dateFilter);
             matchesDate = reviewDate.toDateString() === filterDate.toDateString();
         }
@@ -45,8 +66,33 @@ const InfluencerReviews = () => {
 
     // Sort reviews by date (newest first)
     const sortedReviews = [...filteredReviews].sort(
-        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        (a, b) => new Date(b.created_at || b.submitted_at || 0) - new Date(a.created_at || a.submitted_at || 0)
     );
+
+    // Loading state
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center">
+                    <Loader2 size={40} className="animate-spin text-primary-orange mx-auto mb-4" />
+                    <p className="text-gray-600">Loading reviews...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <Card className="p-8 text-center max-w-md">
+                    <p className="text-red-600 font-medium mb-2">Error</p>
+                    <p className="text-gray-600 text-sm mb-4">{typeof error === 'string' ? error : 'Something went wrong.'}</p>
+                    <Button onClick={() => fetchReviews()}>Try Again</Button>
+                </Card>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8">
@@ -68,7 +114,7 @@ const InfluencerReviews = () => {
                                 </h3>
                                 <StarRating rating={averageRating} size="lg" />
                             </div>
-                            <p className="text-xs text-gray-500 mt-2">Based on {publishedReviews.length} reviews</p>
+                            <p className="text-xs text-gray-500 mt-2">Based on {reviews.length} reviews</p>
                         </div>
                         <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-orange-200 rounded-full flex items-center justify-center">
                             <Star className="text-primary-orange" size={32} fill="currentColor" />
@@ -81,10 +127,10 @@ const InfluencerReviews = () => {
                         <div>
                             <p className="text-sm font-medium text-gray-500 mb-2">Total Reviews</p>
                             <h3 className="text-4xl font-bebas tracking-wide text-deep-black">
-                                {publishedReviews.length}
+                                {reviews.length}
                             </h3>
                             <p className="text-xs text-gray-500 mt-2">
-                                {reviews.filter(r => r.isVerified).length} verified clients
+                                From completed shoots
                             </p>
                         </div>
                         <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
@@ -95,7 +141,7 @@ const InfluencerReviews = () => {
             </div>
 
             {/* Rating Distribution */}
-            {sortedReviews.length > 0 && (
+            {reviews.length > 0 && (
                 <Card className="p-6">
                     <h3 className="text-lg font-bebas tracking-wide text-deep-black mb-4">
                         Rating Distribution
@@ -133,7 +179,7 @@ const InfluencerReviews = () => {
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                         <input
                             type="text"
-                            placeholder="Search reviews by client, project, or content..."
+                            placeholder="Search reviews by reviewer, content, or brand..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent"
@@ -205,7 +251,9 @@ const InfluencerReviews = () => {
                                 No Reviews Yet
                             </h3>
                             <p className="text-gray-500 text-sm max-w-md">
-                                Your client reviews will appear here once brands you've worked with submit their feedback.
+                                {searchQuery || ratingFilter || dateFilter
+                                    ? 'No reviews match your filters. Try adjusting your search.'
+                                    : 'Your client reviews will appear here once brands you\'ve worked with submit their feedback.'}
                             </p>
                         </div>
                     </Card>
@@ -219,28 +267,21 @@ const InfluencerReviews = () => {
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
                                             <h3 className="text-lg font-semibold text-deep-black">
-                                                {review.clientName}
+                                                {review.reviewer_name || 'Anonymous'}
                                             </h3>
-                                            {review.isVerified && (
-                                                <ShieldCheck
-                                                    className="text-blue-600"
-                                                    size={18}
-                                                    title="Verified Client"
-                                                />
-                                            )}
                                         </div>
                                         <div className="flex items-center gap-3 flex-wrap">
-                                            <StarRating rating={review.rating} size="sm" showNumber />
-                                            {review.projectType && (
+                                            <StarRating rating={review.rating || 0} size="sm" showNumber />
+                                            {review.brand_name && (
                                                 <Badge variant="secondary" className="text-xs">
-                                                    {review.projectType}
+                                                    {review.brand_name}
                                                 </Badge>
                                             )}
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1 text-xs text-gray-500">
                                         <Calendar size={14} />
-                                        {new Date(review.createdAt).toLocaleDateString('en-US', {
+                                        {new Date(review.created_at || review.submitted_at).toLocaleDateString('en-US', {
                                             month: 'short',
                                             day: 'numeric',
                                             year: 'numeric'
@@ -250,7 +291,7 @@ const InfluencerReviews = () => {
 
                                 {/* Review Text */}
                                 <p className="text-gray-700 leading-relaxed">
-                                    {review.reviewText}
+                                    {review.review || ''}
                                 </p>
                             </Card>
                         ))}

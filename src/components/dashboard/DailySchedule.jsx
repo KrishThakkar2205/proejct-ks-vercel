@@ -3,21 +3,37 @@ import Card from '../ui/Card';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import RescheduleModal from './RescheduleModal';
-import { Calendar, Clock, MapPin, Video, Camera, Instagram, Facebook, Youtube, CheckCircle, CalendarClock, X, AlertTriangle } from 'lucide-react';
+import { Calendar, Clock, MapPin, Video, Camera, Instagram, Facebook, Youtube, CheckCircle, CalendarClock, X, AlertTriangle, Loader2 } from 'lucide-react';
+import api from '../../utils/api';
 
-const DailySchedule = ({ onMarkComplete }) => {
-    const [completedEvents, setCompletedEvents] = useState([]);
+const DailySchedule = ({ shoots = [], uploads = [], onMarkComplete }) => {
+    const [completingIds, setCompletingIds] = useState(new Set());
+    const [completeErrorId, setCompleteErrorId] = useState(null);
     const [rescheduleModal, setRescheduleModal] = useState({ isOpen: false, event: null });
     const [rescheduledEvents, setRescheduledEvents] = useState({});
 
-    // Handle marking event as complete
-    const handleMarkComplete = (event) => {
-        // Add to completed list locally
-        setCompletedEvents(prev => [...prev, event.id]);
-
-        // Call parent handler to add to completed shoots
-        if (onMarkComplete) {
-            onMarkComplete(event);
+    // Handle marking event as complete — calls the backend API
+    const handleMarkComplete = async (event) => {
+        setCompletingIds(prev => new Set([...prev, event.id]));
+        setCompleteErrorId(null);
+        try {
+            if (event.type === 'shoot') {
+                await api.put(`/api/shoots/${event.originalId}`, { completed: true });
+            } else {
+                await api.put(`/api/uploads/${event.originalId}`, { completed: true });
+            }
+            // Tell the dashboard to soft-reload its data
+            if (onMarkComplete) onMarkComplete();
+        } catch (err) {
+            console.error('Failed to mark complete:', err);
+            setCompleteErrorId(event.id);
+            setTimeout(() => setCompleteErrorId(null), 4000);
+        } finally {
+            setCompletingIds(prev => {
+                const next = new Set(prev);
+                next.delete(event.id);
+                return next;
+            });
         }
     };
 
@@ -29,15 +45,12 @@ const DailySchedule = ({ onMarkComplete }) => {
     // Handle closing reschedule modal
     const handleCloseModal = () => {
         setRescheduleModal({ isOpen: false, event: null });
-        setRescheduleModalOpen(false);
-        setSelectedEvent(null);
     };
 
     // Handle reschedule confirmation
     const handleRescheduleConfirm = (rescheduleData) => {
         // In production, this would call an API to update the event
         const eventId = rescheduleModal.event.id;
-        console.log('Rescheduling event:', eventId, 'to', rescheduleData);
 
         // Convert 24-hour time to 12-hour format for display
         const [hours, minutes] = rescheduleData.time.split(':');
@@ -53,62 +66,40 @@ const DailySchedule = ({ onMarkComplete }) => {
 
         handleCloseModal();
     };
-    // Mock data - in production, this would come from API and filtered for today
+
+    // Combine shoots and uploads into a single schedule
     const todaySchedule = [
-        {
-            id: 1,
+        ...shoots.map(s => ({
+            id: `shoot-${s.id}`,
+            originalId: s.id,
             type: 'shoot',
-            title: 'Fashion Nova - Spring Collection',
-            brand: 'Fashion Nova',
-            time: '10:00 AM',
-            location: 'Mumbai Studio',
-            status: 'upcoming',
-            platform: null
-        },
-        {
-            id: 2,
+            title: s.brand_name || 'Untitled Brand',
+            campaign: s.campaign,
+            time: s.shoot_time || '12:00 PM', // Fallback if no time provided
+            location: s.location,
+            status: s.status || 'upcoming',
+            platform: null,
+            notes: s.notes
+        })),
+        ...uploads.map(u => ({
+            id: `upload-${u.id}`,
+            originalId: u.id,
             type: 'upload',
-            title: 'Product Review - Tech Gadget',
-            time: '11:30 AM',
-            platform: 'youtube',
-            status: 'upcoming',
-            location: null
-        },
-        {
-            id: 3,
-            type: 'shoot',
-            title: 'Wellness Co - Fitness Challenge',
-            brand: 'Wellness Co',
-            time: '2:00 PM',
-            location: 'Outdoor Park',
-            status: 'in-progress',
-            platform: null
-        },
-        {
-            id: 4,
-            type: 'upload',
-            title: 'Fashion Haul Video',
-            time: '4:00 PM',
-            platform: 'instagram',
-            status: 'upcoming',
-            location: null
-        },
-        {
-            id: 5,
-            type: 'upload',
-            title: 'Behind the Scenes',
-            time: '6:00 PM',
-            platform: 'facebook',
-            status: 'upcoming',
-            location: null
-        }
+            title: u.brand_name || 'Untitled Brand',
+            campaign: u.campaign,
+            time: u.upload_time || '12:00 PM', // Fallback if no time provided
+            platform: u.platform?.toLowerCase() || null,
+            status: u.status || 'upcoming',
+            location: null,
+            notes: u.notes
+        }))
     ];
 
     // Apply rescheduled times to events
     const scheduleWithUpdates = todaySchedule.map(event => ({
         ...event,
-        time: rescheduledEvents[event.id]?.time || event.time,
-        date: rescheduledEvents[event.id]?.date || null
+        time: rescheduledEvents[event.originalId]?.displayTime || event.time,
+        date: rescheduledEvents[event.originalId]?.date || null
     }));
 
     const getPlatformIcon = (platform) => {
@@ -163,7 +154,7 @@ const DailySchedule = ({ onMarkComplete }) => {
     // Sort events by time and get earliest shoot and upload
     const getEarliestEvents = () => {
         const sortedSchedule = [...scheduleWithUpdates].sort((a, b) =>
-            convertTo24Hour(rescheduledEvents[a.id]?.displayTime || a.time) - convertTo24Hour(rescheduledEvents[b.id]?.displayTime || b.time)
+            convertTo24Hour(rescheduledEvents[a.originalId]?.displayTime || a.time) - convertTo24Hour(rescheduledEvents[b.originalId]?.displayTime || b.time)
         );
 
         const earliestShoot = sortedSchedule.find(item => item.type === 'shoot');
@@ -175,8 +166,8 @@ const DailySchedule = ({ onMarkComplete }) => {
 
         // Sort the selected events by time
         return events.sort((a, b) =>
-            convertTo24Hour(rescheduledEvents[a.id]?.displayTime || a.time) -
-            convertTo24Hour(rescheduledEvents[b.id]?.displayTime || b.time)
+            convertTo24Hour(rescheduledEvents[a.originalId]?.displayTime || a.time) -
+            convertTo24Hour(rescheduledEvents[b.originalId]?.displayTime || b.time)
         );
     };
 
@@ -186,9 +177,9 @@ const DailySchedule = ({ onMarkComplete }) => {
         <Card className="p-6 h-auto lg:h-full flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between mb-6 flex-shrink-0">
-                <div>
-                    <h2 className="text-2xl font-bebas tracking-wide text-deep-black">Today's Schedule</h2>
-                    <p className="text-sm text-gray-600 mt-1">
+                <div className="min-w-0">
+                    <h2 className="text-xl font-bebas tracking-wide text-deep-black">Today's Schedule</h2>
+                    <p className="text-sm text-gray-600 mt-0.5">
                         {new Date().toLocaleDateString('en-US', {
                             weekday: 'long',
                             month: 'long',
@@ -196,17 +187,17 @@ const DailySchedule = ({ onMarkComplete }) => {
                         })}
                     </p>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
+                <div className="flex items-center gap-1.5 text-xs flex-shrink-0">
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-gray-600">Next {displayEvents.length} event{displayEvents.length !== 1 ? 's' : ''}</span>
+                    <span className="text-gray-500 hidden xs:inline">{displayEvents.length} event{displayEvents.length !== 1 ? 's' : ''}</span>
                 </div>
             </div>
 
             {displayEvents.length === 0 ? (
-                <div className="text-center py-12">
-                    <Calendar size={48} className="mx-auto text-gray-300 mb-3" />
-                    <p className="text-gray-500">No events scheduled for today</p>
-                    <p className="text-sm text-gray-400 mt-1">Enjoy your free time!</p>
+                <div className="flex-1 flex flex-col items-center justify-center min-h-[250px] text-gray-400">
+                    <Calendar size={48} className="mb-4 text-gray-300" strokeWidth={1.5} />
+                    <p className="text-gray-600 font-medium text-lg">No events scheduled</p>
+                    <p className="text-sm mt-1">Enjoy your free time!</p>
                 </div>
             ) : (
                 <div className="space-y-4 lg:max-h-[600px] lg:overflow-y-auto pr-2">
@@ -221,9 +212,9 @@ const DailySchedule = ({ onMarkComplete }) => {
                                 <div className="flex items-center gap-2 bg-orange-50 px-3 py-1.5 rounded-lg border border-primary-orange">
                                     <Clock className="w-3.5 h-3.5 text-primary-orange flex-shrink-0" />
                                     <span className="text-sm font-semibold text-deep-black whitespace-nowrap">
-                                        {rescheduledEvents[item.id]?.displayTime || item.time}
+                                        {rescheduledEvents[item.originalId]?.displayTime || item.time}
                                     </span>
-                                    {rescheduledEvents[item.id] && (
+                                    {rescheduledEvents[item.originalId] && (
                                         <span className="text-[9px] text-green-600 font-medium">✓</span>
                                     )}
                                 </div>
@@ -256,7 +247,7 @@ const DailySchedule = ({ onMarkComplete }) => {
                                     >
                                         {item.type === 'shoot' ? 'Shoot' : 'Upload'}
                                     </Badge>
-                                    {rescheduledEvents[item.id] && (
+                                    {rescheduledEvents[item.originalId] && (
                                         <span className="text-[10px] text-green-600 font-medium">Rescheduled</span>
                                     )}
                                 </div>
@@ -264,9 +255,9 @@ const DailySchedule = ({ onMarkComplete }) => {
 
                             {/* Details */}
                             <div className="space-y-1.5 mb-3 ml-6 text-xs sm:text-sm text-gray-600">
-                                {item.type === 'shoot' && item.brand && (
+                                {item.campaign && (
                                     <div className="font-medium text-primary-orange">
-                                        {item.brand}
+                                        {item.campaign}
                                     </div>
                                 )}
 
@@ -285,26 +276,45 @@ const DailySchedule = ({ onMarkComplete }) => {
                                         </span>
                                     </div>
                                 )}
+
+                                {item.notes && (
+                                    <div className="mt-2 p-2 bg-gray-50 border border-gray-100 rounded text-xs text-gray-500 italic">
+                                        {item.notes}
+                                    </div>
+                                )}
                             </div>
 
+                            {/* Error Message */}
+                            {completeErrorId === item.id && (
+                                <p className="text-xs text-red-500 mt-1 text-center">
+                                    Failed to mark complete. Please try again.
+                                </p>
+                            )}
+
                             {/* Action Buttons */}
-                            <div className="flex gap-2">
+                            <div className="flex flex-col xs:flex-row gap-2">
                                 <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => handleReschedule(item)}
-                                    className="flex-1 text-xs sm:text-sm"
+                                    className="flex-1 text-xs"
+                                    disabled={completingIds.has(item.id)}
                                 >
                                     Reschedule
                                 </Button>
                                 <Button
-                                    variant={completedEvents.includes(item.id) ? "success" : "primary"}
+                                    variant="primary"
                                     size="sm"
                                     onClick={() => handleMarkComplete(item)}
-                                    className="flex-1 text-xs sm:text-sm"
-                                    disabled={completedEvents.includes(item.id)}
+                                    className="flex-1 text-xs"
+                                    disabled={completingIds.has(item.id)}
                                 >
-                                    {completedEvents.includes(item.id) ? 'Completed' : 'Mark Complete'}
+                                    {completingIds.has(item.id) ? (
+                                        <>
+                                            <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                                            Saving...
+                                        </>
+                                    ) : 'Mark Complete'}
                                 </Button>
                             </div>
                         </div>

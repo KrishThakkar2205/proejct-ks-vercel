@@ -7,6 +7,7 @@ const DateInput = ({
     onChange,
     required = false,
     name,
+    min,
     className = ""
 }) => {
     const inputRef = useRef(null);
@@ -55,6 +56,7 @@ const DateInput = ({
                     value={value}
                     onChange={onChange}
                     required={required}
+                    min={min}
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full -z-10"
                     tabIndex={-1}
                 />

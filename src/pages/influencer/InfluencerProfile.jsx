@@ -1,16 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
-import { Instagram, Facebook, Youtube, MapPin, Mail, Camera, Edit2, Check, X } from 'lucide-react';
-import { MOCK_INFLUENCER_DATA } from '../../data/mockData';
+import { Instagram, MapPin, Mail, Camera, Edit2, Check, X, Loader2 } from 'lucide-react';
+import api, { API_BASE_URL } from '../../utils/api';
 
 const InfluencerProfile = () => {
-    const { profile, socialMedia } = MOCK_INFLUENCER_DATA;
     const [isEditing, setIsEditing] = useState(false);
-    const [formData, setFormData] = useState(profile);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [profileData, setProfileData] = useState(null);
+    const [formData, setFormData] = useState(null);
+    const [saving, setSaving] = useState(false);
+    const [saveError, setSaveError] = useState(null);
+    const [saveSuccess, setSaveSuccess] = useState(false);
+    const [profilePictureFile, setProfilePictureFile] = useState(null);
+    const [profilePicturePreview, setProfilePicturePreview] = useState(null);
+    const fileInputRef = useRef(null);
 
     const categories = [
         'Fashion',
@@ -33,6 +41,51 @@ const InfluencerProfile = () => {
         'Sustainability'
     ];
 
+    // Fetch profile data from API
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                const response = await api.get('/api/profile');
+                const data = response.data;
+
+                // Map API response to component data structure
+                const mapped = {
+                    id: data.id || '',
+                    name: data.name || '',
+                    email: data.email_id || '',
+                    phone: data.phone_number || '',
+                    bio: data.bio || '',
+                    location: data.location || '',
+                    categories: data.categories || [],
+                    budgetRange: {
+                        min: data.min_price || 0,
+                        max: data.max_price || 0,
+                    },
+                    availability: true,
+                    joinedDate: data.created_at || new Date().toISOString(),
+                    profilePicture: data.profile_picture_location ? `${API_BASE_URL}/${data.profile_picture_location}` : null,
+                    instagram: data.instagram || false,
+                };
+
+                setProfileData(mapped);
+                setFormData(mapped);
+            } catch (err) {
+                const message =
+                    err.response?.data?.detail?.[0]?.msg ||
+                    err.response?.data?.detail ||
+                    err.response?.data?.message ||
+                    'Failed to load profile. Please try again.';
+                setError(message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProfile();
+    }, []);
+
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -44,16 +97,113 @@ const InfluencerProfile = () => {
         setFormData({ ...formData, categories: newCategories });
     };
 
-    const handleSave = () => {
-        // In production, this would save to backend
-        console.log('Saving profile:', formData);
-        setIsEditing(false);
+    const handleProfilePictureChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setProfilePictureFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => setProfilePicturePreview(reader.result);
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleSave = async () => {
+        try {
+            setSaving(true);
+            setSaveError(null);
+            setSaveSuccess(false);
+
+            const payload = new FormData();
+            if (formData.name) payload.append('name', formData.name);
+            if (formData.bio) payload.append('bio', formData.bio);
+            if (formData.location) payload.append('location', formData.location);
+            if (formData.budgetRange.min != null) payload.append('min_price', formData.budgetRange.min);
+            if (formData.budgetRange.max != null) payload.append('max_price', formData.budgetRange.max);
+            if (formData.categories && formData.categories.length > 0) {
+                formData.categories.forEach((cat) => payload.append('categories', cat));
+            }
+            if (profilePictureFile) {
+                payload.append('profile_picture', profilePictureFile);
+            }
+
+            await api.put('/api/profile', payload, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+
+            // Soft reload — re-fetch fresh profile data from server
+            const freshResponse = await api.get('/api/profile');
+            const data = freshResponse.data;
+            const mapped = {
+                id: data.id || '',
+                name: data.name || '',
+                email: data.email_id || '',
+                phone: data.phone_number || '',
+                bio: data.bio || '',
+                location: data.location || '',
+                categories: data.categories || [],
+                budgetRange: {
+                    min: data.min_price || 0,
+                    max: data.max_price || 0,
+                },
+                availability: true,
+                joinedDate: data.created_at || new Date().toISOString(),
+                profilePicture: data.profile_picture_location ? `${API_BASE_URL}/${data.profile_picture_location}` : null,
+                instagram: data.instagram || false,
+            };
+
+            setProfileData(mapped);
+            setFormData(mapped);
+            setProfilePictureFile(null);
+            setProfilePicturePreview(null);
+            setIsEditing(false);
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 3000);
+        } catch (err) {
+            const message =
+                err.response?.data?.detail?.[0]?.msg ||
+                err.response?.data?.detail ||
+                err.response?.data?.message ||
+                'Failed to save profile. Please try again.';
+            setSaveError(message);
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleCancel = () => {
-        setFormData(profile);
+        setFormData(profileData);
+        setProfilePictureFile(null);
+        setProfilePicturePreview(null);
+        setSaveError(null);
         setIsEditing(false);
     };
+
+    // Loading state
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center">
+                    <Loader2 size={40} className="animate-spin text-primary-orange mx-auto mb-4" />
+                    <p className="text-gray-600">Loading profile...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <Card className="p-8 text-center max-w-md">
+                    <p className="text-red-600 font-medium mb-2">Error</p>
+                    <p className="text-gray-600 text-sm mb-4">{typeof error === 'string' ? error : 'Something went wrong.'}</p>
+                    <Button onClick={() => window.location.reload()}>Try Again</Button>
+                </Card>
+            </div>
+        );
+    }
+
+    if (!formData) return null;
 
     return (
         <div className="space-y-8">
@@ -76,7 +226,7 @@ const InfluencerProfile = () => {
                     <div className="space-y-3">
                         <input
                             type="text"
-                            value={`${window.location.origin}/portfolio/${formData.name.toLowerCase().replace(/\s+/g, '-')}`}
+                            value={`${window.location.origin}/portfolio/${formData.id}`}
                             readOnly
                             className="w-full px-3 py-2 text-sm border border-orange-200 rounded-lg bg-white overflow-x-auto"
                         />
@@ -85,7 +235,7 @@ const InfluencerProfile = () => {
                                 variant="primary"
                                 size="sm"
                                 onClick={() => {
-                                    const link = `${window.location.origin}/portfolio/${formData.name.toLowerCase().replace(/\s+/g, '-')}`;
+                                    const link = `${window.location.origin}/portfolio/${formData.id}`;
                                     navigator.clipboard.writeText(link);
                                     alert('Portfolio link copied to clipboard!');
                                 }}
@@ -94,7 +244,7 @@ const InfluencerProfile = () => {
                                 Copy Link
                             </Button>
                             <Link
-                                to={`/portfolio/${formData.name.toLowerCase().replace(/\s+/g, '-')}`}
+                                to={`/portfolio/${formData.id}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex-1"
@@ -120,17 +270,21 @@ const InfluencerProfile = () => {
                         <div className="flex items-center justify-between mb-6 gap-4">
                             <h2 className="text-xl font-bebas tracking-wide font-bold text-deep-black">Basic Information</h2>
                             {!isEditing ? (
-                                <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)} className="whitespace-nowrap">
+                                <Button variant="secondary" size="sm" onClick={() => { setIsEditing(true); setSaveSuccess(false); setSaveError(null); }} className="whitespace-nowrap">
                                     <Edit2 size={16} className="mr-2" />
                                     Edit Profile
                                 </Button>
                             ) : (
                                 <div className="flex gap-2">
-                                    <Button variant="primary" size="sm" onClick={handleSave} className="whitespace-nowrap">
-                                        <Check size={16} className="mr-2" />
-                                        Save
+                                    <Button variant="primary" size="sm" onClick={handleSave} disabled={saving} className="whitespace-nowrap">
+                                        {saving ? (
+                                            <Loader2 size={16} className="mr-2 animate-spin" />
+                                        ) : (
+                                            <Check size={16} className="mr-2" />
+                                        )}
+                                        {saving ? 'Saving...' : 'Save'}
                                     </Button>
-                                    <Button variant="white" size="sm" onClick={handleCancel} className="whitespace-nowrap">
+                                    <Button variant="white" size="sm" onClick={handleCancel} disabled={saving} className="whitespace-nowrap">
                                         <X size={16} className="mr-2" />
                                         Cancel
                                     </Button>
@@ -138,17 +292,44 @@ const InfluencerProfile = () => {
                             )}
                         </div>
 
+                        {/* Save Success / Error Messages */}
+                        {saveSuccess && (
+                            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+                                Profile updated successfully!
+                            </div>
+                        )}
+                        {saveError && (
+                            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                                {typeof saveError === 'string' ? saveError : 'Failed to save profile.'}
+                            </div>
+                        )}
+
                         <div className="flex flex-col sm:flex-row items-start gap-6 mb-6">
-                            <div className="w-24 h-24 bg-orange-100 rounded-full flex items-center justify-center text-primary-orange text-3xl font-bold flex-shrink-0 mx-auto sm:mx-0">
-                                {formData.name.charAt(0)}
+                            <div className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold flex-shrink-0 mx-auto sm:mx-0 overflow-hidden bg-orange-100 text-primary-orange">
+                                {profilePicturePreview ? (
+                                    <img src={profilePicturePreview} alt="Preview" className="w-full h-full object-cover" />
+                                ) : formData.profilePicture ? (
+                                    <img src={formData.profilePicture} alt={formData.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    formData.name.charAt(0)
+                                )}
                             </div>
                             {isEditing && (
                                 <div className="flex-1 w-full sm:w-auto text-center sm:text-left">
-                                    <Button variant="white" size="sm" className="w-full sm:w-auto">
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        accept="image/jpeg,image/png,image/gif"
+                                        className="hidden"
+                                        onChange={handleProfilePictureChange}
+                                    />
+                                    <Button variant="white" size="sm" className="w-full sm:w-auto" onClick={() => fileInputRef.current?.click()}>
                                         <Camera size={16} className="mr-2" />
                                         Change Photo
                                     </Button>
-                                    <p className="text-xs text-gray-500 mt-2">JPG, PNG or GIF. Max size 2MB.</p>
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        {profilePictureFile ? profilePictureFile.name : 'JPG, PNG or GIF. Max size 2MB.'}
+                                    </p>
                                 </div>
                             )}
                         </div>
@@ -241,7 +422,7 @@ const InfluencerProfile = () => {
                                     budgetRange: { ...formData.budgetRange, min: parseInt(e.target.value) }
                                 })}
                                 disabled={!isEditing}
-                                prefix="$"
+                                prefix="₹"
                             />
                             <Input
                                 label="Maximum Budget"
@@ -253,7 +434,7 @@ const InfluencerProfile = () => {
                                     budgetRange: { ...formData.budgetRange, max: parseInt(e.target.value) }
                                 })}
                                 disabled={!isEditing}
-                                prefix="$"
+                                prefix="₹"
                             />
                         </div>
                     </Card>
@@ -270,7 +451,7 @@ const InfluencerProfile = () => {
                         <div className="space-y-3">
                             <input
                                 type="text"
-                                value={`${window.location.origin}/portfolio/${formData.name.toLowerCase().replace(/\s+/g, '-')}`}
+                                value={`${window.location.origin}/portfolio/${formData.id}`}
                                 readOnly
                                 className="w-full px-3 py-2 text-sm border border-orange-200 rounded-lg bg-white overflow-x-auto"
                             />
@@ -279,7 +460,7 @@ const InfluencerProfile = () => {
                                     variant="primary"
                                     size="sm"
                                     onClick={() => {
-                                        const link = `${window.location.origin}/portfolio/${formData.name.toLowerCase().replace(/\s+/g, '-')}`;
+                                        const link = `${window.location.origin}/portfolio/${formData.id}`;
                                         navigator.clipboard.writeText(link);
                                         alert('Portfolio link copied to clipboard!');
                                     }}
@@ -288,7 +469,7 @@ const InfluencerProfile = () => {
                                     Copy Link
                                 </Button>
                                 <Link
-                                    to={`/portfolio/${formData.name.toLowerCase().replace(/\s+/g, '-')}`}
+                                    to={`/portfolio/${formData.id}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex-1"
@@ -327,57 +508,45 @@ const InfluencerProfile = () => {
                     <Card className="p-6">
                         <h3 className="font-semibold text-deep-black mb-4">Social Media</h3>
                         <div className="space-y-4">
-                            {/* Instagram */}
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gradient-to-r from-pink-50 to-orange-50 rounded-lg gap-3">
-                                <div className="flex items-center gap-3">
-                                    <Instagram size={20} className="text-pink-600" />
-                                    <div>
-                                        <p className="text-sm font-medium text-deep-black">Instagram</p>
-                                        {socialMedia.instagram.connected && (
-                                            <p className="text-xs text-gray-600">{socialMedia.instagram.username}</p>
-                                        )}
+                            {formData.instagram ? (
+                                /* Connected state */
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gradient-to-r from-pink-50 to-orange-50 rounded-lg gap-3">
+                                    <div className="flex items-center gap-3">
+                                        <Instagram size={20} className="text-pink-600" />
+                                        <div>
+                                            <p className="text-sm font-medium text-deep-black">Instagram</p>
+                                        </div>
                                     </div>
+                                    <Badge variant="success" className="self-start sm:self-auto">
+                                        Connected
+                                    </Badge>
                                 </div>
-                                <Badge variant={socialMedia.instagram.connected ? 'success' : 'default'} className="self-start sm:self-auto">
-                                    {socialMedia.instagram.connected ? 'Connected' : 'Connect'}
-                                </Badge>
-                            </div>
-
-                            {/* Facebook */}
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-blue-50 rounded-lg gap-3">
-                                <div className="flex items-center gap-3">
-                                    <Facebook size={20} className="text-blue-600" />
-                                    <div>
-                                        <p className="text-sm font-medium text-deep-black">Facebook</p>
-                                        {socialMedia.facebook.connected && (
-                                            <p className="text-xs text-gray-600">{socialMedia.facebook.username}</p>
-                                        )}
-                                    </div>
+                            ) : (
+                                /* Not connected state — show connect button */
+                                <div className="p-4 bg-gradient-to-r from-pink-50 to-orange-50 rounded-lg text-center space-y-3">
+                                    <Instagram size={28} className="text-pink-600 mx-auto" />
+                                    <p className="text-sm text-gray-600">Connect your Instagram to sync your profile and metrics</p>
+                                    <Button
+                                        variant="primary"
+                                        size="sm"
+                                        className="w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 border-none"
+                                        onClick={async () => {
+                                            try {
+                                                const response = await api.get('/api/social-media/connect/instagram');
+                                                if (response.data?.url) {
+                                                    window.location.href = response.data.url;
+                                                }
+                                            } catch (err) {
+                                                alert(err.response?.data?.detail || 'Failed to connect Instagram. Please try again.');
+                                            }
+                                        }}
+                                    >
+                                        <Instagram size={16} className="mr-2" />
+                                        Connect Instagram
+                                    </Button>
                                 </div>
-                                <Badge variant={socialMedia.facebook.connected ? 'success' : 'default'} className="self-start sm:self-auto">
-                                    {socialMedia.facebook.connected ? 'Connected' : 'Connect'}
-                                </Badge>
-                            </div>
-
-                            {/* YouTube */}
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-red-50 rounded-lg gap-3">
-                                <div className="flex items-center gap-3">
-                                    <Youtube size={20} className="text-red-600" />
-                                    <div>
-                                        <p className="text-sm font-medium text-deep-black">YouTube</p>
-                                        {socialMedia.youtube.connected && (
-                                            <p className="text-xs text-gray-600">{socialMedia.youtube.username}</p>
-                                        )}
-                                    </div>
-                                </div>
-                                <Badge variant={socialMedia.youtube.connected ? 'success' : 'default'} className="self-start sm:self-auto">
-                                    {socialMedia.youtube.connected ? 'Connected' : 'Connect'}
-                                </Badge>
-                            </div>
+                            )}
                         </div>
-                        <p className="text-xs text-gray-500 mt-4">
-                            Last synced: {new Date(socialMedia.instagram.lastSync).toLocaleString()}
-                        </p>
                     </Card>
 
                     {/* Account Info */}

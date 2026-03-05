@@ -1,167 +1,263 @@
 import React, { useState } from 'react';
 import Card from '../ui/Card';
-import Badge from '../ui/Badge';
 import Button from '../ui/Button';
-import { CheckCircle, Calendar, Clock, Award, Link as LinkIcon, Check } from 'lucide-react';
+import { CheckCircle, Clock, Link as LinkIcon, Check, Loader2, AlertCircle, Upload, Video, Star } from 'lucide-react';
+import api from '../../utils/api';
 
-const CompletedShootsToday = ({ completedShoots = [] }) => {
-    const [generatedLinks, setGeneratedLinks] = useState({});
+const CompletedShootsToday = ({ completedShoots: apiShoots = [], completedUploads: apiUploads = [] }) => {
+    const reviewBaseUrl = `${window.location.origin}/review/`;
     const [copiedId, setCopiedId] = useState(null);
+    const [generatedLinks, setGeneratedLinks] = useState({});
+    const [generatingIds, setGeneratingIds] = useState(new Set());
+    const [generateErrors, setGenerateErrors] = useState({});
 
-    // Generate review link
-    const generateReviewLink = (shootId) => {
-        // In production, this would generate a unique review link from the backend
-        const reviewLink = `${window.location.origin}/review/${shootId}`;
-
-        setGeneratedLinks(prev => ({
-            ...prev,
-            [shootId]: reviewLink
-        }));
+    // Call POST /api/reviews/generate/{shoot_id} to get a unique token
+    const generateReviewLink = async (shootId, compositeId) => {
+        setGeneratingIds(prev => new Set([...prev, compositeId]));
+        setGenerateErrors(prev => { const n = { ...prev }; delete n[compositeId]; return n; });
+        try {
+            const res = await api.post(`/api/reviews/generate/${shootId}`);
+            const data = res.data;
+            const token = data?.review_id || data?.token || data?.review_token || data?.id || shootId;
+            const link = `${reviewBaseUrl}${token}`;
+            setGeneratedLinks(prev => ({ ...prev, [compositeId]: link }));
+        } catch (err) {
+            const msg =
+                err.response?.data?.detail?.[0]?.msg ||
+                err.response?.data?.detail ||
+                'Failed to generate link. Try again.';
+            setGenerateErrors(prev => ({ ...prev, [compositeId]: msg }));
+        } finally {
+            setGeneratingIds(prev => {
+                const next = new Set(prev);
+                next.delete(compositeId);
+                return next;
+            });
+        }
     };
 
-    // Copy link to clipboard
-    const copyLink = (shootId, link) => {
+    const copyLink = (compositeId, link) => {
         navigator.clipboard.writeText(link).then(() => {
-            setCopiedId(shootId);
+            setCopiedId(compositeId);
             setTimeout(() => setCopiedId(null), 2000);
         });
     };
 
+    const formatTime = (val) => {
+        if (!val) return null;
+        if (val.includes('T')) {
+            return new Date(val).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        }
+        if (val.includes(':')) {
+            const [hours, minutes] = val.split(':');
+            const hour = parseInt(hours);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const h = hour % 12 || 12;
+            return `${h}:${minutes} ${ampm}`;
+        }
+        return val;
+    };
+
+    const completedEvents = [
+        ...apiShoots.map(s => ({
+            id: `shoot-${s.id}`,
+            originalId: s.id,
+            brand: s.brand_name || 'Untitled Brand',
+            campaign: s.name || s.campaign || null,
+            type: 'shoot',
+            completedAt: s.completed_at || s.shoot_time || null,
+            notes: s.notes || null,
+            rating: s.rating || null,
+            // if the API already generated a review link token, store it
+            reviewToken: s.review_generated ? (s.review_token || s.review_id || s.id) : null,
+        })),
+        ...apiUploads.map(u => ({
+            id: `upload-${u.id}`,
+            originalId: u.id,
+            brand: u.brand_name || 'Untitled Brand',
+            campaign: u.name || u.campaign || null,
+            type: 'upload',
+            completedAt: u.completed_at || u.upload_time || null,
+            notes: u.notes || null,
+            rating: u.rating || null,
+            reviewToken: null,
+        })),
+    ];
+
+    const getReviewLink = (item) => {
+        // Prefer locally-generated link, then pre-existing token from API
+        return generatedLinks[item.id] || (item.reviewToken ? `${reviewBaseUrl}${item.reviewToken}` : null);
+    };
+
     return (
-        <Card className="p-6 h-auto lg:h-full flex flex-col">
-            <div className="flex items-center justify-between mb-6 flex-shrink-0">
+        <Card className="p-6 flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-5 flex-shrink-0">
                 <div>
                     <h2 className="text-xl font-bebas tracking-wide text-deep-black">Completed Today</h2>
-                    <p className="text-sm text-gray-600 mt-1">Tasks finished</p>
+                    <p className="text-sm text-gray-500 mt-0.5">
+                        {completedEvents.length > 0
+                            ? `${completedEvents.length} task${completedEvents.length !== 1 ? 's' : ''} done`
+                            : 'Tasks finished today'}
+                    </p>
                 </div>
                 <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center">
                     <CheckCircle className="w-6 h-6 text-green-600" />
                 </div>
             </div>
 
-            {/* Count Badge */}
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4 mb-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <p className="text-sm text-gray-600">Total Completed</p>
-                        <h3 className="text-3xl font-bebas tracking-wide text-green-600">
-                            {completedShoots.length}
-                        </h3>
+            {/* Content */}
+            <div className="flex-1 flex flex-col min-h-[250px]">
+                {completedEvents.length === 0 ? (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center py-8">
+                        <CheckCircle size={48} className="mb-3 text-gray-200" strokeWidth={1.5} />
+                        <p className="text-gray-600 font-medium">No tasks completed yet</p>
+                        <p className="text-sm text-gray-400 mt-1">Complete a shoot or upload to see it here</p>
                     </div>
-                    <Award className="w-8 h-8 text-green-600 opacity-50" />
-                </div>
-            </div>
+                ) : (
+                    <div className="space-y-3 overflow-y-auto pr-1">
+                        {completedEvents.map((item) => {
+                            const reviewLink = getReviewLink(item);
+                            const rating = item.rating;
+                            const timeLabel = formatTime(item.completedAt);
 
-            {completedShoots.length === 0 ? (
-                <div className="text-center py-8">
-                    <CheckCircle size={40} className="mx-auto text-gray-300 mb-3" />
-                    <p className="text-gray-500 text-sm">No tasks completed yet</p>
-                    <p className="text-xs text-gray-400 mt-1">Keep going!</p>
-                </div>
-            ) : (
-                <div className="space-y-3 lg:max-h-[600px] lg:overflow-y-auto pr-2">
-                    {completedShoots.map((shoot) => (
-                        <div
-                            key={shoot.id}
-                            className="p-4 bg-green-50 border border-green-200 rounded-lg hover:shadow-md transition-shadow group"
-                        >
-                            <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                                    <CheckCircle className="w-5 h-5 text-white" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <h4 className="font-semibold text-deep-black text-sm truncate">
-                                            {shoot.brand}
-                                        </h4>
-                                        {/* Type Badge */}
-                                        {shoot.type && (
-                                            <Badge
-                                                variant={shoot.type === 'shoot' ? 'default' : 'secondary'}
-                                                className={shoot.type === 'shoot'
-                                                    ? 'bg-purple-50 text-purple-700 border-purple-200 text-xs'
-                                                    : 'bg-blue-50 text-blue-700 border-blue-200 text-xs'
-                                                }
-                                            >
-                                                {shoot.type === 'shoot' ? 'Shoot' : 'Upload'}
-                                            </Badge>
-                                        )}
-                                    </div>
-                                    <p className="text-xs text-gray-600 truncate">
-                                        {shoot.campaign}
-                                    </p>
-                                    <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
-                                        <div className="flex items-center gap-1">
-                                            <Clock className="w-3 h-3" />
-                                            <span>{shoot.completedAt}</span>
+                            return (
+                                <div
+                                    key={item.id}
+                                    className="p-4 bg-green-50 border border-green-200 rounded-xl"
+                                >
+                                    {/* Top Row */}
+                                    <div className="flex items-start gap-3">
+                                        {/* Icon */}
+                                        <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <CheckCircle className="w-5 h-5 text-white" />
                                         </div>
-                                        <div className="flex items-center gap-0.5">
-                                            {[...Array(5)].map((_, i) => (
-                                                <span
-                                                    key={i}
-                                                    className={i < shoot.rating ? 'text-yellow-500' : 'text-gray-300'}
-                                                >
-                                                    ★
+
+                                        {/* Meta */}
+                                        <div className="flex-1 min-w-0">
+                                            {/* Brand + Type */}
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <h4 className="font-bold text-deep-black text-sm tracking-wide uppercase">
+                                                    {item.brand}
+                                                </h4>
+                                                <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${item.type === 'shoot'
+                                                    ? 'text-purple-600'
+                                                    : 'text-blue-600'
+                                                    }`}>
+                                                    {item.type === 'shoot' ? 'Shoot' : 'Upload'}
                                                 </span>
-                                            ))}
+                                            </div>
+
+                                            {/* Campaign */}
+                                            {item.campaign && (
+                                                <p className="text-sm text-gray-600 mt-0.5 truncate">{item.campaign}</p>
+                                            )}
+
+                                            {/* Time + Stars */}
+                                            {(timeLabel || rating != null) && (
+                                                <div className="flex items-center gap-3 mt-1.5">
+                                                    {timeLabel && (
+                                                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                                                            <Clock className="w-3 h-3" />
+                                                            <span>{timeLabel}</span>
+                                                        </div>
+                                                    )}
+                                                    {rating != null && (
+                                                        <div className="flex items-center gap-0.5">
+                                                            {[...Array(5)].map((_, i) => (
+                                                                <Star
+                                                                    key={i}
+                                                                    className={`w-3 h-3 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* Notes */}
+                                            {item.notes && (
+                                                <div className="mt-2 text-xs text-gray-600 italic bg-white/60 border border-green-200 rounded-lg px-2.5 py-1.5 line-clamp-2">
+                                                    {item.notes}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-                                </div>
-                            </div>
 
-                            {/* Generate Review Link Section - Below main content */}
-                            {shoot.type === 'shoot' && (
-                                <div className="mt-3 pt-3 border-t border-green-300">
-                                    {!generatedLinks[shoot.id] ? (
-                                        <Button
-                                            variant="primary"
-                                            size="sm"
-                                            onClick={() => generateReviewLink(shoot.id)}
-                                            className="w-full"
-                                        >
-                                            <LinkIcon className="w-4 h-4 mr-2" />
-                                            Generate Review Link
-                                        </Button>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            <div className="flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={generatedLinks[shoot.id]}
-                                                    readOnly
-                                                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded bg-white focus:outline-none"
-                                                />
-                                                <Button
-                                                    variant={copiedId === shoot.id ? "success" : "primary"}
-                                                    size="sm"
-                                                    onClick={() => copyLink(shoot.id, generatedLinks[shoot.id])}
-                                                    className="whitespace-nowrap"
-                                                >
-                                                    {copiedId === shoot.id ? (
-                                                        <>
-                                                            <Check className="w-4 h-4 mr-1" />
-                                                            Copied!
-                                                        </>
-                                                    ) : (
-                                                        'Copy'
+                                    {/* Review Link Section — shoots only */}
+                                    {item.type === 'shoot' && (
+                                        <div className="mt-3 pt-3 border-t border-green-200">
+                                            {reviewLink ? (
+                                                /* Link already generated — show Copy Link */
+                                                <div className="flex flex-col xs:flex-row gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={reviewLink}
+                                                        readOnly
+                                                        className="flex-1 min-w-0 px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none text-gray-500 truncate"
+                                                    />
+                                                    <Button
+                                                        variant={copiedId === item.id ? 'success' : 'primary'}
+                                                        size="sm"
+                                                        onClick={() => copyLink(item.id, reviewLink)}
+                                                        className="whitespace-nowrap w-full xs:w-auto xs:min-w-[70px]"
+                                                    >
+                                                        {copiedId === item.id ? (
+                                                            <>
+                                                                <Check className="w-3.5 h-3.5 mr-1" />
+                                                                Copied!
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <LinkIcon className="w-3.5 h-3.5 mr-1" />
+                                                                Copy Link
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                /* No link yet — show Generate button */
+                                                <div>
+                                                    <Button
+                                                        variant="primary"
+                                                        size="sm"
+                                                        onClick={() => generateReviewLink(item.originalId, item.id)}
+                                                        className="w-full"
+                                                        disabled={generatingIds.has(item.id)}
+                                                    >
+                                                        {generatingIds.has(item.id) ? (
+                                                            <>
+                                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                                Generating...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <LinkIcon className="w-4 h-4 mr-2" />
+                                                                Generate Review Link
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                    {generateErrors[item.id] && (
+                                                        <div className="flex items-center gap-1 mt-1.5 text-xs text-red-500">
+                                                            <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                                            <span>{generateErrors[item.id]}</span>
+                                                        </div>
                                                     )}
-                                                </Button>
-                                            </div>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            )}
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
 
-            {completedShoots.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                    <p className="text-xs text-center text-gray-500">
-                        Great work today! 🎉
-                    </p>
-                </div>
+            {completedEvents.length > 0 && (
+                <p className="text-xs text-center text-gray-400 mt-4 pt-4 border-t border-gray-100">
+                    Great work today! 🎉
+                </p>
             )}
         </Card>
     );

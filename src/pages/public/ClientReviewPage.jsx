@@ -1,19 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CheckCircle, Star, Send } from 'lucide-react';
+import { CheckCircle, Star, Send, Loader2 } from 'lucide-react';
+import axios from 'axios';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import InteractiveStarRating from '../../components/ui/InteractiveStarRating';
+import { API_BASE_URL } from '../../utils/api';
 
 const ClientReviewPage = () => {
-    const { token } = useParams();
+    const { token: reviewId } = useParams();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [shootData, setShootData] = useState(null);
     const [submitted, setSubmitted] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState(null);
 
     const [formData, setFormData] = useState({
+        reviewerName: '',
         phoneNumber: '',
         email: '',
         rating: 0,
@@ -22,27 +26,36 @@ const ClientReviewPage = () => {
 
     const [formErrors, setFormErrors] = useState({});
 
-    // Fetch shoot data using the token
+    // Fetch review/shoot data using the review ID (public endpoint, no auth)
     useEffect(() => {
-        const fetchShootData = () => {
-            // Get completed shoots from localStorage
-            const completedShoots = JSON.parse(localStorage.getItem('completedShoots') || '[]');
-            const shoot = completedShoots.find(s => s.reviewToken === token);
-
-            if (shoot) {
-                setShootData(shoot);
-                setLoading(false);
-            } else {
-                setError('Invalid or expired review link');
+        const fetchReviewData = async () => {
+            try {
+                setLoading(true);
+                const response = await axios.get(`${API_BASE_URL}/api/reviews/validate/${reviewId}`);
+                setShootData(response.data);
+            } catch (err) {
+                const msg =
+                    err.response?.data?.detail?.[0]?.msg ||
+                    err.response?.data?.detail ||
+                    'Invalid or expired review link';
+                setError(msg);
+            } finally {
                 setLoading(false);
             }
         };
 
-        fetchShootData();
-    }, [token]);
+        if (reviewId) {
+            fetchReviewData();
+        }
+    }, [reviewId]);
 
     const validateForm = () => {
         const errors = {};
+
+        // Name validation
+        if (!formData.reviewerName.trim()) {
+            errors.reviewerName = 'Name is required';
+        }
 
         // Phone number validation (basic)
         if (!formData.phoneNumber.trim()) {
@@ -90,45 +103,40 @@ const ClientReviewPage = () => {
         }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!validateForm()) {
             return;
         }
 
-        // In a real app, this would send to backend
-        const review = {
-            shootId: shootData.id,
-            reviewToken: token,
-            clientNumber: formData.phoneNumber,
-            clientEmail: formData.email,
-            rating: formData.rating,
-            reviewText: formData.reviewText,
-            submittedAt: new Date().toISOString()
-        };
+        setSubmitting(true);
+        try {
+            await axios.post(`${API_BASE_URL}/api/reviews/submit/${reviewId}`, {
+                reviewer_name: formData.reviewerName,
+                reviewer_phone: formData.phoneNumber,
+                reviewer_email: formData.email,
+                rating: formData.rating,
+                review: formData.reviewText,
+            });
 
-        // Store review in localStorage (for demo purposes)
-        const reviews = JSON.parse(localStorage.getItem('reviews') || '[]');
-        reviews.push(review);
-        localStorage.setItem('reviews', JSON.stringify(reviews));
-
-        // Update shoot to mark review as submitted
-        const completedShoots = JSON.parse(localStorage.getItem('completedShoots') || '[]');
-        const updatedShoots = completedShoots.map(s =>
-            s.reviewToken === token ? { ...s, reviewSubmitted: true } : s
-        );
-        localStorage.setItem('completedShoots', JSON.stringify(updatedShoots));
-
-        console.log('Review submitted:', review);
-        setSubmitted(true);
+            setSubmitted(true);
+        } catch (err) {
+            const msg =
+                err.response?.data?.detail?.[0]?.msg ||
+                err.response?.data?.detail ||
+                'Failed to submit review. Please try again.';
+            alert(typeof msg === 'string' ? msg : 'Failed to submit review.');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     if (loading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-orange-50 to-gray-50 flex items-center justify-center p-4">
                 <Card className="p-8 text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-orange mx-auto mb-4"></div>
+                    <Loader2 size={40} className="animate-spin text-primary-orange mx-auto mb-4" />
                     <p className="text-gray-600">Loading...</p>
                 </Card>
             </div>
@@ -143,7 +151,7 @@ const ClientReviewPage = () => {
                         <Star className="text-red-500" size={32} />
                     </div>
                     <h2 className="text-2xl font-bebas tracking-wide text-deep-black mb-2">Invalid Link</h2>
-                    <p className="text-gray-600 mb-6">{error}</p>
+                    <p className="text-gray-600 mb-6">{typeof error === 'string' ? error : 'Invalid or expired review link'}</p>
                     <Button variant="primary" onClick={() => navigate('/')}>
                         Go to Homepage
                     </Button>
@@ -184,31 +192,56 @@ const ClientReviewPage = () => {
                 <Card className="p-6 mb-6 bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-primary-orange">
                     <h3 className="text-sm font-semibold text-primary-orange uppercase mb-3">Shoot Details</h3>
                     <div className="space-y-2">
-                        <div>
-                            <span className="text-xs text-gray-600">Brand:</span>
-                            <p className="font-semibold text-deep-black">{shootData.brandName}</p>
-                        </div>
-                        <div>
-                            <span className="text-xs text-gray-600">Campaign:</span>
-                            <p className="text-sm text-gray-700">{shootData.campaign}</p>
-                        </div>
-                        <div>
-                            <span className="text-xs text-gray-600">Date:</span>
-                            <p className="text-sm text-gray-700">
-                                {new Date(shootData.shootDate).toLocaleDateString('en-US', {
-                                    weekday: 'long',
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                })}
-                            </p>
-                        </div>
+                        {(shootData?.brand_name || shootData?.brandName) && (
+                            <div>
+                                <span className="text-xs text-gray-600">Brand:</span>
+                                <p className="font-semibold text-deep-black">{shootData.brand_name || shootData.brandName}</p>
+                            </div>
+                        )}
+                        {(shootData?.name || shootData?.campaign) && (
+                            <div>
+                                <span className="text-xs text-gray-600">Campaign:</span>
+                                <p className="text-sm text-gray-700">{shootData.name || shootData.campaign}</p>
+                            </div>
+                        )}
+                        {(shootData?.shoot_date || shootData?.shootDate) && (
+                            <div>
+                                <span className="text-xs text-gray-600">Date:</span>
+                                <p className="text-sm text-gray-700">
+                                    {new Date(shootData.shoot_date || shootData.shootDate).toLocaleDateString('en-US', {
+                                        weekday: 'long',
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                    })}
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </Card>
 
                 {/* Review Form */}
                 <Card className="p-6 md:p-8">
                     <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* Reviewer Name */}
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Your Name <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="reviewerName"
+                                value={formData.reviewerName}
+                                onChange={handleInputChange}
+                                className={`w-full px-4 py-3 border ${formErrors.reviewerName ? 'border-red-500' : 'border-gray-200'
+                                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent transition-all`}
+                                placeholder="John Doe"
+                            />
+                            {formErrors.reviewerName && (
+                                <p className="text-red-500 text-xs mt-1">{formErrors.reviewerName}</p>
+                            )}
+                        </div>
+
                         {/* Phone Number */}
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -297,9 +330,19 @@ const ClientReviewPage = () => {
                             type="submit"
                             variant="primary"
                             className="w-full py-4 text-lg font-semibold flex items-center justify-center gap-2"
+                            disabled={submitting}
                         >
-                            <Send size={20} />
-                            Submit Review
+                            {submitting ? (
+                                <>
+                                    <Loader2 size={20} className="animate-spin" />
+                                    Submitting...
+                                </>
+                            ) : (
+                                <>
+                                    <Send size={20} />
+                                    Submit Review
+                                </>
+                            )}
                         </Button>
                     </form>
                 </Card>

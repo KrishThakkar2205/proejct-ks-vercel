@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { LayoutDashboard, Search, Users, Briefcase, MessageSquare, Heart, Bell, LogOut, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { logout } from '../store/slices/authSlice';
 
 const DashboardLayout = () => {
     const location = useLocation();
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const isActive = (path) => location.pathname === path;
@@ -48,8 +52,8 @@ const DashboardLayout = () => {
             <div className="p-4 border-t border-gray-100">
                 <button
                     onClick={() => {
-                        localStorage.removeItem('currentUser');
-                        window.location.href = '/login';
+                        dispatch(logout());
+                        navigate('/login');
                     }}
                     className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 w-full text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors`}
                     title={isCollapsed ? 'Logout' : ''}

@@ -1,120 +1,176 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import Card from '../../components/ui/Card';
-import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import PlatformMetrics from '../../components/dashboard/PlatformMetrics';
 import DailySchedule from '../../components/dashboard/DailySchedule';
 import CompletedShootsToday from '../../components/dashboard/CompletedShootsToday';
 import DelayedShootsToday from '../../components/dashboard/DelayedShootsToday';
-import { Calendar, CheckCircle, DollarSign, Star, Clock, ArrowRight, TrendingUp, Share2, Check } from 'lucide-react';
+import { Calendar, CheckCircle, Star, Clock, TrendingUp, Share2, Check, Loader2, AlertCircle } from 'lucide-react';
+import api from '../../utils/api';
+import AddEventModal from '../../components/dashboard/AddEventModal';
+import SuccessAlert from '../../components/ui/SuccessAlert';
 
 const InfluencerDashboard = () => {
     const [copied, setCopied] = useState(false);
-    const [completedShootsToday, setCompletedShootsToday] = useState([
-        {
-            id: 'completed-1',
-            brand: 'Fashion Nova',
-            campaign: 'Spring Collection 2025',
-            type: 'shoot',
-            completedAt: '9:30 AM',
-            location: 'Mumbai Studio',
-            rating: 5
-        },
-        {
-            id: 'completed-2',
-            brand: 'TechGear Pro',
-            campaign: 'Gadget Review Series',
-            type: 'upload',
-            completedAt: '1:45 PM',
-            location: 'Virtual',
-            rating: 4
-        },
-        {
-            id: 'completed-3',
-            brand: 'Wellness Co',
-            campaign: 'Fitness Challenge',
-            type: 'shoot',
-            completedAt: '11:00 AM',
-            location: 'Outdoor Park',
-            rating: 5
-        },
-        {
-            id: 'completed-4',
-            brand: 'Beauty Brands',
-            campaign: 'Makeup Tutorial',
-            type: 'upload',
-            completedAt: '3:15 PM',
-            location: 'Home Studio',
-            rating: 4
-        }
-    ]);
 
-    // Handler to mark event as complete
-    const handleMarkComplete = (event) => {
-        const newCompletedShoot = {
-            id: `completed-${Date.now()}`,
-            brand: event.brand || event.title,
-            campaign: event.campaign || event.title,
-            type: event.type,
-            completedAt: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-            location: event.location || 'N/A',
-            rating: 0
-        };
+    // Loading & Error State
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-        setCompletedShootsToday(prev => [...prev, newCompletedShoot]);
+    // Data State
+    const [todayShoots, setTodayShoots] = useState([]);
+    const [todayUploads, setTodayUploads] = useState([]);
+    const [delayedShoots, setDelayedShoots] = useState([]);
+    const [delayedUploads, setDelayedUploads] = useState([]);
+    const [completedShoots, setCompletedShoots] = useState([]);
+    const [completedUploads, setCompletedUploads] = useState([]);
+    const [recentReviews, setRecentReviews] = useState([]);
+    const authUser = useSelector(state => state.auth.user);
+    const [statsData, setStatsData] = useState({
+        upcomingCount: 0,
+        completedCount: 0,
+        rating: 'N/A',
+    });
+
+    // Add Event Modal
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [successAlert, setSuccessAlert] = useState({ isOpen: false, message: '' });
+
+    // Helper: get YYYY-MM-DD string for a given Date object
+    const toDateStr = (date) => {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
     };
 
-    const stats = [
-        { label: 'Upcoming Shoots', value: '3', trend: '+1', icon: <Calendar className="text-white" />, color: 'bg-blue-500' },
-        { label: 'Completed Shoots', value: '24', trend: '+5', icon: <CheckCircle className="text-white" />, color: 'bg-green-500' },
-        { label: 'Total Earnings', value: '$12.5k', trend: '+18%', icon: <DollarSign className="text-white" />, color: 'bg-primary-orange' },
-        { label: 'Average Rating', value: '4.8', trend: '+0.2', icon: <Star className="text-white" />, color: 'bg-purple-500' },
-    ];
+    const fetchDashboardData = useCallback(async (silent = false) => {
+        if (!silent) setLoading(true);
+        setError(null);
+        try {
+            const today = new Date();
+            const todayStr = toDateStr(today);
 
-    const upcomingShoots = [
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = toDateStr(yesterday);
+
+            // Run all fetches in parallel
+            const [
+                resDashboardCard,
+                resTodayShoots,
+                resTodayUploads,
+                resDelayedShoots,
+                resDelayedUploads,
+                resCompletedShoots,
+                resCompletedUploads,
+                resReviews,
+                resUpcomingShoots,
+            ] = await Promise.all([
+                api.get('/dashboard-card').catch(() => ({ data: null })),
+                api.get('/api/shoots', { params: { start_date: todayStr, end_date: todayStr, completed: false } }),
+                api.get('/api/uploads', { params: { start_date: todayStr, end_date: todayStr, completed: false } }),
+                api.get('/api/shoots', { params: { completed: false, end_date: yesterdayStr } }),
+                api.get('/api/uploads', { params: { completed: false, end_date: yesterdayStr } }),
+                api.get('/api/shoots', { params: { completed: true, start_date: todayStr, end_date: todayStr } }),
+                api.get('/api/uploads', { params: { completed: true, start_date: todayStr, end_date: todayStr } }),
+                api.get('/api/reviews', { params: { limit: 3 } }).catch(() => ({ data: [] })),
+                api.get('/api/shoots', { params: { completed: false, start_date: todayStr } }),
+            ]);
+
+            // --- Today's Schedule (not completed) ---
+            const todayShootsData = Array.isArray(resTodayShoots.data) ? resTodayShoots.data : [];
+            const todayUploadsData = Array.isArray(resTodayUploads.data) ? resTodayUploads.data : [];
+            setTodayShoots(todayShootsData);
+            setTodayUploads(todayUploadsData);
+
+            // --- Delayed Tasks (past due & not completed) ---
+            setDelayedShoots(Array.isArray(resDelayedShoots.data) ? resDelayedShoots.data : []);
+            setDelayedUploads(Array.isArray(resDelayedUploads.data) ? resDelayedUploads.data : []);
+
+            // --- Completed Today ---
+            setCompletedShoots(Array.isArray(resCompletedShoots.data) ? resCompletedShoots.data : []);
+            setCompletedUploads(Array.isArray(resCompletedUploads.data) ? resCompletedUploads.data : []);
+
+            // --- Recent Reviews ---
+            const fetchedReviews = Array.isArray(resReviews.data)
+                ? resReviews.data
+                : resReviews.data?.data || [];
+            const sortedReviews = [...fetchedReviews]
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                .slice(0, 3);
+            setRecentReviews(sortedReviews);
+
+
+            // --- Stats ---
+            const dashCard = resDashboardCard.data;
+            const upcomingCount = Array.isArray(resUpcomingShoots.data)
+                ? resUpcomingShoots.data.length
+                : 0;
+
+            setStatsData({
+                upcomingCount: dashCard?.upcoming_shoots ?? upcomingCount,
+                completedCount: dashCard?.completed_today ?? (resCompletedShoots.data?.length || 0),
+                rating: dashCard?.average_rating != null
+                    ? Number(dashCard.average_rating).toFixed(1)
+                    : 'N/A',
+            });
+
+        } catch (err) {
+            console.error('Error fetching dashboard data:', err);
+            setError('Failed to load dashboard data. Please refresh.');
+        } finally {
+            if (!silent) setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, [fetchDashboardData]);
+
+    // Soft-reload: called by child components after marking complete
+    const handleRefreshAfterComplete = () => fetchDashboardData(true);
+
+    const stats = [
         {
-            id: 1,
-            brand: 'Fashion Nova',
-            campaign: 'Spring Collection 2025',
-            date: '2025-12-20',
-            time: '10:00 AM',
-            location: 'Mumbai Studio',
-            status: 'Confirmed',
-            daysUntil: 4
+            label: 'Upcoming Shoots',
+            value: statsData.upcomingCount.toString(),
+            icon: <Calendar className="text-white" />,
+            color: 'bg-blue-500',
         },
         {
-            id: 2,
-            brand: 'TechGear Pro',
-            campaign: 'Gadget Review Series',
-            date: '2025-12-22',
-            time: '2:00 PM',
-            location: 'Virtual',
-            status: 'Confirmed',
-            daysUntil: 6
+            label: 'Completed Today',
+            value: statsData.completedCount.toString(),
+            icon: <CheckCircle className="text-white" />,
+            color: 'bg-green-500',
         },
         {
-            id: 3,
-            brand: 'Wellness Co',
-            campaign: 'Fitness Challenge',
-            date: '2025-12-25',
-            time: '9:00 AM',
-            location: 'Outdoor Park',
-            status: 'Pending',
-            daysUntil: 9
+            label: 'Average Rating',
+            value: statsData.rating,
+            icon: <Star className="text-white" />,
+            color: 'bg-purple-500',
         },
     ];
 
     const quickActions = [
         { label: 'View Calendar', path: '/influencer/calendar', icon: <Calendar size={20} />, color: 'bg-blue-50 text-blue-600 hover:bg-blue-100' },
         { label: 'Check Schedule', path: '/influencer/schedule', icon: <Clock size={20} />, color: 'bg-orange-50 text-primary-orange hover:bg-orange-100' },
-        { label: 'View Reviews', path: '/influencer/reviews', icon: <Star size={20} />, color: 'bg-purple-50 text-purple-600 hover:bg-purple-100' },
+        {
+            label: 'Add to Calendar',
+            onClick: () => setShowAddModal(true),
+            icon: <Calendar size={20} />,
+            color: 'bg-purple-50 text-purple-600 hover:bg-purple-100'
+        },
         { label: 'Edit Profile', path: '/influencer/profile', icon: <TrendingUp size={20} />, color: 'bg-green-50 text-green-600 hover:bg-green-100' },
     ];
 
-    // Portfolio link - In production, this would use the actual username from auth context
-    const username = 'johndoe'; // Replace with actual username from auth
-    const portfolioUrl = `${window.location.origin}/portfolio/${username}`;
+    // Portfolio link — /portfolio/{influencer_id}
+    const influencerId = authUser?.influencer_id || authUser?.id || authUser?.email_id;
+    const portfolioUrl = influencerId
+        ? `${window.location.origin}/portfolio/${influencerId}`
+        : `${window.location.origin}/portfolio`;
 
     const handleCopyPortfolioLink = () => {
         navigator.clipboard.writeText(portfolioUrl).then(() => {
@@ -148,14 +204,25 @@ const InfluencerDashboard = () => {
 
                 {/* Quick Actions */}
                 {quickActions.map((action, index) => (
-                    <Link key={index} to={action.path}>
-                        <Card className={`p-2 sm:p-3 h-full flex flex-col items-center justify-center gap-1 sm:gap-2 hover:border-primary-orange transition-all cursor-pointer group ${action.color}`}>
-                            <div className="flex-shrink-0">
-                                {React.cloneElement(action.icon, { size: 16, className: "sm:w-5 sm:h-5" })}
-                            </div>
-                            <h4 className="font-semibold text-[10px] sm:text-sm md:text-base text-center leading-tight">{action.label}</h4>
-                        </Card>
-                    </Link>
+                    action.path ? (
+                        <Link key={index} to={action.path}>
+                            <Card className={`p-2 sm:p-3 h-full flex flex-col items-center justify-center gap-1 sm:gap-2 hover:border-primary-orange transition-all cursor-pointer group ${action.color}`}>
+                                <div className="flex-shrink-0">
+                                    {React.cloneElement(action.icon, { size: 16, className: 'sm:w-5 sm:h-5' })}
+                                </div>
+                                <h4 className="font-semibold text-[10px] sm:text-sm md:text-base text-center leading-tight">{action.label}</h4>
+                            </Card>
+                        </Link>
+                    ) : (
+                        <button key={index} onClick={action.onClick} className="w-full">
+                            <Card className={`p-2 sm:p-3 h-full flex flex-col items-center justify-center gap-1 sm:gap-2 hover:border-primary-orange transition-all cursor-pointer group ${action.color}`}>
+                                <div className="flex-shrink-0">
+                                    {React.cloneElement(action.icon, { size: 16, className: 'sm:w-5 sm:h-5' })}
+                                </div>
+                                <h4 className="font-semibold text-[10px] sm:text-sm md:text-base text-center leading-tight">{action.label}</h4>
+                            </Card>
+                        </button>
+                    )
                 ))}
             </div>
 
@@ -164,127 +231,163 @@ const InfluencerDashboard = () => {
                 <PlatformMetrics />
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {stats.map((stat, index) => (
-                    <Card key={index} className="flex items-center justify-between p-6">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 mb-1">{stat.label}</p>
-                            <h3 className="text-3xl font-bebas tracking-wide text-deep-black">{stat.value}</h3>
-                            {stat.trend && (
-                                <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full mt-2 inline-block">
-                                    {stat.trend} this month
-                                </span>
-                            )}
-                        </div>
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ${stat.color}`}>
-                            {stat.icon}
-                        </div>
-                    </Card>
-                ))}
-            </div>
-
-            {/* Main Content Grid */}
-            <div className="space-y-6">
-                {/* Top Row: Today's Schedule and Delayed Shoots side by side */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="lg:h-[700px]">
-                        <DailySchedule onMarkComplete={handleMarkComplete} />
-                    </div>
-                    <div className="lg:h-[700px]">
-                        <DelayedShootsToday onMarkComplete={handleMarkComplete} />
-                    </div>
+            {/* Loading State */}
+            {loading ? (
+                <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+                    <Loader2 className="w-10 h-10 animate-spin text-primary-orange mb-4" />
+                    <p>Loading your dashboard...</p>
                 </div>
-
-                {/* Bottom Row: Completed Shoots and Upcoming Shoots */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Completed Shoots Today */}
-                    <div className="lg:h-[700px]">
-                        <CompletedShootsToday completedShoots={completedShootsToday} />
+            ) : error ? (
+                /* Error State */
+                <div className="flex flex-col items-center justify-center py-20 text-red-500">
+                    <AlertCircle className="w-10 h-10 mb-4" />
+                    <p className="font-medium">{error}</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="mt-4 px-4 py-2 text-sm bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+                    >
+                        Retry
+                    </button>
+                </div>
+            ) : (
+                <>
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        {stats.map((stat, index) => (
+                            <Card key={index} className="flex items-center justify-between p-5">
+                                <div className="min-w-0">
+                                    <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1 truncate">{stat.label}</p>
+                                    <h3 className="text-2xl sm:text-3xl font-bebas tracking-wide text-deep-black">{stat.value}</h3>
+                                </div>
+                                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-md flex-shrink-0 ${stat.color}`}>
+                                    {stat.icon}
+                                </div>
+                            </Card>
+                        ))}
                     </div>
 
-                    {/* Recent Reviews */}
-                    <div className="lg:h-[700px]">
-                        <Card className="p-6 h-auto lg:h-full flex flex-col">
-                            <div className="flex items-center justify-between mb-6 flex-shrink-0">
-                                <div>
-                                    <h2 className="text-xl font-bebas tracking-wide text-deep-black">Recent Reviews</h2>
-                                    <p className="text-sm text-gray-600 mt-1">Client feedback</p>
-                                </div>
-                                <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center">
-                                    <Star className="w-6 h-6 text-purple-600" />
-                                </div>
-                            </div>
+                    {/* Main Content Grid */}
+                    <div className="space-y-6">
+                        {/* Top Row: Today's Schedule and Delayed Shoots */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <DailySchedule
+                                shoots={todayShoots}
+                                uploads={todayUploads}
+                                onMarkComplete={handleRefreshAfterComplete}
+                            />
+                            <DelayedShootsToday
+                                delayedShoots={delayedShoots}
+                                delayedUploads={delayedUploads}
+                                onMarkComplete={handleRefreshAfterComplete}
+                            />
+                        </div>
 
-                            <div className="space-y-4 flex-1 lg:overflow-y-auto pr-2">
-                                {[
-                                    {
-                                        id: 1,
-                                        clientName: 'Fashion Nova',
-                                        rating: 5,
-                                        comment: 'Excellent work! Very professional and delivered amazing content.',
-                                        date: '2 days ago',
-                                        avatar: 'FN'
-                                    },
-                                    {
-                                        id: 2,
-                                        clientName: 'TechGear Pro',
-                                        rating: 4,
-                                        comment: 'Great collaboration. Looking forward to working again!',
-                                        date: '5 days ago',
-                                        avatar: 'TG'
-                                    },
-                                    {
-                                        id: 3,
-                                        clientName: 'Wellness Co',
-                                        rating: 5,
-                                        comment: 'Outstanding creativity and engagement. Highly recommended!',
-                                        date: '1 week ago',
-                                        avatar: 'WC'
-                                    }
-                                ].map((review) => (
-                                    <div key={review.id} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                        <div className="flex gap-3">
-                                            {/* Avatar */}
-                                            <div className="w-10 h-10 bg-primary-orange rounded-full flex items-center justify-center flex-shrink-0">
-                                                <span className="text-white font-semibold text-sm">{review.avatar}</span>
-                                            </div>
+                        {/* Bottom Row: Completed Today and Recent Reviews */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <CompletedShootsToday
+                                completedShoots={completedShoots}
+                                completedUploads={completedUploads}
+                            />
 
-                                            {/* Review Content */}
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-start justify-between mb-1">
-                                                    <h3 className="font-semibold text-deep-black text-sm">{review.clientName}</h3>
-                                                    <span className="text-xs text-gray-500">{review.date}</span>
-                                                </div>
-
-                                                {/* Star Rating */}
-                                                <div className="flex items-center gap-1 mb-2">
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <Star
-                                                            key={i}
-                                                            size={14}
-                                                            className={i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}
-                                                        />
-                                                    ))}
-                                                </div>
-
-                                                {/* Comment */}
-                                                <p className="text-sm text-gray-600 line-clamp-2">{review.comment}</p>
-                                            </div>
-                                        </div>
+                            {/* Recent Reviews Card */}
+                            <Card className="p-6 flex flex-col">
+                                <div className="flex items-center justify-between mb-6 flex-shrink-0">
+                                    <div>
+                                        <h2 className="text-xl font-bebas tracking-wide text-deep-black">Recent Reviews</h2>
+                                        <p className="text-sm text-gray-600 mt-1">Client feedback</p>
                                     </div>
-                                ))}
-                            </div>
+                                    <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center">
+                                        <Star className="w-6 h-6 text-purple-600" />
+                                    </div>
+                                </div>
 
-                            <Link to="/influencer/reviews" className="block mt-4">
-                                <Button variant="outline" size="sm" className="w-full">
-                                    View All Reviews
-                                </Button>
-                            </Link>
-                        </Card>
+                                <div className="flex-1 flex flex-col min-h-[250px] overflow-y-auto pr-1">
+                                    {recentReviews.length === 0 ? (
+                                        <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+                                            <Star size={48} className="mb-4 text-gray-300" strokeWidth={1.5} />
+                                            <p className="text-gray-600 font-medium text-lg">No reviews yet</p>
+                                            <p className="text-sm mt-1">Check back later!</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {recentReviews.map((review) => (
+                                                <div key={review.id || review._id} className="p-3 bg-gray-50 border border-gray-100 rounded-lg hover:bg-gray-100 transition-colors">
+                                                    <div className="flex gap-3">
+                                                        {/* Avatar */}
+                                                        <div className="w-10 h-10 bg-primary-orange rounded-full flex items-center justify-center flex-shrink-0">
+                                                            <span className="text-white font-semibold text-sm">
+                                                                {review.client_name
+                                                                    ? review.client_name.charAt(0).toUpperCase()
+                                                                    : review.brand_name
+                                                                        ? review.brand_name.charAt(0).toUpperCase()
+                                                                        : 'C'}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Content */}
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-start justify-between mb-1">
+                                                                <h3 className="font-semibold text-deep-black text-sm truncate">
+                                                                    {review.client_name || review.brand_name || 'Anonymous Client'}
+                                                                </h3>
+                                                                <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
+                                                                    {review.created_at
+                                                                        ? new Date(review.created_at).toLocaleDateString()
+                                                                        : '—'}
+                                                                </span>
+                                                            </div>
+
+                                                            {/* Star Rating */}
+                                                            <div className="flex items-center gap-0.5 mb-1.5">
+                                                                {[...Array(5)].map((_, i) => (
+                                                                    <Star
+                                                                        key={i}
+                                                                        size={13}
+                                                                        className={i < (review.rating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}
+                                                                    />
+                                                                ))}
+                                                            </div>
+
+                                                            {/* Review Text */}
+                                                            <p className="text-sm text-gray-600 line-clamp-2">
+                                                                {review.review_text || review.review || review.comment || '—'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <Link to="/influencer/reviews" className="block mt-4 flex-shrink-0">
+                                    <Button variant="outline" size="sm" className="w-full">
+                                        View All Reviews
+                                    </Button>
+                                </Link>
+                            </Card>
+                        </div>
                     </div>
-                </div>
-            </div>
+                </>
+            )}
+
+            {/* Add Event Modal */}
+            <AddEventModal
+                isOpen={showAddModal}
+                onClose={() => setShowAddModal(false)}
+                onSuccess={(msg) => {
+                    setSuccessAlert({ isOpen: true, message: msg });
+                    setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
+                    fetchDashboardData(true); // Soft reload
+                }}
+            />
+
+            {/* Success Alert */}
+            <SuccessAlert
+                isOpen={successAlert.isOpen}
+                message={successAlert.message}
+                onClose={() => setSuccessAlert({ isOpen: false, message: '' })}
+            />
         </div>
     );
 };

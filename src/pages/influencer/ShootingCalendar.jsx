@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -9,70 +9,27 @@ import TimeInput from '../../components/ui/TimeInput';
 import RescheduleModal from '../../components/dashboard/RescheduleModal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import SuccessAlert from '../../components/ui/SuccessAlert';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Upload, Video, Trash2, AlertTriangle } from 'lucide-react';
-import { calendarEvents } from '../../data/demoData';
+import AddEventModal from '../../components/dashboard/AddEventModal';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Upload, Video, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
+import api from '../../utils/api';
 
 const ShootingCalendar = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [showAddModal, setShowAddModal] = useState(false);
-    const [isClosing, setIsClosing] = useState(false);
-    const [scheduleType, setScheduleType] = useState('shoot'); // 'shoot' or 'upload'
-    const [rescheduleModal, setRescheduleModal] = useState({ isOpen: false, event: null });
-    const [rescheduledEvents, setRescheduledEvents] = useState({});
-    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, itemId: null });
-    const [deletedItems, setDeletedItems] = useState(new Set());
+    const [rescheduleModal, setRescheduleModal] = useState({ isOpen: false, event: null, eventType: null });
+    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, itemId: null, itemType: null });
     const [successAlert, setSuccessAlert] = useState({ isOpen: false, message: '' });
+    const [selectedDate, setSelectedDate] = useState(new Date().getDate());
 
-    const closeModal = () => {
-        setIsClosing(true);
-        setTimeout(() => {
-            setShowAddModal(false);
-            setIsClosing(false);
-        }, 300); // Match animation duration
-    };
-    const [formData, setFormData] = useState({
-        brandName: '',
-        campaign: '',
-        date: '',
-        time: '',
-        location: '',
-        platform: '',
-        contentType: '',
-        notes: ''
-    });
-
-    // Convert calendar events to booking format
-    const bookings = calendarEvents.filter(event => event.type === 'shoot').map(event => ({
-        id: event.id,
-        brandName: event.brand,
-        campaign: event.campaign,
-        shootDate: event.date,
-        shootTime: event.displayTime,
-        location: event.location,
-        status: event.status,
-        notes: event.description
-    }));
-
-    const uploadSchedule = calendarEvents.filter(event => event.type === 'upload').map(event => ({
-        id: event.id,
-        brandName: event.brand,
-        campaign: event.campaign,
-        uploadDate: event.date,
-        uploadTime: event.displayTime,
-        platform: event.platform,
-        contentType: 'Video',
-        status: event.status,
-        notes: event.description
-    }));
-
-    const calendar = {
-        unavailableDates: [] // No unavailable dates in demo
-    };
+    // API data
+    const [shoots, setShoots] = useState([]);
+    const [uploads, setUploads] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     // Calendar logic
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-
     const firstDayOfMonth = new Date(year, month, 1);
     const lastDayOfMonth = new Date(year, month + 1, 0);
     const daysInMonth = lastDayOfMonth.getDate();
@@ -82,6 +39,79 @@ const ShootingCalendar = () => {
         'July', 'August', 'September', 'October', 'November', 'December'];
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+    // Fetch shoots and uploads for the current month
+    // silent = true skips the full-page loader (used for refreshes after CRUD ops)
+    const fetchData = useCallback(async (silent = false) => {
+        try {
+            if (!silent) setLoading(true);
+            setError(null);
+            const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+            const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
+
+            const [shootsRes, uploadsRes] = await Promise.all([
+                api.get('/api/shoots', { params: { start_date: startDate, end_date: endDate } }),
+                api.get('/api/uploads', { params: { start_date: startDate, end_date: endDate } }),
+            ]);
+
+            setShoots(Array.isArray(shootsRes.data) ? shootsRes.data : []);
+            setUploads(Array.isArray(uploadsRes.data) ? uploadsRes.data : []);
+        } catch (err) {
+            if (!silent) {
+                const msg =
+                    err.response?.data?.detail?.[0]?.msg ||
+                    err.response?.data?.detail ||
+                    'Failed to load calendar data.';
+                setError(msg);
+            }
+        } finally {
+            if (!silent) setLoading(false);
+        }
+    }, [year, month, daysInMonth]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    // Helper to format date
+    const formatDate = (date) => {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    };
+
+    // Helper to convert HH:MM:SS or HH:MM to display time
+    const toDisplayTime = (timeStr) => {
+        if (!timeStr) return '';
+        const [hours, minutes] = timeStr.split(':');
+        const hour = parseInt(hours);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour % 12 || 12;
+        return `${displayHour}:${minutes} ${ampm}`;
+    };
+
+    // Map API data to the format the component expects
+    const bookings = shoots.map(s => ({
+        id: s.id,
+        brandName: s.brand_name || '',
+        campaign: s.name || '',
+        shootDate: s.shoot_date,
+        shootTime: toDisplayTime(s.shoot_time),
+        location: s.location || '',
+        status: s.completed ? 'completed' : 'confirmed',
+        notes: s.notes || ''
+    }));
+
+    const uploadSchedule = uploads.map(u => ({
+        id: u.id,
+        brandName: u.brand_name || '',
+        campaign: u.name || '',
+        uploadDate: u.upload_date,
+        uploadTime: toDisplayTime(u.upload_time),
+        platform: u.platform || '',
+        contentType: 'Video',
+        status: u.completed ? 'uploaded' : 'confirmed',
+        notes: u.notes || ''
+    }));
+
+    // Calendar helpers
     const previousMonth = () => {
         setCurrentDate(new Date(year, month - 1, 1));
         setSelectedDate(null);
@@ -90,10 +120,6 @@ const ShootingCalendar = () => {
     const nextMonth = () => {
         setCurrentDate(new Date(year, month + 1, 1));
         setSelectedDate(null);
-    };
-
-    const formatDate = (date) => {
-        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     };
 
     const isBooked = (day) => {
@@ -106,11 +132,6 @@ const ShootingCalendar = () => {
         return uploadSchedule.some(u => u.uploadDate === dateStr);
     };
 
-    const isUnavailable = (day) => {
-        const dateStr = formatDate(new Date(year, month, day));
-        return calendar.unavailableDates.includes(dateStr);
-    };
-
     const getBookingsForDate = (day) => {
         const dateStr = formatDate(new Date(year, month, day));
         return bookings.filter(b => b.shootDate === dateStr);
@@ -121,13 +142,8 @@ const ShootingCalendar = () => {
         return uploadSchedule.filter(u => u.uploadDate === dateStr);
     };
 
-    const getBookingCountForDate = (day) => {
-        return getBookingsForDate(day).length;
-    };
-
-    const getUploadCountForDate = (day) => {
-        return getUploadsForDate(day).length;
-    };
+    const getBookingCountForDate = (day) => getBookingsForDate(day).length;
+    const getUploadCountForDate = (day) => getUploadsForDate(day).length;
 
     const isPast = (day) => {
         const date = new Date(year, month, day);
@@ -136,31 +152,19 @@ const ShootingCalendar = () => {
         return date < today;
     };
 
-    const isFull = (day) => {
-        return getBookingCountForDate(day) >= 4; // Max 4 bookings per day
-    };
+    const isFull = (day) => getBookingCountForDate(day) >= 4;
 
     // Generate calendar days
     const calendarDays = [];
+    for (let i = 0; i < startingDayOfWeek; i++) calendarDays.push(null);
+    for (let day = 1; day <= daysInMonth; day++) calendarDays.push(day);
 
-    // Empty cells for days before month starts
-    for (let i = 0; i < startingDayOfWeek; i++) {
-        calendarDays.push(null);
-    }
-
-    // Days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-        calendarDays.push(day);
-    }
-
-    const [selectedDate, setSelectedDate] = useState(new Date().getDate());
-
-    // Get today's date for comparison
+    // Get today for comparison
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Get selected date as Date object
     const getSelectedDateObj = () => {
+        if (!selectedDate) return today;
         const date = new Date(year, month, selectedDate);
         date.setHours(0, 0, 0, 0);
         return date;
@@ -171,11 +175,11 @@ const ShootingCalendar = () => {
 
     // Categorize events for selected date
     const categorizeEvents = () => {
-        const allBookings = getBookingsForDate(selectedDate).filter(b => !deletedItems.has(b.id));
-        const allUploads = getUploadsForDate(selectedDate).filter(u => !deletedItems.has(u.id));
+        if (!selectedDate) return { shoots: [], uploads: [], delayedShoots: [], delayedUploads: [] };
+        const allBookings = getBookingsForDate(selectedDate);
+        const allUploads = getUploadsForDate(selectedDate);
 
         if (isPastDate) {
-            // For past dates, separate delayed (incomplete) from completed
             return {
                 shoots: allBookings.filter(b => b.status === 'completed'),
                 uploads: allUploads.filter(u => u.status === 'uploaded'),
@@ -183,7 +187,6 @@ const ShootingCalendar = () => {
                 delayedUploads: allUploads.filter(u => u.status !== 'uploaded')
             };
         } else {
-            // For today/future, all are editable
             return {
                 shoots: allBookings,
                 uploads: allUploads,
@@ -195,107 +198,100 @@ const ShootingCalendar = () => {
 
     const { shoots: selectedBookings, uploads: selectedUploads, delayedShoots, delayedUploads } = categorizeEvents();
 
-    // Form handlers
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        // In a real app, this would send data to backend
-        console.log('New schedule item:', { type: scheduleType, ...formData });
-        alert(`${scheduleType === 'shoot' ? 'Shoot' : 'Upload'} scheduled successfully!`);
-        setShowAddModal(false);
-        // Reset form
-        setFormData({
-            brandName: '',
-            campaign: '',
-            date: '',
-            time: '',
-            location: '',
-            platform: '',
-            contentType: '',
-            notes: ''
-        });
-    };
-
-    const openAddModal = () => {
-        setShowAddModal(true);
-        // Set default date to today
-        const today = new Date();
-        const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        setFormData(prev => ({ ...prev, date: dateStr }));
-    };
 
     // Reschedule handlers
-    const handleReschedule = (event) => {
-        setRescheduleModal({ isOpen: true, event });
+    const handleReschedule = (event, type) => {
+        setRescheduleModal({ isOpen: true, event, eventType: type });
     };
 
     const handleCloseRescheduleModal = () => {
-        setRescheduleModal({ isOpen: false, event: null });
+        setRescheduleModal({ isOpen: false, event: null, eventType: null });
     };
 
-    const handleRescheduleConfirm = (rescheduleData) => {
-        if (rescheduleModal.event && rescheduleData) {
-            const [hours, minutes] = rescheduleData.time.split(':');
-            const hour = parseInt(hours);
-            const ampm = hour >= 12 ? 'PM' : 'AM';
-            const displayHour = hour % 12 || 12;
-            const displayTime = `${displayHour}:${minutes} ${ampm}`;
+    const handleRescheduleConfirm = async (rescheduleData) => {
+        if (!rescheduleModal.event || !rescheduleData) {
+            handleCloseRescheduleModal();
+            return;
+        }
 
-            setRescheduledEvents(prev => ({
-                ...prev,
-                [rescheduleModal.event.id]: {
-                    date: rescheduleData.date,
-                    time: rescheduleData.time,
-                    displayTime: displayTime
-                }
-            }));
+        try {
+            const eventId = rescheduleModal.event.id;
+            if (rescheduleModal.eventType === 'shoot') {
+                await api.put(`/api/shoots/${eventId}`, {
+                    shoot_date: rescheduleData.date,
+                    shoot_time: rescheduleData.time || null,
+                });
+            } else {
+                await api.put(`/api/uploads/${eventId}`, {
+                    upload_date: rescheduleData.date,
+                    upload_time: rescheduleData.time || null,
+                });
+            }
 
-            setSuccessAlert({
-                isOpen: true,
-                message: 'Event rescheduled successfully!'
-            });
-
-            setTimeout(() => {
-                setSuccessAlert({ isOpen: false, message: '' });
-            }, 3000);
+            setSuccessAlert({ isOpen: true, message: 'Event rescheduled successfully!' });
+            setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
+            fetchData(true); // Silent refresh
+        } catch (err) {
+            alert(err.response?.data?.detail || 'Failed to reschedule event.');
         }
         handleCloseRescheduleModal();
     };
 
     // Delete handlers
-    const handleDelete = (itemId) => {
-        setDeleteConfirm({ isOpen: true, itemId });
+    const handleDelete = (itemId, type) => {
+        setDeleteConfirm({ isOpen: true, itemId, itemType: type });
     };
 
-    const handleConfirmDelete = () => {
-        if (deleteConfirm.itemId) {
-            setDeletedItems(prev => {
-                const newSet = new Set(prev);
-                newSet.add(deleteConfirm.itemId);
-                return newSet;
-            });
-
-            setSuccessAlert({
-                isOpen: true,
-                message: 'Event deleted successfully!'
-            });
-
-            setTimeout(() => {
-                setSuccessAlert({ isOpen: false, message: '' });
-            }, 3000);
+    const handleConfirmDelete = async () => {
+        if (!deleteConfirm.itemId) {
+            setDeleteConfirm({ isOpen: false, itemId: null, itemType: null });
+            return;
         }
-        setDeleteConfirm({ isOpen: false, itemId: null });
+
+        try {
+            if (deleteConfirm.itemType === 'shoot') {
+                await api.delete(`/api/shoots/${deleteConfirm.itemId}`);
+            } else {
+                await api.delete(`/api/uploads/${deleteConfirm.itemId}`);
+            }
+
+            setSuccessAlert({ isOpen: true, message: 'Event deleted successfully!' });
+            setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
+            fetchData(true); // Silent refresh
+        } catch (err) {
+            alert(err.response?.data?.detail || 'Failed to delete event.');
+        }
+        setDeleteConfirm({ isOpen: false, itemId: null, itemType: null });
     };
 
     const handleCancelDelete = () => {
-        setDeleteConfirm({ isOpen: false, itemId: null });
+        setDeleteConfirm({ isOpen: false, itemId: null, itemType: null });
     };
 
+    // Loading state
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center">
+                    <Loader2 size={40} className="animate-spin text-primary-orange mx-auto mb-4" />
+                    <p className="text-gray-600">Loading calendar...</p>
+                </div>
+            </div>
+        );
+    }
 
+    // Error state
+    if (error) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <Card className="p-8 text-center max-w-md">
+                    <p className="text-red-600 font-medium mb-2">Error</p>
+                    <p className="text-gray-600 text-sm mb-4">{typeof error === 'string' ? error : 'Something went wrong.'}</p>
+                    <Button onClick={() => fetchData()}>Try Again</Button>
+                </Card>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8">
@@ -318,7 +314,7 @@ const ShootingCalendar = () => {
                                 <Button
                                     variant="primary"
                                     size="sm"
-                                    onClick={openAddModal}
+                                    onClick={() => setShowAddModal(true)}
                                     className="flex items-center"
                                 >
                                     <span className="mr-1 text-lg leading-none">+</span>
@@ -348,10 +344,6 @@ const ShootingCalendar = () => {
                                 <div className="w-4 h-4 bg-orange-700 rounded"></div>
                                 <span className="text-gray-600">Both</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 bg-gray-300 rounded"></div>
-                                <span className="text-gray-600">Unavailable</span>
-                            </div>
                         </div>
 
                         {/* Calendar Grid */}
@@ -370,8 +362,7 @@ const ShootingCalendar = () => {
                                 }
 
                                 const booked = isBooked(day);
-                                const uploads = hasUploads(day);
-                                const unavailable = isUnavailable(day);
+                                const hasUpload = hasUploads(day);
                                 const past = isPast(day);
                                 const bookingCount = getBookingCountForDate(day);
                                 const uploadCount = getUploadCountForDate(day);
@@ -379,23 +370,21 @@ const ShootingCalendar = () => {
 
                                 let bgColor = 'bg-white hover:bg-gray-50';
 
-                                if (booked && uploads) {
-                                    bgColor = 'bg-orange-700 text-white hover:bg-orange-800'; // Both shoots and uploads
+                                if (booked && hasUpload) {
+                                    bgColor = 'bg-orange-700 text-white hover:bg-orange-800';
                                 } else if (booked) {
                                     if (full) {
-                                        bgColor = 'bg-red-500 text-white hover:bg-red-600'; // Full day (4/4)
+                                        bgColor = 'bg-red-500 text-white hover:bg-red-600';
                                     } else {
-                                        bgColor = 'bg-primary-orange text-white hover:bg-orange-600'; // Has bookings
+                                        bgColor = 'bg-primary-orange text-white hover:bg-orange-600';
                                     }
-                                } else if (uploads) {
-                                    bgColor = 'bg-gray-700 text-white hover:bg-gray-800'; // Has uploads
-                                } else if (unavailable) {
-                                    bgColor = 'bg-gray-300 text-gray-600';
+                                } else if (hasUpload) {
+                                    bgColor = 'bg-gray-700 text-white hover:bg-gray-800';
                                 } else if (!past) {
                                     bgColor = 'bg-gray-50 border border-gray-200 hover:bg-gray-100';
                                 }
 
-                                if (past && !booked && !uploads) bgColor = 'bg-gray-50 text-gray-400';
+                                if (past && !booked && !hasUpload) bgColor = 'bg-gray-50 text-gray-400';
 
                                 return (
                                     <button
@@ -451,27 +440,35 @@ const ShootingCalendar = () => {
                                             <div key={booking.id} className={`pb-4 ${idx < selectedBookings.length - 1 ? 'border-b border-gray-200' : ''}`}>
                                                 <div className="flex items-center justify-between mb-2">
                                                     <p className="text-xs text-primary-orange font-semibold">Shoot #{idx + 1}</p>
-                                                    <Badge variant={booking.status === 'confirmed' ? 'success' : 'warning'}>
+                                                    <Badge variant={booking.status === 'completed' ? 'success' : 'warning'}>
                                                         {booking.status}
                                                     </Badge>
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">Brand</p>
-                                                        <p className="font-medium text-deep-black text-sm">{booking.brandName}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">Campaign</p>
-                                                        <p className="text-sm text-gray-700">{booking.campaign}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">Time</p>
-                                                        <p className="text-sm text-gray-700">{booking.shootTime}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">Location</p>
-                                                        <p className="text-sm text-gray-700">{booking.location}</p>
-                                                    </div>
+                                                    {booking.brandName && (
+                                                        <div>
+                                                            <p className="text-xs text-gray-500">Brand</p>
+                                                            <p className="font-medium text-deep-black text-sm">{booking.brandName}</p>
+                                                        </div>
+                                                    )}
+                                                    {booking.campaign && (
+                                                        <div>
+                                                            <p className="text-xs text-gray-500">Campaign</p>
+                                                            <p className="text-sm text-gray-700">{booking.campaign}</p>
+                                                        </div>
+                                                    )}
+                                                    {booking.shootTime && (
+                                                        <div>
+                                                            <p className="text-xs text-gray-500">Time</p>
+                                                            <p className="text-sm text-gray-700">{booking.shootTime}</p>
+                                                        </div>
+                                                    )}
+                                                    {booking.location && (
+                                                        <div>
+                                                            <p className="text-xs text-gray-500">Location</p>
+                                                            <p className="text-sm text-gray-700">{booking.location}</p>
+                                                        </div>
+                                                    )}
                                                     {booking.notes && (
                                                         <div>
                                                             <p className="text-xs text-gray-500">Notes</p>
@@ -480,27 +477,27 @@ const ShootingCalendar = () => {
                                                     )}
                                                 </div>
 
-                                                {/* Action Buttons */}
-                                                <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="flex-1"
-                                                        onClick={() => handleReschedule(booking)}
-                                                        disabled={isPastDate && booking.status === 'completed'}
-                                                    >
-                                                        Reschedule
-                                                    </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="text-red-600 hover:bg-red-50 hover:border-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                        onClick={() => handleDelete(booking.id)}
-                                                        disabled={isPastDate && booking.status === 'completed'}
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </Button>
-                                                </div>
+                                                {/* Action Buttons - hidden for completed shoots */}
+                                                {booking.status !== 'completed' && (
+                                                    <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="flex-1"
+                                                            onClick={() => handleReschedule(booking, 'shoot')}
+                                                        >
+                                                            Reschedule
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="text-red-600 hover:bg-red-50 hover:border-red-600"
+                                                            onClick={() => handleDelete(booking.id, 'shoot')}
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </Button>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
@@ -526,26 +523,30 @@ const ShootingCalendar = () => {
                                                     </Badge>
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">Brand</p>
-                                                        <p className="font-medium text-deep-black text-sm">{upload.brandName}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">Campaign</p>
-                                                        <p className="text-sm text-gray-700">{upload.campaign}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">Platform</p>
-                                                        <p className="text-sm text-gray-700">{upload.platform}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">Content Type</p>
-                                                        <p className="text-sm text-gray-700">{upload.contentType}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">Time</p>
-                                                        <p className="text-sm text-gray-700">{upload.uploadTime}</p>
-                                                    </div>
+                                                    {upload.brandName && (
+                                                        <div>
+                                                            <p className="text-xs text-gray-500">Brand</p>
+                                                            <p className="font-medium text-deep-black text-sm">{upload.brandName}</p>
+                                                        </div>
+                                                    )}
+                                                    {upload.campaign && (
+                                                        <div>
+                                                            <p className="text-xs text-gray-500">Campaign</p>
+                                                            <p className="text-sm text-gray-700">{upload.campaign}</p>
+                                                        </div>
+                                                    )}
+                                                    {upload.platform && (
+                                                        <div>
+                                                            <p className="text-xs text-gray-500">Platform</p>
+                                                            <p className="text-sm text-gray-700">{upload.platform}</p>
+                                                        </div>
+                                                    )}
+                                                    {upload.uploadTime && (
+                                                        <div>
+                                                            <p className="text-xs text-gray-500">Time</p>
+                                                            <p className="text-sm text-gray-700">{upload.uploadTime}</p>
+                                                        </div>
+                                                    )}
                                                     {upload.notes && (
                                                         <div>
                                                             <p className="text-xs text-gray-500">Notes</p>
@@ -554,27 +555,27 @@ const ShootingCalendar = () => {
                                                     )}
                                                 </div>
 
-                                                {/* Action Buttons */}
-                                                <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="flex-1"
-                                                        onClick={() => handleReschedule(upload)}
-                                                        disabled={isPastDate && upload.status === 'uploaded'}
-                                                    >
-                                                        Reschedule
-                                                    </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="text-red-600 hover:bg-red-50 hover:border-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                        onClick={() => handleDelete(upload.id)}
-                                                        disabled={isPastDate && upload.status === 'uploaded'}
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </Button>
-                                                </div>
+                                                {/* Action Buttons - hidden for completed uploads */}
+                                                {upload.status !== 'uploaded' && (
+                                                    <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="flex-1"
+                                                            onClick={() => handleReschedule(upload, 'upload')}
+                                                        >
+                                                            Reschedule
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="text-red-600 hover:bg-red-50 hover:border-red-600"
+                                                            onClick={() => handleDelete(upload.id, 'upload')}
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </Button>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
@@ -592,76 +593,62 @@ const ShootingCalendar = () => {
                                     </div>
                                     <div className="space-y-4 max-h-64 overflow-y-auto">
                                         {/* Delayed Shoots */}
-                                        {delayedShoots.map((shoot, idx) => (
+                                        {delayedShoots.map((shoot) => (
                                             <div key={shoot.id} className="pb-4 border-b border-gray-200">
                                                 <div className="flex items-center justify-between mb-2">
                                                     <p className="text-xs text-red-600 font-semibold">Delayed Shoot</p>
                                                     <Badge variant="error">Delayed</Badge>
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">Brand</p>
-                                                        <p className="font-medium text-deep-black text-sm">{shoot.brandName}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">Campaign</p>
-                                                        <p className="text-sm text-gray-700">{shoot.campaign}</p>
-                                                    </div>
+                                                    {shoot.brandName && (
+                                                        <div>
+                                                            <p className="text-xs text-gray-500">Brand</p>
+                                                            <p className="font-medium text-deep-black text-sm">{shoot.brandName}</p>
+                                                        </div>
+                                                    )}
+                                                    {shoot.campaign && (
+                                                        <div>
+                                                            <p className="text-xs text-gray-500">Campaign</p>
+                                                            <p className="text-sm text-gray-700">{shoot.campaign}</p>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                {/* Action Buttons for Delayed */}
                                                 <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="flex-1"
-                                                        onClick={() => handleReschedule(shoot)}
-                                                    >
+                                                    <Button variant="outline" size="sm" className="flex-1" onClick={() => handleReschedule(shoot, 'shoot')}>
                                                         Reschedule
                                                     </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="text-red-600 hover:bg-red-50 hover:border-red-600"
-                                                        onClick={() => handleDelete(shoot.id)}
-                                                    >
+                                                    <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50 hover:border-red-600" onClick={() => handleDelete(shoot.id, 'shoot')}>
                                                         <Trash2 size={16} />
                                                     </Button>
                                                 </div>
                                             </div>
                                         ))}
                                         {/* Delayed Uploads */}
-                                        {delayedUploads.map((upload, idx) => (
+                                        {delayedUploads.map((upload) => (
                                             <div key={upload.id} className="pb-4 border-b border-gray-200">
                                                 <div className="flex items-center justify-between mb-2">
                                                     <p className="text-xs text-orange-600 font-semibold">Delayed Upload</p>
                                                     <Badge variant="warning">Delayed</Badge>
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">Brand</p>
-                                                        <p className="font-medium text-deep-black text-sm">{upload.brandName}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">Campaign</p>
-                                                        <p className="text-sm text-gray-700">{upload.campaign}</p>
-                                                    </div>
+                                                    {upload.brandName && (
+                                                        <div>
+                                                            <p className="text-xs text-gray-500">Brand</p>
+                                                            <p className="font-medium text-deep-black text-sm">{upload.brandName}</p>
+                                                        </div>
+                                                    )}
+                                                    {upload.campaign && (
+                                                        <div>
+                                                            <p className="text-xs text-gray-500">Campaign</p>
+                                                            <p className="text-sm text-gray-700">{upload.campaign}</p>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                {/* Action Buttons for Delayed */}
                                                 <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="flex-1"
-                                                        onClick={() => handleReschedule(upload)}
-                                                    >
+                                                    <Button variant="outline" size="sm" className="flex-1" onClick={() => handleReschedule(upload, 'upload')}>
                                                         Reschedule
                                                     </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="text-red-600 hover:bg-red-50 hover:border-red-600"
-                                                        onClick={() => handleDelete(upload.id)}
-                                                    >
+                                                    <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50 hover:border-red-600" onClick={() => handleDelete(upload.id, 'upload')}>
                                                         <Trash2 size={16} />
                                                     </Button>
                                                 </div>
@@ -676,201 +663,19 @@ const ShootingCalendar = () => {
                             )}
                         </Card>
                     )}
-
-
-
                 </div>
             </div>
 
             {/* Add to Calendar Modal */}
-            {showAddModal && createPortal(
-                <div
-                    className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4 ${isClosing ? 'animate-backdrop-exit' : 'animate-fadeIn'}`}
-                    style={{ backdropFilter: 'blur(4px)' }}
-                    onClick={closeModal}
-                >
-                    <Card
-                        className={`w-[95%] md:w-full max-w-4xl max-h-[85vh] md:max-h-[90vh] overflow-y-auto ${isClosing ? 'animate-popup-exit' : 'animate-scaleIn'}`}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="p-4 md:p-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-2xl font-bebas tracking-wide text-deep-black">Add to Calendar</h2>
-                                <button
-                                    onClick={closeModal}
-                                    className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
-                                >
-                                    ×
-                                </button>
-                            </div>
-
-                            {/* Schedule Type Selector */}
-                            <div className="flex gap-2 mb-6">
-                                <button
-                                    onClick={() => setScheduleType('shoot')}
-                                    className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${scheduleType === 'shoot'
-                                        ? 'bg-primary-orange text-white shadow-md'
-                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                        }`}
-                                >
-                                    <Video size={16} className="inline mr-2" />
-                                    Shoot Schedule
-                                </button>
-                                <button
-                                    onClick={() => setScheduleType('upload')}
-                                    className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${scheduleType === 'upload'
-                                        ? 'bg-gray-700 text-white shadow-md'
-                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                        }`}
-                                >
-                                    <Upload size={16} className="inline mr-2" />
-                                    Upload Schedule
-                                </button>
-                            </div>
-
-                            {/* Form */}
-                            <form onSubmit={handleSubmit} className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="md:col-span-1">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Brand Name *
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="brandName"
-                                            value={formData.brandName}
-                                            onChange={handleInputChange}
-                                            required
-                                            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent"
-                                            placeholder="Enter brand name"
-                                        />
-                                    </div>
-
-                                    <div className="md:col-span-2">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Campaign Name *
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="campaign"
-                                            value={formData.campaign}
-                                            onChange={handleInputChange}
-                                            required
-                                            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent"
-                                            placeholder="Enter campaign name"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <DateInput
-                                            label="Date"
-                                            name="date"
-                                            value={formData.date}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <TimeInput
-                                            label="Time"
-                                            name="time"
-                                            value={formData.time}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                    </div>
-
-                                    {scheduleType === 'shoot' ? (
-                                        <div className="md:col-span-1">
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Location *
-                                            </label>
-                                            <input
-                                                type="text"
-                                                name="location"
-                                                value={formData.location}
-                                                onChange={handleInputChange}
-                                                required={scheduleType === 'shoot'}
-                                                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent"
-                                                placeholder="Enter shoot location"
-                                            />
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <div>
-                                                <Select
-                                                    label="Platform"
-                                                    name="platform"
-                                                    value={formData.platform}
-                                                    onChange={handleInputChange}
-                                                    required={scheduleType === 'upload'}
-                                                    options={[
-                                                        'Instagram',
-                                                        'YouTube',
-                                                        'TikTok',
-                                                        'Facebook'
-                                                    ]}
-                                                    placeholder="Select platform"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Content Type *
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    name="contentType"
-                                                    value={formData.contentType}
-                                                    onChange={handleInputChange}
-                                                    required={scheduleType === 'upload'}
-                                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent"
-                                                    placeholder="e.g., Reel, Post, Video"
-                                                />
-                                            </div>
-                                        </>
-                                    )}
-
-                                    <div className="md:col-span-3">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Notes
-                                        </label>
-                                        <textarea
-                                            name="notes"
-                                            value={formData.notes}
-                                            onChange={handleInputChange}
-                                            rows="2"
-                                            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent resize-none"
-                                            placeholder="Add any additional notes..."
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-3 pt-4">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={closeModal}
-                                        className="flex-1"
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        type="submit"
-                                        variant="primary"
-                                        className="flex-1"
-                                    >
-                                        Add to Calendar
-                                    </Button>
-                                </div>
-                            </form>
-                        </div>
-                    </Card>
-                </div>,
-                document.body
-            )}
-
+            <AddEventModal
+                isOpen={showAddModal}
+                onClose={() => setShowAddModal(false)}
+                onSuccess={(msg) => {
+                    setSuccessAlert({ isOpen: true, message: msg });
+                    setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
+                    fetchData(true); // Silent refresh
+                }}
+            />
             {/* Reschedule Modal */}
             {createPortal(
                 <RescheduleModal

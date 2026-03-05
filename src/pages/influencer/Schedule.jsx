@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
@@ -6,21 +6,23 @@ import Button from '../../components/ui/Button';
 import RescheduleModal from '../../components/dashboard/RescheduleModal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import SuccessAlert from '../../components/ui/SuccessAlert';
-import { Calendar, Clock, MapPin, Search, Upload, Video, X, Trash2 } from 'lucide-react';
-import { calendarEvents } from '../../data/demoData';
+import { Calendar, Clock, MapPin, Search, Upload, Video, X, Trash2, Loader2 } from 'lucide-react';
+import api from '../../utils/api';
 
 const Schedule = () => {
     const [activeTab, setActiveTab] = useState('shoots');
     const [searchQuery, setSearchQuery] = useState('');
-    const [completedShoots, setCompletedShoots] = useState(new Set());
-    const [completedUploads, setCompletedUploads] = useState(new Set());
     const [selectedShoot, setSelectedShoot] = useState(null);
     const [isModalClosing, setIsModalClosing] = useState(false);
-    const [rescheduleModal, setRescheduleModal] = useState({ isOpen: false, event: null });
-    const [rescheduledEvents, setRescheduledEvents] = useState({});
-    const [deletedItems, setDeletedItems] = useState(new Set());
-    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, itemId: null });
+    const [rescheduleModal, setRescheduleModal] = useState({ isOpen: false, event: null, eventType: null });
+    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, itemId: null, itemType: null });
     const [successAlert, setSuccessAlert] = useState({ isOpen: false, message: '' });
+
+    // API data
+    const [shoots, setShoots] = useState([]);
+    const [uploads, setUploads] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     // Get today's date string
     const getTodayStr = () => {
@@ -30,166 +32,166 @@ const Schedule = () => {
 
     const todayStr = getTodayStr();
 
-    // Convert calendar events to booking format for shoots
-    const bookings = calendarEvents
-        .filter(event => event.type === 'shoot' && event.date === todayStr)
-        .map(event => ({
-            id: event.id,
-            brandName: event.brand,
-            campaign: event.campaign,
-            shootDate: event.date,
-            shootTime: event.displayTime,
-            location: event.location,
-            status: event.status,
-            notes: event.description
-        }));
-
-    // Convert calendar events to upload format
-    const uploadSchedule = calendarEvents
-        .filter(event => event.type === 'upload' && event.date === todayStr)
-        .map(event => ({
-            id: event.id,
-            brandName: event.brand,
-            campaign: event.campaign,
-            uploadDate: event.date,
-            uploadTime: event.displayTime,
-            platform: event.platform || 'YouTube',
-            contentType: 'Video',
-            status: event.status,
-            notes: event.description
-        }));
-
-    // Get today's shoots
-    const getTodaysShoot = () => {
-        return bookings.filter(b =>
-            b.shootDate === todayStr &&
-            (b.status === 'confirmed' || b.status === 'pending')
-        );
+    // Helper to convert HH:MM:SS or HH:MM to display time
+    const toDisplayTime = (timeStr) => {
+        if (!timeStr) return '';
+        const [hours, minutes] = timeStr.split(':');
+        const hour = parseInt(hours);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour % 12 || 12;
+        return `${displayHour}:${minutes} ${ampm}`;
     };
 
-    // Get today's uploads
-    const getTodaysUploads = () => {
-        return uploadSchedule.filter(u => u.uploadDate === todayStr);
-    };
+    // Fetch today's shoots and uploads
+    const fetchData = useCallback(async (silent = false) => {
+        try {
+            if (!silent) setLoading(true);
+            setError(null);
 
-    const todaysShoot = getTodaysShoot();
-    const todaysUploads = getTodaysUploads();
+            const [shootsRes, uploadsRes] = await Promise.all([
+                api.get('/api/shoots', { params: { start_date: todayStr, end_date: todayStr } }),
+                api.get('/api/uploads', { params: { start_date: todayStr, end_date: todayStr } }),
+            ]);
 
-    // Handler for marking shoot as completed
-    const handleMarkShootComplete = (shootId) => {
-        setCompletedShoots(prev => {
-            const newSet = new Set(prev);
-            newSet.add(shootId);
-            return newSet;
-        });
-
-        // Persist completed shoot to localStorage
-        const shoot = bookings.find(b => b.id === shootId);
-        if (shoot) {
-            const completedShootsData = JSON.parse(localStorage.getItem('completedShoots') || '[]');
-
-            // Check if shoot is already in completed list
-            if (!completedShootsData.find(s => s.id === shootId)) {
-                completedShootsData.push({
-                    ...shoot,
-                    completedAt: new Date().toISOString(),
-                    status: 'completed'
-                });
-                localStorage.setItem('completedShoots', JSON.stringify(completedShootsData));
-
-                // Show success notification (optional)
-                console.log('Shoot marked as completed! Visit Completed Shoots page to generate review link.');
+            setShoots(Array.isArray(shootsRes.data) ? shootsRes.data : []);
+            setUploads(Array.isArray(uploadsRes.data) ? uploadsRes.data : []);
+        } catch (err) {
+            if (!silent) {
+                const msg =
+                    err.response?.data?.detail?.[0]?.msg ||
+                    err.response?.data?.detail ||
+                    'Failed to load schedule data.';
+                setError(msg);
             }
+        } finally {
+            if (!silent) setLoading(false);
+        }
+    }, [todayStr]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    // Map API data to component format
+    const bookings = shoots.map(s => ({
+        id: s.id,
+        brandName: s.brand_name || '',
+        campaign: s.name || '',
+        shootDate: s.shoot_date,
+        shootTime: toDisplayTime(s.shoot_time),
+        location: s.location || '',
+        status: s.completed ? 'completed' : 'confirmed',
+        notes: s.notes || '',
+        completed: s.completed
+    }));
+
+    const uploadSchedule = uploads.map(u => ({
+        id: u.id,
+        brandName: u.brand_name || '',
+        campaign: u.name || '',
+        uploadDate: u.upload_date,
+        uploadTime: toDisplayTime(u.upload_time),
+        platform: u.platform || '',
+        contentType: 'Video',
+        status: u.completed ? 'uploaded' : 'confirmed',
+        notes: u.notes || '',
+        completed: u.completed
+    }));
+
+    // Get today's active shoots (not completed)
+    const todaysShoot = bookings.filter(b => !b.completed);
+    const todaysUploads = uploadSchedule.filter(u => !u.completed);
+
+    // Mark as completed handlers (call PUT API)
+    const handleMarkShootComplete = async (shootId) => {
+        try {
+            await api.put(`/api/shoots/${shootId}`, { completed: true });
+            setSuccessAlert({ isOpen: true, message: 'Shoot marked as completed!' });
+            setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
+            fetchData(true);
+        } catch (err) {
+            alert(err.response?.data?.detail || 'Failed to mark shoot as completed.');
         }
     };
 
-    // Handler for marking upload as completed
-    const handleMarkUploadComplete = (uploadId) => {
-        setCompletedUploads(prev => {
-            const newSet = new Set(prev);
-            newSet.add(uploadId);
-            return newSet;
-        });
-
-        // Persist completed upload to localStorage
-        const upload = uploadSchedule.find(u => u.id === uploadId);
-        if (upload) {
-            const completedUploadsData = JSON.parse(localStorage.getItem('completedUploads') || '[]');
-
-            // Check if upload is already in completed list
-            if (!completedUploadsData.find(u => u.id === uploadId)) {
-                completedUploadsData.push({
-                    ...upload,
-                    completedAt: new Date().toISOString(),
-                    status: 'uploaded'
-                });
-                localStorage.setItem('completedUploads', JSON.stringify(completedUploadsData));
-
-                // Show success notification (optional)
-                console.log('Upload marked as completed!');
-            }
+    const handleMarkUploadComplete = async (uploadId) => {
+        try {
+            await api.put(`/api/uploads/${uploadId}`, { completed: true });
+            setSuccessAlert({ isOpen: true, message: 'Upload marked as completed!' });
+            setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
+            fetchData(true);
+        } catch (err) {
+            alert(err.response?.data?.detail || 'Failed to mark upload as completed.');
         }
     };
 
     // Reschedule handlers
-    const handleReschedule = (event) => {
-        setRescheduleModal({ isOpen: true, event });
+    const handleReschedule = (event, type) => {
+        setRescheduleModal({ isOpen: true, event, eventType: type });
     };
 
     const handleCloseRescheduleModal = () => {
-        setRescheduleModal({ isOpen: false, event: null });
+        setRescheduleModal({ isOpen: false, event: null, eventType: null });
     };
 
-    const handleRescheduleConfirm = (rescheduleData) => {
-        if (rescheduleModal.event && rescheduleData) {
-            // Convert 24-hour time to 12-hour format for display
-            const [hours, minutes] = rescheduleData.time.split(':');
-            const hour = parseInt(hours);
-            const ampm = hour >= 12 ? 'PM' : 'AM';
-            const displayHour = hour % 12 || 12;
-            const displayTime = `${displayHour}:${minutes} ${ampm}`;
+    const handleRescheduleConfirm = async (rescheduleData) => {
+        if (!rescheduleModal.event || !rescheduleData) {
+            handleCloseRescheduleModal();
+            return;
+        }
 
-            setRescheduledEvents(prev => ({
-                ...prev,
-                [rescheduleModal.event.id]: {
-                    date: rescheduleData.date,
-                    time: rescheduleData.time,
-                    displayTime: displayTime
-                }
-            }));
+        try {
+            const eventId = rescheduleModal.event.id;
+            if (rescheduleModal.eventType === 'shoot') {
+                await api.put(`/api/shoots/${eventId}`, {
+                    shoot_date: rescheduleData.date,
+                    shoot_time: rescheduleData.time || null,
+                });
+            } else {
+                await api.put(`/api/uploads/${eventId}`, {
+                    upload_date: rescheduleData.date,
+                    upload_time: rescheduleData.time || null,
+                });
+            }
 
-            // Show success alert
-            setSuccessAlert({
-                isOpen: true,
-                message: 'Event rescheduled successfully!'
-            });
-
-            // Auto-hide success alert after 3 seconds
-            setTimeout(() => {
-                setSuccessAlert({ isOpen: false, message: '' });
-            }, 3000);
+            setSuccessAlert({ isOpen: true, message: 'Event rescheduled successfully!' });
+            setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
+            fetchData(true);
+        } catch (err) {
+            alert(err.response?.data?.detail || 'Failed to reschedule event.');
         }
         handleCloseRescheduleModal();
     };
 
     // Delete handlers
-    const handleDelete = (itemId) => {
-        setDeleteConfirm({ isOpen: true, itemId });
+    const handleDelete = (itemId, type) => {
+        setDeleteConfirm({ isOpen: true, itemId, itemType: type });
     };
 
-    const handleConfirmDelete = () => {
-        if (deleteConfirm.itemId) {
-            setDeletedItems(prev => {
-                const newSet = new Set(prev);
-                newSet.add(deleteConfirm.itemId);
-                return newSet;
-            });
+    const handleConfirmDelete = async () => {
+        if (!deleteConfirm.itemId) {
+            setDeleteConfirm({ isOpen: false, itemId: null, itemType: null });
+            return;
         }
-        setDeleteConfirm({ isOpen: false, itemId: null });
+
+        try {
+            if (deleteConfirm.itemType === 'shoot') {
+                await api.delete(`/api/shoots/${deleteConfirm.itemId}`);
+            } else {
+                await api.delete(`/api/uploads/${deleteConfirm.itemId}`);
+            }
+
+            setSuccessAlert({ isOpen: true, message: 'Event deleted successfully!' });
+            setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
+            fetchData(true);
+        } catch (err) {
+            alert(err.response?.data?.detail || 'Failed to delete event.');
+        }
+        setDeleteConfirm({ isOpen: false, itemId: null, itemType: null });
     };
 
     const handleCancelDelete = () => {
-        setDeleteConfirm({ isOpen: false, itemId: null });
+        setDeleteConfirm({ isOpen: false, itemId: null, itemType: null });
     };
 
     // Modal handlers
@@ -202,12 +204,12 @@ const Schedule = () => {
         setTimeout(() => {
             setSelectedShoot(null);
             setIsModalClosing(false);
-        }, 300); // Match animation duration
+        }, 300);
     };
 
     // Filter functions
     const filterShoots = () => {
-        let filtered = todaysShoot.filter(b => !deletedItems.has(b.id));
+        let filtered = todaysShoot;
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
             filtered = filtered.filter(booking =>
@@ -215,7 +217,6 @@ const Schedule = () => {
                 booking.campaign?.toLowerCase().includes(query) ||
                 booking.location?.toLowerCase().includes(query) ||
                 booking.status?.toLowerCase().includes(query) ||
-                booking.shootDate?.toLowerCase().includes(query) ||
                 booking.shootTime?.toLowerCase().includes(query) ||
                 booking.notes?.toLowerCase().includes(query)
             );
@@ -224,7 +225,7 @@ const Schedule = () => {
     };
 
     const filterUploads = () => {
-        let filtered = todaysUploads.filter(u => !deletedItems.has(u.id));
+        let filtered = todaysUploads;
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
             filtered = filtered.filter(upload =>
@@ -255,9 +256,33 @@ const Schedule = () => {
     };
 
     const getPlatformIcon = (platform) => {
-        // You can customize icons based on platform
         return <Upload size={16} />;
     };
+
+    // Loading state
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center">
+                    <Loader2 size={40} className="animate-spin text-primary-orange mx-auto mb-4" />
+                    <p className="text-gray-600">Loading schedule...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <Card className="p-8 text-center max-w-md">
+                    <p className="text-red-600 font-medium mb-2">Error</p>
+                    <p className="text-gray-600 text-sm mb-4">{typeof error === 'string' ? error : 'Something went wrong.'}</p>
+                    <Button onClick={() => fetchData()}>Try Again</Button>
+                </Card>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8">
@@ -338,7 +363,7 @@ const Schedule = () => {
                                     <div className="flex items-start gap-3">
                                         <div className="w-12 h-12 bg-gray-200 rounded-lg flex-shrink-0" />
                                         <div>
-                                            <h3 className="font-semibold text-deep-black">{booking.brandName}</h3>
+                                            <h3 className="font-semibold text-deep-black">{booking.brandName || 'Untitled'}</h3>
                                             <p className="text-sm text-gray-600 mt-1">{booking.campaign}</p>
                                         </div>
                                     </div>
@@ -348,14 +373,18 @@ const Schedule = () => {
                                 </div>
 
                                 <div className="space-y-2 mb-4">
-                                    <div className="flex items-center gap-2 text-sm font-semibold text-primary-orange">
-                                        <Clock size={16} />
-                                        {booking.shootTime}
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                        <MapPin size={16} className="text-gray-400" />
-                                        {booking.location}
-                                    </div>
+                                    {booking.shootTime && (
+                                        <div className="flex items-center gap-2 text-sm font-semibold text-primary-orange">
+                                            <Clock size={16} />
+                                            {booking.shootTime}
+                                        </div>
+                                    )}
+                                    {booking.location && (
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                            <MapPin size={16} className="text-gray-400" />
+                                            {booking.location}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {booking.notes && (
@@ -372,8 +401,7 @@ const Schedule = () => {
                                             variant="outline"
                                             size="sm"
                                             className="flex-1"
-                                            onClick={() => handleReschedule(booking)}
-                                            disabled={completedShoots.has(booking.id)}
+                                            onClick={() => handleReschedule(booking, 'shoot')}
                                         >
                                             Reschedule
                                         </Button>
@@ -381,8 +409,7 @@ const Schedule = () => {
                                             variant="outline"
                                             size="sm"
                                             className="text-red-600 hover:bg-red-50 hover:border-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            onClick={() => handleDelete(booking.id)}
-                                            disabled={completedShoots.has(booking.id)}
+                                            onClick={() => handleDelete(booking.id, 'shoot')}
                                         >
                                             <Trash2 size={16} />
                                         </Button>
@@ -398,13 +425,12 @@ const Schedule = () => {
                                             View Details
                                         </Button>
                                         <Button
-                                            variant={completedShoots.has(booking.id) ? "outline" : "primary"}
+                                            variant="primary"
                                             size="sm"
                                             className="flex-1"
                                             onClick={() => handleMarkShootComplete(booking.id)}
-                                            disabled={completedShoots.has(booking.id)}
                                         >
-                                            {completedShoots.has(booking.id) ? 'Done' : 'Mark as Completed'}
+                                            Mark as Completed
                                         </Button>
                                     </div>
                                 </div>
@@ -436,7 +462,7 @@ const Schedule = () => {
                                             {getPlatformIcon(upload.platform)}
                                         </div>
                                         <div>
-                                            <h3 className="font-semibold text-deep-black">{upload.brandName}</h3>
+                                            <h3 className="font-semibold text-deep-black">{upload.brandName || 'Untitled'}</h3>
                                             <p className="text-sm text-gray-600 mt-1">{upload.campaign}</p>
                                         </div>
                                     </div>
@@ -446,14 +472,18 @@ const Schedule = () => {
                                 </div>
 
                                 <div className="space-y-2 mb-4">
-                                    <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                                        <Clock size={16} />
-                                        {upload.uploadTime}
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                        <Upload size={16} className="text-gray-400" />
-                                        {upload.platform} - {upload.contentType}
-                                    </div>
+                                    {upload.uploadTime && (
+                                        <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                                            <Clock size={16} />
+                                            {upload.uploadTime}
+                                        </div>
+                                    )}
+                                    {upload.platform && (
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                            <Upload size={16} className="text-gray-400" />
+                                            {upload.platform}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {upload.notes && (
@@ -470,8 +500,7 @@ const Schedule = () => {
                                             variant="outline"
                                             size="sm"
                                             className="flex-1"
-                                            onClick={() => handleReschedule(upload)}
-                                            disabled={completedUploads.has(upload.id)}
+                                            onClick={() => handleReschedule(upload, 'upload')}
                                         >
                                             Reschedule
                                         </Button>
@@ -479,21 +508,19 @@ const Schedule = () => {
                                             variant="outline"
                                             size="sm"
                                             className="text-red-600 hover:bg-red-50 hover:border-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            onClick={() => handleDelete(upload.id)}
-                                            disabled={completedUploads.has(upload.id)}
+                                            onClick={() => handleDelete(upload.id, 'upload')}
                                         >
                                             <Trash2 size={16} />
                                         </Button>
                                     </div>
                                     {/* Second row: Mark as Completed */}
                                     <Button
-                                        variant={completedUploads.has(upload.id) ? "outline" : "primary"}
+                                        variant="primary"
                                         size="sm"
                                         className="w-full"
                                         onClick={() => handleMarkUploadComplete(upload.id)}
-                                        disabled={completedUploads.has(upload.id)}
                                     >
-                                        {completedUploads.has(upload.id) ? 'Done' : 'Mark as Completed'}
+                                        Mark as Completed
                                     </Button>
                                 </div>
                             </Card>
@@ -530,7 +557,7 @@ const Schedule = () => {
                                     <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0" />
                                     <div>
                                         <h2 className="text-2xl font-bebas tracking-wide text-deep-black mb-1">
-                                            {selectedShoot.brandName}
+                                            {selectedShoot.brandName || 'Untitled'}
                                         </h2>
                                         <p className="text-gray-600">{selectedShoot.campaign}</p>
                                         <Badge variant={getStatusVariant(selectedShoot.status)} className="mt-2">
@@ -564,23 +591,27 @@ const Schedule = () => {
                                             })}
                                         </p>
                                     </div>
-                                    <div className="p-4 bg-orange-50 rounded-lg border-l-4 border-primary-orange">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Clock size={18} className="text-primary-orange" />
-                                            <p className="text-xs font-semibold text-primary-orange uppercase">Shoot Time</p>
+                                    {selectedShoot.shootTime && (
+                                        <div className="p-4 bg-orange-50 rounded-lg border-l-4 border-primary-orange">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Clock size={18} className="text-primary-orange" />
+                                                <p className="text-xs font-semibold text-primary-orange uppercase">Shoot Time</p>
+                                            </div>
+                                            <p className="text-lg font-semibold text-deep-black">{selectedShoot.shootTime}</p>
                                         </div>
-                                        <p className="text-lg font-semibold text-deep-black">{selectedShoot.shootTime}</p>
-                                    </div>
+                                    )}
                                 </div>
 
                                 {/* Location */}
-                                <div className="p-4 bg-gray-50 rounded-lg">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <MapPin size={18} className="text-gray-600" />
-                                        <p className="text-xs font-semibold text-gray-600 uppercase">Location</p>
+                                {selectedShoot.location && (
+                                    <div className="p-4 bg-gray-50 rounded-lg">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <MapPin size={18} className="text-gray-600" />
+                                            <p className="text-xs font-semibold text-gray-600 uppercase">Location</p>
+                                        </div>
+                                        <p className="text-base text-deep-black font-medium">{selectedShoot.location}</p>
                                     </div>
-                                    <p className="text-base text-deep-black font-medium">{selectedShoot.location}</p>
-                                </div>
+                                )}
 
                                 {/* Notes */}
                                 {selectedShoot.notes && (
@@ -593,15 +624,14 @@ const Schedule = () => {
                                 {/* Action Buttons */}
                                 <div className="flex gap-3 pt-4 border-t border-gray-200">
                                     <Button
-                                        variant={completedShoots.has(selectedShoot.id) ? "outline" : "primary"}
+                                        variant="primary"
                                         className="flex-1"
                                         onClick={() => {
                                             handleMarkShootComplete(selectedShoot.id);
                                             closeShootModal();
                                         }}
-                                        disabled={completedShoots.has(selectedShoot.id)}
                                     >
-                                        {completedShoots.has(selectedShoot.id) ? 'Done' : 'Mark as Completed'}
+                                        Mark as Completed
                                     </Button>
                                     <Button
                                         variant="outline"
