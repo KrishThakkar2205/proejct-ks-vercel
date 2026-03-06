@@ -618,13 +618,13 @@ const PublicPortfolio = () => {
 
                                 {/* Body: side-by-side on desktop, stacked on mobile */}
                                 <div
-                                    className="flex flex-col md:flex-row max-h-[85vh] overflow-hidden"
+                                    className="flex flex-col md:flex-row max-h-[85vh] overflow-y-auto"
                                     onTouchStart={onTouchStart}
                                     onTouchMove={onTouchMove}
                                     onTouchEnd={onTouchEnd}
                                 >
                                     {/* Media Preview */}
-                                    <div className="w-full md:w-auto bg-transparent flex items-center justify-center relative max-h-[60vh] md:max-h-[85vh] group/media shrink-0">
+                                    <div className="w-full md:w-auto bg-black md:bg-transparent flex items-start md:items-center justify-center relative md:max-h-[85vh] group/media shrink-0">
                                         {/* Navigation Buttons (Large Screen) */}
                                         {currentIndex > 0 && (
                                             <button
@@ -671,7 +671,7 @@ const PublicPortfolio = () => {
                                     </div>
 
                                     {/* Content Panel */}
-                                    <div className="w-full md:w-80 lg:w-96 p-4 md:p-6 flex flex-col bg-white shrink-0 overflow-y-auto border-t md:border-t-0 md:border-l border-gray-100 relative min-w-0">
+                                    <div className="w-full md:w-80 lg:w-96 p-4 md:p-6 flex flex-col bg-white shrink-0 border-t md:border-t-0 md:border-l border-gray-100 relative min-w-0">
                                         <div className="flex-1">
                                             {selectedMedia?.timestamp && (
                                                 <div className="mb-4">
@@ -741,24 +741,13 @@ const PublicPortfolio = () => {
                                                 )}
                                             </div>
 
-                                            <p className="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wider">Caption</p>
-                                            <div className="text-sm text-gray-800 whitespace-pre-wrap">
-                                                {selectedMedia?.caption || 'No caption available.'}
+                                            <div className="mb-4">
+                                                <p className="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wider">Caption</p>
+                                                <div className="text-sm text-gray-800 whitespace-pre-wrap break-words">
+                                                    {selectedMedia?.caption || 'No caption available.'}
+                                                </div>
                                             </div>
                                         </div>
-
-                                        {selectedMedia?.permalink && (
-                                            <div className="mt-4 md:mt-6 pt-4 border-t border-gray-100 flex-shrink-0">
-                                                <a
-                                                    href={selectedMedia.permalink}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="block w-full text-center bg-gray-50 hover:bg-pink-50 text-pink-600 font-semibold py-3 rounded-lg border border-pink-100 transition-colors text-sm md:text-base"
-                                                >
-                                                    View on Instagram
-                                                </a>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
                             </div>
