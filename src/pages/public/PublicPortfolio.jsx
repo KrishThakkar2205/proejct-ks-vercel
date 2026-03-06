@@ -617,8 +617,8 @@ const PublicPortfolio = () => {
                                         {/* Media Preview Container with Animation */}
                                         <div
                                             className={`absolute inset-0 w-full h-full flex items-center justify-center transition-transform duration-300 ease-in-out ${slideDirection === 'slide-left' ? '-translate-x-full opacity-0' :
-                                                    slideDirection === 'slide-right' ? 'translate-x-full opacity-0' :
-                                                        'translate-x-0 opacity-100'
+                                                slideDirection === 'slide-right' ? 'translate-x-full opacity-0' :
+                                                    'translate-x-0 opacity-100'
                                                 }`}
                                         >
                                             {selectedMedia?.media_type === 'VIDEO' ? (
