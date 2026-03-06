@@ -69,7 +69,7 @@ const InfluencerDashboard = () => {
                 resReviews,
                 resUpcomingShoots,
             ] = await Promise.all([
-                api.get('/dashboard-card').catch(() => ({ data: null })),
+                api.get('/dashboard-card', { params: { Start_Date: todayStr, End_Date: todayStr } }).catch(() => ({ data: null })),
                 api.get('/api/shoots', { params: { start_date: todayStr, end_date: todayStr, completed: false } }),
                 api.get('/api/uploads', { params: { start_date: todayStr, end_date: todayStr, completed: false } }),
                 api.get('/api/shoots', { params: { completed: false, end_date: yesterdayStr } }),
@@ -105,13 +105,12 @@ const InfluencerDashboard = () => {
 
 
             // --- Stats ---
+            // --- Stats ---
             const dashCard = resDashboardCard.data;
-            const upcomingCount = Array.isArray(resUpcomingShoots.data)
-                ? resUpcomingShoots.data.length
-                : 0;
+            const todayUpcomingCount = todayShootsData.length + todayUploadsData.length;
 
             setStatsData({
-                upcomingCount: dashCard?.upcoming_shoots ?? upcomingCount,
+                upcomingCount: todayUpcomingCount,
                 completedCount: dashCard?.completed_today ?? (resCompletedShoots.data?.length || 0),
                 rating: dashCard?.average_rating != null
                     ? Number(dashCard.average_rating).toFixed(1)

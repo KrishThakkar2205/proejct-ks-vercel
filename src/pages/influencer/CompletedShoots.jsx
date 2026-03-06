@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link2, Copy, CheckCircle, Calendar, MapPin, Clock, Search, Loader2 } from 'lucide-react';
+import { Link2, Copy, CheckCircle, Calendar, MapPin, Clock, Search, Loader2, ExternalLink } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
