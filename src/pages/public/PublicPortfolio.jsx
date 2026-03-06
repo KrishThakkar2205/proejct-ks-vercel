@@ -4,7 +4,7 @@ import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import StarRating from '../../components/ui/StarRating';
-import { MapPin, Star, Loader2, Calendar, X, Eye, Heart, MessageCircle } from 'lucide-react';
+import { MapPin, Star, Loader2, Calendar, X, Eye, Heart, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '../../utils/api';
 
@@ -20,6 +20,50 @@ const PublicPortfolio = () => {
     const [selectedMedia, setSelectedMedia] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
     const modalTimeoutRef = useRef(null);
+
+    // Swipe and Navigation state
+    const [touchStart, setTouchStart] = useState(null);
+    const [touchEnd, setTouchEnd] = useState(null);
+    const minSwipeDistance = 50;
+
+    const currentIndex = selectedMedia ? instaMedia.findIndex(m => m.id === selectedMedia.id) : -1;
+
+    const handlePrevMedia = useCallback((e) => {
+        if (e) e.stopPropagation();
+        if (currentIndex > 0) {
+            setSelectedMedia(instaMedia[currentIndex - 1]);
+        }
+    }, [currentIndex, instaMedia]);
+
+    const handleNextMedia = useCallback((e) => {
+        if (e) e.stopPropagation();
+        if (currentIndex > -1 && currentIndex < instaMedia.length - 1) {
+            setSelectedMedia(instaMedia[currentIndex + 1]);
+        }
+    }, [currentIndex, instaMedia]);
+
+    const onTouchStart = (e) => {
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+
+    const onTouchMove = (e) => {
+        setTouchEnd(e.targetTouches[0].clientX);
+    };
+
+    const onTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+
+        if (isLeftSwipe && currentIndex > -1 && currentIndex < instaMedia.length - 1) {
+            handleNextMedia();
+        }
+        if (isRightSwipe && currentIndex > 0) {
+            handlePrevMedia();
+        }
+    };
 
     // Animate modal in when selectedMedia is set
     useEffect(() => {
@@ -533,18 +577,44 @@ const PublicPortfolio = () => {
                                 </div>
 
                                 {/* Body: side-by-side on desktop, stacked on mobile */}
-                                <div className="flex flex-col md:flex-row max-h-[85vh] overflow-y-auto">
+                                <div
+                                    className="flex flex-col md:flex-row max-h-[85vh] overflow-y-auto"
+                                    onTouchStart={onTouchStart}
+                                    onTouchMove={onTouchMove}
+                                    onTouchEnd={onTouchEnd}
+                                >
                                     {/* Media Preview */}
-                                    <div className="w-full md:w-1/2 bg-black flex items-center justify-center relative min-h-[300px] max-h-[50vh] md:max-h-[85vh]">
+                                    <div className="w-full md:w-1/2 bg-black flex items-center justify-center relative min-h-[300px] max-h-[50vh] md:max-h-[85vh] group/media">
+                                        {/* Navigation Buttons (Large Screen) */}
+                                        {currentIndex > 0 && (
+                                            <button
+                                                onClick={handlePrevMedia}
+                                                className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/20 hover:bg-white/40 rounded-full items-center justify-center text-white transition-all backdrop-blur-sm"
+                                                aria-label="Previous Media"
+                                            >
+                                                <ChevronLeft size={24} />
+                                            </button>
+                                        )}
+                                        {currentIndex > -1 && currentIndex < instaMedia.length - 1 && (
+                                            <button
+                                                onClick={handleNextMedia}
+                                                className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/20 hover:bg-white/40 rounded-full items-center justify-center text-white transition-all backdrop-blur-sm"
+                                                aria-label="Next Media"
+                                            >
+                                                <ChevronRight size={24} />
+                                            </button>
+                                        )}
+
                                         {selectedMedia?.media_type === 'VIDEO' ? (
                                             <video
+                                                key={`video-${selectedMedia.id}`}
                                                 src={selectedMedia.media_url}
-                                                controls
                                                 autoPlay
                                                 className="w-full h-full object-contain max-h-[50vh] md:max-h-[80vh]"
                                             />
                                         ) : (
                                             <img
+                                                key={`img-${selectedMedia?.id || 'none'}`}
                                                 src={selectedMedia?.media_url}
                                                 alt="Instagram post"
                                                 className="w-full h-full object-contain max-h-[50vh] md:max-h-[80vh]"
