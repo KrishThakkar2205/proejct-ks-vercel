@@ -18,6 +18,8 @@ const PublicPortfolio = () => {
     const [instaMedia, setInstaMedia] = useState([]);
     const [mediaLoading, setMediaLoading] = useState(true);
     const [selectedMedia, setSelectedMedia] = useState(null);
+    const [selectedMediaMetrics, setSelectedMediaMetrics] = useState(null);
+    const [mediaMetricsLoading, setMediaMetricsLoading] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [slideDirection, setSlideDirection] = useState(''); // 'slide-left', 'slide-right', or ''
     const modalTimeoutRef = useRef(null);
@@ -161,6 +163,26 @@ const PublicPortfolio = () => {
             fetchInstaMedia();
         }
     }, [influencerId]);
+
+    // Fetch individual media metrics when a media item is selected
+    useEffect(() => {
+        const fetchMediaMetrics = async () => {
+            if (!selectedMedia || !selectedMedia.id || !influencerId) return;
+
+            try {
+                setMediaMetricsLoading(true);
+                const response = await axios.get(`${API_BASE_URL}/api/insta-metric-per-media?influencer_id=${influencerId}&media_id=${selectedMedia.id}`);
+                setSelectedMediaMetrics(response.data);
+            } catch (err) {
+                console.error("Failed to fetch specific media metrics:", err);
+                setSelectedMediaMetrics(null);
+            } finally {
+                setMediaMetricsLoading(false);
+            }
+        };
+
+        fetchMediaMetrics();
+    }, [selectedMedia, influencerId]);
 
     // Loading state
     if (loading) {
@@ -417,6 +439,15 @@ const PublicPortfolio = () => {
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                            {media.timestamp && (
+                                                <p className="text-xs text-gray-500 mb-1">
+                                                    {new Date(media.timestamp).toLocaleDateString('en-US', {
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                        year: 'numeric'
+                                                    })}
+                                                </p>
+                                            )}
                                             <p className="text-sm font-medium text-deep-black line-clamp-2">
                                                 {media.caption || 'No caption'}
                                             </p>
@@ -614,9 +645,9 @@ const PublicPortfolio = () => {
                                             </button>
                                         )}
 
-                                        {/* Media Preview Container with Animation */}
+                                        {/* Animation wrapper for media */}
                                         <div
-                                            className={`relative flex items-center justify-center transition-transform duration-300 ease-in-out ${slideDirection === 'slide-left' ? '-translate-x-full opacity-0' :
+                                            className={`w-full h-full flex items-center justify-center transition-all duration-300 ease-out transform ${slideDirection === 'slide-left' ? '-translate-x-full opacity-0' :
                                                 slideDirection === 'slide-right' ? 'translate-x-full opacity-0' :
                                                     'translate-x-0 opacity-100'
                                                 }`}
@@ -626,22 +657,90 @@ const PublicPortfolio = () => {
                                                     key={`video-${selectedMedia.id}`}
                                                     src={selectedMedia.media_url}
                                                     autoPlay
-                                                    className="w-auto h-auto max-w-full max-h-[60vh] md:max-h-[80vh] md:max-w-[calc(95vw-20rem)] lg:max-w-[calc(95vw-24rem)] object-contain block mx-auto rounded-none md:rounded-bl-xl"
+                                                    className="w-auto h-auto max-w-full max-h-[60vh] md:max-h-[80vh] md:max-w-full lg:max-w-full object-contain block mx-auto rounded-none md:rounded-bl-xl"
                                                 />
                                             ) : (
                                                 <img
                                                     key={`img-${selectedMedia?.id || 'none'}`}
                                                     src={selectedMedia?.media_url}
                                                     alt="Instagram post"
-                                                    className="w-auto h-auto max-w-full max-h-[60vh] md:max-h-[80vh] md:max-w-[calc(95vw-20rem)] lg:max-w-[calc(95vw-24rem)] object-contain block mx-auto rounded-none md:rounded-bl-xl"
+                                                    className="w-auto h-auto max-w-full max-h-[60vh] md:max-h-[80vh] md:max-w-full lg:max-w-full object-contain block mx-auto rounded-none md:rounded-bl-xl"
                                                 />
                                             )}
                                         </div>
                                     </div>
 
                                     {/* Content Panel */}
-                                    <div className="w-full md:w-80 lg:w-96 p-4 md:p-6 flex flex-col bg-white shrink-0 overflow-y-auto border-t md:border-t-0 md:border-l border-gray-100 relative">
+                                    <div className="w-full md:w-80 lg:w-96 p-4 md:p-6 flex flex-col bg-white shrink-0 overflow-y-auto border-t md:border-t-0 md:border-l border-gray-100 relative min-w-0">
                                         <div className="flex-1">
+                                            {selectedMedia?.timestamp && (
+                                                <div className="mb-4">
+                                                    <p className="text-xs text-gray-500 font-semibold mb-1 uppercase tracking-wider">Published Date</p>
+                                                    <p className="text-sm font-medium text-deep-black">
+                                                        {new Date(selectedMedia.timestamp).toLocaleDateString('en-US', {
+                                                            year: 'numeric',
+                                                            month: 'long',
+                                                            day: 'numeric'
+                                                        })}
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {/* Media Metrics Display */}
+                                            <div className="mb-6">
+                                                <p className="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wider">Performance Metrics</p>
+                                                {mediaMetricsLoading ? (
+                                                    <div className="flex justify-center items-center py-4">
+                                                        <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                                                    </div>
+                                                ) : selectedMediaMetrics ? (
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div className="bg-blue-50 p-3 rounded-lg text-center">
+                                                            <div className="flex items-center justify-center gap-1 mb-1">
+                                                                <Eye size={14} className="text-blue-500" />
+                                                                <span className="text-xs text-gray-500">Views</span>
+                                                            </div>
+                                                            <p className="font-semibold text-deep-black">{selectedMediaMetrics.views?.toLocaleString() || '--'}</p>
+                                                        </div>
+                                                        <div className="bg-pink-50 p-3 rounded-lg text-center">
+                                                            <div className="flex items-center justify-center gap-1 mb-1">
+                                                                <Heart size={14} className="text-pink-500" />
+                                                                <span className="text-xs text-gray-500">Interactions</span>
+                                                            </div>
+                                                            <p className="font-semibold text-deep-black">{selectedMediaMetrics.total_interactions?.toLocaleString() || '--'}</p>
+                                                        </div>
+                                                        <div className="bg-orange-50 p-3 rounded-lg text-center">
+                                                            <div className="flex items-center justify-center gap-1 mb-1">
+                                                                <MessageCircle size={14} className="text-primary-orange" />
+                                                                <span className="text-xs text-gray-500">Shares</span>
+                                                            </div>
+                                                            <p className="font-semibold text-deep-black">{selectedMediaMetrics.shares?.toLocaleString() || '--'}</p>
+                                                        </div>
+                                                        <div className="bg-green-50 p-3 rounded-lg text-center">
+                                                            <div className="flex items-center justify-center gap-1 mb-1">
+                                                                <svg className="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                                                                </svg>
+                                                                <span className="text-xs text-gray-500">Reach</span>
+                                                            </div>
+                                                            <p className="font-semibold text-deep-black">{selectedMediaMetrics.reach?.toLocaleString() || '--'}</p>
+                                                        </div>
+
+                                                        {/* Engagement Rate calculated locally since API might only return base metrics */}
+                                                        {selectedMediaMetrics.reach > 0 && (
+                                                            <div className="col-span-2 p-3 bg-gradient-to-r from-orange-50 to-orange-100 border border-primary-orange/20 rounded-lg text-center mt-1">
+                                                                <p className="text-xs text-gray-600 mb-1">Engagement Rate (Interactions / Reach)</p>
+                                                                <p className="text-xl font-bebas tracking-wide text-primary-orange">
+                                                                    {((selectedMediaMetrics.total_interactions / selectedMediaMetrics.reach) * 100).toFixed(2)}%
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-xs text-gray-400">Metrics unavailable</p>
+                                                )}
+                                            </div>
+
                                             <p className="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wider">Caption</p>
                                             <div className="text-sm text-gray-800 whitespace-pre-wrap">
                                                 {selectedMedia?.caption || 'No caption available.'}
