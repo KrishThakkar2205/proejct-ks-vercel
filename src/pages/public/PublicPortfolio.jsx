@@ -19,6 +19,7 @@ const PublicPortfolio = () => {
     const [mediaLoading, setMediaLoading] = useState(true);
     const [selectedMedia, setSelectedMedia] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
+    const [slideDirection, setSlideDirection] = useState(''); // 'slide-left', 'slide-right', or ''
     const modalTimeoutRef = useRef(null);
 
     // Swipe and Navigation state
@@ -31,14 +32,22 @@ const PublicPortfolio = () => {
     const handlePrevMedia = useCallback((e) => {
         if (e) e.stopPropagation();
         if (currentIndex > 0) {
-            setSelectedMedia(instaMedia[currentIndex - 1]);
+            setSlideDirection('slide-right');
+            setTimeout(() => {
+                setSelectedMedia(instaMedia[currentIndex - 1]);
+                setSlideDirection('');
+            }, 300); // 300ms matches the CSS transition duration
         }
     }, [currentIndex, instaMedia]);
 
     const handleNextMedia = useCallback((e) => {
         if (e) e.stopPropagation();
         if (currentIndex > -1 && currentIndex < instaMedia.length - 1) {
-            setSelectedMedia(instaMedia[currentIndex + 1]);
+            setSlideDirection('slide-left');
+            setTimeout(() => {
+                setSelectedMedia(instaMedia[currentIndex + 1]);
+                setSlideDirection('');
+            }, 300);
         }
     }, [currentIndex, instaMedia]);
 
@@ -605,21 +614,29 @@ const PublicPortfolio = () => {
                                             </button>
                                         )}
 
-                                        {selectedMedia?.media_type === 'VIDEO' ? (
-                                            <video
-                                                key={`video-${selectedMedia.id}`}
-                                                src={selectedMedia.media_url}
-                                                autoPlay
-                                                className="w-full h-full object-contain max-h-[50vh] md:max-h-[80vh]"
-                                            />
-                                        ) : (
-                                            <img
-                                                key={`img-${selectedMedia?.id || 'none'}`}
-                                                src={selectedMedia?.media_url}
-                                                alt="Instagram post"
-                                                className="w-full h-full object-contain max-h-[50vh] md:max-h-[80vh]"
-                                            />
-                                        )}
+                                        {/* Media Preview Container with Animation */}
+                                        <div
+                                            className={`absolute inset-0 w-full h-full flex items-center justify-center transition-transform duration-300 ease-in-out ${slideDirection === 'slide-left' ? '-translate-x-full opacity-0' :
+                                                    slideDirection === 'slide-right' ? 'translate-x-full opacity-0' :
+                                                        'translate-x-0 opacity-100'
+                                                }`}
+                                        >
+                                            {selectedMedia?.media_type === 'VIDEO' ? (
+                                                <video
+                                                    key={`video-${selectedMedia.id}`}
+                                                    src={selectedMedia.media_url}
+                                                    autoPlay
+                                                    className="w-full h-full object-contain max-h-[50vh] md:max-h-[80vh]"
+                                                />
+                                            ) : (
+                                                <img
+                                                    key={`img-${selectedMedia?.id || 'none'}`}
+                                                    src={selectedMedia?.media_url}
+                                                    alt="Instagram post"
+                                                    className="w-full h-full object-contain max-h-[50vh] md:max-h-[80vh]"
+                                                />
+                                            )}
+                                        </div>
                                     </div>
 
                                     {/* Content Panel */}
