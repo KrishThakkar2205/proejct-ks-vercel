@@ -81,7 +81,7 @@ const InfluencerMessages = () => {
                                             </div>
                                             <p className="text-sm text-gray-600 truncate">{message.lastMessage}</p>
                                             <p className="text-xs text-gray-400 mt-1">
-                                                {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                {new Date(message.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}
                                             </p>
                                         </div>
                                     </div>
@@ -133,7 +133,7 @@ const InfluencerMessages = () => {
                                     >
                                         <p className="text-sm">{msg.text}</p>
                                         <p className={`text-xs mt-1 ${msg.sender === 'influencer' ? 'text-purple-200' : 'text-gray-500'}`}>
-                                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}
                                         </p>
                                     </div>
                                 </div>

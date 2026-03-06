@@ -16,7 +16,16 @@ const RescheduleModal = ({ isOpen, event, onClose, onConfirm }) => {
 
             // Set current date and time as default
             const today = new Date().toISOString().split('T')[0];
-            setRescheduleData({ date: today, time: event.time || event.scheduledTime || '12:00' });
+            let rawTime = event.originalTime || event.time || event.scheduledTime || '12:00';
+            if (rawTime.toLowerCase().includes('am') || rawTime.toLowerCase().includes('pm')) {
+                const [timePart, period] = rawTime.split(' ');
+                let [h, m] = timePart.split(':');
+                h = parseInt(h, 10);
+                if (period && period.toUpperCase() === 'PM' && h !== 12) h += 12;
+                if (period && period.toUpperCase() === 'AM' && h === 12) h = 0;
+                rawTime = `${h.toString().padStart(2, '0')}:${m || '00'}`;
+            }
+            setRescheduleData({ date: today, time: rawTime });
             setRescheduleError('');
         } else {
             // Start closing animation

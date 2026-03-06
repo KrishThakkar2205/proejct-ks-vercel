@@ -11,6 +11,20 @@ const DailySchedule = ({ shoots = [], uploads = [], onMarkComplete }) => {
     const [completeErrorId, setCompleteErrorId] = useState(null);
     const [rescheduleModal, setRescheduleModal] = useState({ isOpen: false, event: null });
     const [rescheduledEvents, setRescheduledEvents] = useState({});
+    const [isRescheduling, setIsRescheduling] = useState(false);
+
+    // Helper to convert 24h to 12h, or just return if already 12h
+    const toDisplayTime = (timeStr) => {
+        if (!timeStr) return '';
+        if (timeStr.toLowerCase().includes('am') || timeStr.toLowerCase().includes('pm')) return timeStr;
+        const [hours, minutes] = timeStr.split(':');
+        if (!minutes) return timeStr;
+        const hour = parseInt(hours, 10);
+        if (isNaN(hour)) return timeStr;
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour % 12 || 12;
+        return `${displayHour}:${minutes} ${ampm}`;
+    };
 
     // Handle marking event as complete — calls the backend API
     const handleMarkComplete = async (event) => {
@@ -48,23 +62,45 @@ const DailySchedule = ({ shoots = [], uploads = [], onMarkComplete }) => {
     };
 
     // Handle reschedule confirmation
-    const handleRescheduleConfirm = (rescheduleData) => {
-        // In production, this would call an API to update the event
-        const eventId = rescheduleModal.event.id;
-
-        // Convert 24-hour time to 12-hour format for display
+    const handleRescheduleConfirm = async (rescheduleData) => {
+        setIsRescheduling(true);
+        const event = rescheduleModal.event;
+        const eventId = event.id;
         const [hours, minutes] = rescheduleData.time.split(':');
-        const hour = parseInt(hours);
-        const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
-        const ampm = hour >= 12 ? 'PM' : 'AM';
-        const displayTime = `${displayHour}:${minutes} ${ampm}`;
 
-        setRescheduledEvents(prev => ({
-            ...prev,
-            [eventId]: { ...rescheduleData, displayTime }
-        }));
+        try {
+            if (event.type === 'shoot') {
+                await api.put(`/api/shoots/${event.originalId}`, {
+                    shoot_date: rescheduleData.date,
+                    shoot_time: `${hours}:${minutes}`,
+                });
+            } else {
+                await api.put(`/api/uploads/${event.originalId}`, {
+                    upload_date: rescheduleData.date,
+                    upload_time: `${hours}:${minutes}`,
+                });
+            }
 
-        handleCloseModal();
+            // Convert 24-hour time to 12-hour format for display
+            const hour = parseInt(hours);
+            const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const displayTime = `${displayHour}:${minutes} ${ampm}`;
+
+            setRescheduledEvents(prev => ({
+                ...prev,
+                [event.originalId]: { ...rescheduleData, displayTime }
+            }));
+
+            // Soft-refresh the dashboard if possible
+            if (onMarkComplete) onMarkComplete();
+        } catch (error) {
+            console.error('Error rescheduling task:', error);
+            alert('Failed to reschedule task. Please try again.');
+        } finally {
+            setIsRescheduling(false);
+            handleCloseModal();
+        }
     };
 
     // Combine shoots and uploads into a single schedule
@@ -75,7 +111,7 @@ const DailySchedule = ({ shoots = [], uploads = [], onMarkComplete }) => {
             type: 'shoot',
             title: s.brand_name || 'Untitled Brand',
             campaign: s.campaign,
-            time: s.shoot_time || '12:00 PM', // Fallback if no time provided
+            time: toDisplayTime(s.shoot_time) || '12:00 PM', // Fallback if no time provided
             location: s.location,
             status: s.status || 'upcoming',
             platform: null,
@@ -87,7 +123,7 @@ const DailySchedule = ({ shoots = [], uploads = [], onMarkComplete }) => {
             type: 'upload',
             title: u.brand_name || 'Untitled Brand',
             campaign: u.campaign,
-            time: u.upload_time || '12:00 PM', // Fallback if no time provided
+            time: toDisplayTime(u.upload_time) || '12:00 PM', // Fallback if no time provided
             platform: u.platform?.toLowerCase() || null,
             status: u.status || 'upcoming',
             location: null,
@@ -298,8 +334,11 @@ const DailySchedule = ({ shoots = [], uploads = [], onMarkComplete }) => {
                                     size="sm"
                                     onClick={() => handleReschedule(item)}
                                     className="flex-1 text-xs"
-                                    disabled={completingIds.has(item.id)}
+                                    disabled={completingIds.has(item.id) || isRescheduling}
                                 >
+                                    {isRescheduling && rescheduleModal?.event?.id === item.id ? (
+                                        <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin inline" />
+                                    ) : null}
                                     Reschedule
                                 </Button>
                                 <Button

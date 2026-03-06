@@ -316,8 +316,8 @@ const InfluencerDashboard = () => {
                                                         {/* Avatar */}
                                                         <div className="w-10 h-10 bg-primary-orange rounded-full flex items-center justify-center flex-shrink-0">
                                                             <span className="text-white font-semibold text-sm">
-                                                                {review.client_name
-                                                                    ? review.client_name.charAt(0).toUpperCase()
+                                                                {review.reviewer_name
+                                                                    ? review.reviewer_name.charAt(0).toUpperCase()
                                                                     : review.brand_name
                                                                         ? review.brand_name.charAt(0).toUpperCase()
                                                                         : 'C'}
@@ -328,7 +328,7 @@ const InfluencerDashboard = () => {
                                                         <div className="flex-1 min-w-0">
                                                             <div className="flex items-start justify-between mb-1">
                                                                 <h3 className="font-semibold text-deep-black text-sm truncate">
-                                                                    {review.client_name || review.brand_name || 'Anonymous Client'}
+                                                                    {review.reviewer_name || review.brand_name || 'Anonymous Client'}
                                                                 </h3>
                                                                 <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
                                                                     {review.created_at

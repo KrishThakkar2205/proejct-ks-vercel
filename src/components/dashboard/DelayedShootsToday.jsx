@@ -3,12 +3,27 @@ import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Badge from '../ui/Badge';
 import RescheduleModal from './RescheduleModal';
-import { AlertTriangle, Clock, Calendar, AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertTriangle, Clock, Calendar, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import api from '../../utils/api';
 
 const DelayedShootsToday = ({ delayedShoots: apiShoots = [], delayedUploads: apiUploads = [], onMarkComplete }) => {
     const [rescheduleModal, setRescheduleModal] = useState({ isOpen: false, event: null });
     const [completedShoots, setCompletedShoots] = useState([]);
     const [rescheduledShoots, setRescheduledShoots] = useState({});
+    const [isRescheduling, setIsRescheduling] = useState(false);
+
+    // Helper to convert 24h to 12h, or just return if already 12h
+    const toDisplayTime = (timeStr) => {
+        if (!timeStr) return '';
+        if (timeStr.toLowerCase().includes('am') || timeStr.toLowerCase().includes('pm')) return timeStr;
+        const [hours, minutes] = timeStr.split(':');
+        if (!minutes) return timeStr;
+        const hour = parseInt(hours, 10);
+        if (isNaN(hour)) return timeStr;
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour % 12 || 12;
+        return `${displayHour}:${minutes} ${ampm}`;
+    };
 
     // Handle opening reschedule modal
     const handleReschedule = (shoot) => {
@@ -21,23 +36,46 @@ const DelayedShootsToday = ({ delayedShoots: apiShoots = [], delayedUploads: api
     };
 
     // Handle reschedule confirmation
-    const handleRescheduleConfirm = (rescheduleData) => {
-        // In production, this would call an API to update the event
-        const shootId = rescheduleModal.event.originalId;
-
-        // Convert 24-hour time to 12-hour format for display
+    const handleRescheduleConfirm = async (rescheduleData) => {
+        setIsRescheduling(true);
+        const event = rescheduleModal.event;
+        const shootId = event.originalId;
         const [hours, minutes] = rescheduleData.time.split(':');
-        const hour = parseInt(hours);
-        const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
-        const ampm = hour >= 12 ? 'PM' : 'AM';
-        const displayTime = `${displayHour}:${minutes} ${ampm}`;
 
-        setRescheduledShoots(prev => ({
-            ...prev,
-            [shootId]: { ...rescheduleData, displayTime }
-        }));
+        try {
+            if (event.type === 'shoot') {
+                await api.put(`/api/shoots/${shootId}`, {
+                    shoot_date: rescheduleData.date,
+                    shoot_time: `${hours}:${minutes}`,
+                });
+            } else {
+                await api.put(`/api/uploads/${shootId}`, {
+                    upload_date: rescheduleData.date,
+                    upload_time: `${hours}:${minutes}`,
+                });
+            }
 
-        handleCloseModal();
+            // Convert 24-hour time to 12-hour format for display
+            const hour = parseInt(hours);
+            const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const displayTime = `${displayHour}:${minutes} ${ampm}`;
+
+            setRescheduledShoots(prev => ({
+                ...prev,
+                [shootId]: { ...rescheduleData, displayTime }
+            }));
+
+            // Tell the dashboard to soft-reload its data if possible
+            if (onMarkComplete) onMarkComplete();
+
+        } catch (error) {
+            console.error('Error rescheduling task:', error);
+            alert('Failed to reschedule task. Please try again.');
+        } finally {
+            setIsRescheduling(false);
+            handleCloseModal();
+        }
     };
 
     // Handle marking shoot as complete
@@ -77,7 +115,7 @@ const DelayedShootsToday = ({ delayedShoots: apiShoots = [], delayedUploads: api
             brand: s.brand_name || 'Untitled Brand',
             campaign: s.campaign,
             type: 'shoot',
-            scheduledTime: s.shoot_time || '12:00 PM',
+            scheduledTime: toDisplayTime(s.shoot_time) || '12:00 PM',
             scheduledDate: s.shoot_date,
             delayHours: parseDelayHours(s.shoot_date, s.shoot_time),
             notes: s.notes
@@ -88,7 +126,7 @@ const DelayedShootsToday = ({ delayedShoots: apiShoots = [], delayedUploads: api
             brand: u.brand_name || 'Untitled Brand',
             campaign: u.campaign,
             type: 'upload',
-            scheduledTime: u.upload_time || '12:00 PM',
+            scheduledTime: toDisplayTime(u.upload_time) || '12:00 PM',
             scheduledDate: u.upload_date,
             delayHours: parseDelayHours(u.upload_date, u.upload_time),
             notes: u.notes
@@ -233,7 +271,11 @@ const DelayedShootsToday = ({ delayedShoots: apiShoots = [], delayedUploads: api
                                             size="sm"
                                             className="flex-1 text-xs"
                                             onClick={() => handleReschedule(shoot)}
+                                            disabled={isRescheduling}
                                         >
+                                            {isRescheduling && rescheduleModal?.event?.originalId === shoot.originalId ? (
+                                                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin inline" />
+                                            ) : null}
                                             Reschedule
                                         </Button>
                                         <Button

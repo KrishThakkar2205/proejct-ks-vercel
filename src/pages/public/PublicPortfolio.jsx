@@ -13,6 +13,8 @@ const PublicPortfolio = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [portfolio, setPortfolio] = useState(null);
+    const [instaMetrics, setInstaMetrics] = useState(null);
+    const [metricsLoading, setMetricsLoading] = useState(true);
     const [selectedMedia, setSelectedMedia] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
     const modalTimeoutRef = useRef(null);
@@ -55,6 +57,29 @@ const PublicPortfolio = () => {
 
         if (influencerId) {
             fetchPortfolio();
+        }
+    }, [influencerId]);
+
+    // Fetch Instagram Metrics
+    useEffect(() => {
+        const fetchInstaMetrics = async () => {
+            try {
+                setMetricsLoading(true);
+                // We useaxios here directly as it's a public endpoint or auth isn't strict. 
+                // But you might need standard `api.get` if it requires backend interceptors.
+                // According to prompt, URL is api.influrunner.com/api/insta-portfolio-metric?influencer_id=...
+                const response = await axios.get(`${API_BASE_URL}/api/insta-portfolio-metric?influencer_id=${influencerId}`);
+                setInstaMetrics(response.data);
+            } catch (err) {
+                console.error("Failed to fetch Instagram metrics:", err);
+                setInstaMetrics(null);
+            } finally {
+                setMetricsLoading(false);
+            }
+        };
+
+        if (influencerId) {
+            fetchInstaMetrics();
         }
     }, [influencerId]);
 
@@ -169,22 +194,38 @@ const PublicPortfolio = () => {
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3 className="font-bebas tracking-wide text-deep-black">Instagram</h3>
-                                    <p className="text-xs text-gray-500">Coming soon</p>
+                                    <h3 className="font-bebas tracking-wide text-deep-black">
+                                        Instagram {instaMetrics && <span className="text-gray-500 font-sans font-normal text-sm ml-2">@{instaMetrics.username}</span>}
+                                    </h3>
+                                    <p className="text-xs text-gray-500">Last 30 days (Excl. today)</p>
                                 </div>
                             </div>
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-gray-600">Followers</span>
-                                    <span className="font-semibold text-deep-black">--</span>
+                                    {metricsLoading ? <Loader2 size={16} className="animate-spin text-gray-400" /> : (
+                                        <span className="font-semibold text-deep-black">
+                                            {instaMetrics ? instaMetrics.followers_count.toLocaleString() : '--'}
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-gray-600">Engagement Rate</span>
-                                    <span className="font-semibold text-pink-500">--</span>
+                                    {metricsLoading ? <Loader2 size={16} className="animate-spin text-gray-400" /> : (
+                                        <span className="font-semibold text-pink-500">
+                                            {instaMetrics && instaMetrics.followers_count > 0
+                                                ? ((instaMetrics.accounts_engaged / instaMetrics.followers_count) * 100).toFixed(2) + '%'
+                                                : '--'}
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm text-gray-600">Avg Likes</span>
-                                    <span className="font-semibold text-deep-black">--</span>
+                                    <span className="text-sm text-gray-600">Total Interactions</span>
+                                    {metricsLoading ? <Loader2 size={16} className="animate-spin text-gray-400" /> : (
+                                        <span className="font-semibold text-deep-black">
+                                            {instaMetrics ? instaMetrics.total_interactions.toLocaleString() : '--'}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </Card>
@@ -193,7 +234,10 @@ const PublicPortfolio = () => {
 
                 {/* Performance Highlights */}
                 <div>
-                    <h2 className="text-3xl font-bebas tracking-wide text-deep-black mb-6">Performance Highlights</h2>
+                    <div className="mb-6">
+                        <h2 className="text-3xl font-bebas tracking-wide text-deep-black">Performance Highlights</h2>
+                        <p className="text-sm text-gray-500 mt-1">Last 30 days (excluding today)</p>
+                    </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {/* Total Reach */}
                         <Card className="p-5 text-center bg-orange-50">
@@ -202,7 +246,9 @@ const PublicPortfolio = () => {
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
                                 </svg>
                             </div>
-                            <p className="text-2xl font-bebas tracking-wide text-deep-black">--</p>
+                            <p className="text-2xl font-bebas tracking-wide text-deep-black">
+                                {metricsLoading ? <Loader2 size={24} className="animate-spin text-gray-400 mx-auto" /> : (instaMetrics ? instaMetrics.reach.toLocaleString() : '--')}
+                            </p>
                             <p className="text-xs text-gray-500 mt-1">Total Reach</p>
                         </Card>
                         {/* Avg Engagement */}
@@ -212,28 +258,39 @@ const PublicPortfolio = () => {
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
                                 </svg>
                             </div>
-                            <p className="text-2xl font-bebas tracking-wide text-deep-black">--</p>
+                            <p className="text-2xl font-bebas tracking-wide text-deep-black">
+                                {metricsLoading ? <Loader2 size={24} className="animate-spin text-gray-400 mx-auto" /> : (
+                                    instaMetrics && instaMetrics.followers_count > 0
+                                        ? ((instaMetrics.accounts_engaged / instaMetrics.followers_count) * 100).toFixed(2) + '%'
+                                        : '--'
+                                )}
+                            </p>
                             <p className="text-xs text-gray-500 mt-1">Avg Engagement</p>
                         </Card>
-                        {/* Platforms */}
+                        {/* Accounts Engaged */}
                         <Card className="p-5 text-center bg-green-50">
                             <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
                                 <svg className="w-7 h-7 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
                                 </svg>
                             </div>
-                            <p className="text-2xl font-bebas tracking-wide text-deep-black">--</p>
-                            <p className="text-xs text-gray-500 mt-1">Platforms</p>
+                            <p className="text-2xl font-bebas tracking-wide text-deep-black">
+                                {metricsLoading ? <Loader2 size={24} className="animate-spin text-gray-400 mx-auto" /> : (instaMetrics ? instaMetrics.accounts_engaged.toLocaleString() : '--')}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">Accounts Engaged</p>
                         </Card>
-                        {/* Categories */}
+                        {/* Views */}
                         <Card className="p-5 text-center bg-blue-50">
                             <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
                                 <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
                             </div>
-                            <p className="text-2xl font-bebas tracking-wide text-deep-black">--</p>
-                            <p className="text-xs text-gray-500 mt-1">Categories</p>
+                            <p className="text-2xl font-bebas tracking-wide text-deep-black">
+                                {metricsLoading ? <Loader2 size={24} className="animate-spin text-gray-400 mx-auto" /> : (instaMetrics ? instaMetrics.views.toLocaleString() : '--')}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">Total Views</p>
                         </Card>
                     </div>
                 </div>

@@ -399,7 +399,7 @@ const CompletedShoots = () => {
                                     {upload.completedAt && (
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
                                             <Clock size={16} className="text-gray-400" />
-                                            <span>Uploaded: {new Date(upload.completedAt).toLocaleString()}</span>
+                                            <span>Uploaded: {new Date(upload.completedAt).toLocaleString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</span>
                                         </div>
                                     )}
                                     {upload.platform && (
