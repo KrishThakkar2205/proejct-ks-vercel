@@ -568,7 +568,7 @@ const PublicPortfolio = () => {
                     >
                         <div className="flex items-center justify-center min-h-full p-4">
                             <div
-                                className={`bg-white rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden transition-all duration-200 ease-out ${modalVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                                className={`bg-white rounded-xl shadow-2xl w-auto min-w-[320px] max-w-[95vw] overflow-hidden transition-all duration-200 ease-out flex flex-col ${modalVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
                                     }`}
                                 onClick={(e) => e.stopPropagation()}
                             >
@@ -587,13 +587,13 @@ const PublicPortfolio = () => {
 
                                 {/* Body: side-by-side on desktop, stacked on mobile */}
                                 <div
-                                    className="flex flex-col md:flex-row max-h-[85vh] overflow-y-auto"
+                                    className="flex flex-col md:flex-row max-h-[85vh] overflow-hidden"
                                     onTouchStart={onTouchStart}
                                     onTouchMove={onTouchMove}
                                     onTouchEnd={onTouchEnd}
                                 >
                                     {/* Media Preview */}
-                                    <div className="w-full md:w-1/2 bg-black flex items-center justify-center relative min-h-[300px] max-h-[50vh] md:max-h-[85vh] group/media">
+                                    <div className="w-full md:w-auto bg-transparent flex items-center justify-center relative max-h-[60vh] md:max-h-[85vh] group/media shrink-0">
                                         {/* Navigation Buttons (Large Screen) */}
                                         {currentIndex > 0 && (
                                             <button
@@ -616,7 +616,7 @@ const PublicPortfolio = () => {
 
                                         {/* Media Preview Container with Animation */}
                                         <div
-                                            className={`absolute inset-0 w-full h-full flex items-center justify-center transition-transform duration-300 ease-in-out ${slideDirection === 'slide-left' ? '-translate-x-full opacity-0' :
+                                            className={`relative flex items-center justify-center transition-transform duration-300 ease-in-out ${slideDirection === 'slide-left' ? '-translate-x-full opacity-0' :
                                                 slideDirection === 'slide-right' ? 'translate-x-full opacity-0' :
                                                     'translate-x-0 opacity-100'
                                                 }`}
@@ -626,21 +626,21 @@ const PublicPortfolio = () => {
                                                     key={`video-${selectedMedia.id}`}
                                                     src={selectedMedia.media_url}
                                                     autoPlay
-                                                    className="w-full h-full object-contain max-h-[50vh] md:max-h-[80vh]"
+                                                    className="w-auto h-auto max-w-full max-h-[60vh] md:max-h-[80vh] md:max-w-[calc(95vw-20rem)] lg:max-w-[calc(95vw-24rem)] object-contain block mx-auto rounded-none md:rounded-bl-xl"
                                                 />
                                             ) : (
                                                 <img
                                                     key={`img-${selectedMedia?.id || 'none'}`}
                                                     src={selectedMedia?.media_url}
                                                     alt="Instagram post"
-                                                    className="w-full h-full object-contain max-h-[50vh] md:max-h-[80vh]"
+                                                    className="w-auto h-auto max-w-full max-h-[60vh] md:max-h-[80vh] md:max-w-[calc(95vw-20rem)] lg:max-w-[calc(95vw-24rem)] object-contain block mx-auto rounded-none md:rounded-bl-xl"
                                                 />
                                             )}
                                         </div>
                                     </div>
 
                                     {/* Content Panel */}
-                                    <div className="w-full md:w-1/2 p-4 md:p-6 flex flex-col bg-white">
+                                    <div className="w-full md:w-80 lg:w-96 p-4 md:p-6 flex flex-col bg-white shrink-0 overflow-y-auto border-t md:border-t-0 md:border-l border-gray-100 relative">
                                         <div className="flex-1">
                                             <p className="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wider">Caption</p>
                                             <div className="text-sm text-gray-800 whitespace-pre-wrap">
