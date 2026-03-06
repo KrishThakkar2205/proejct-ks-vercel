@@ -15,6 +15,8 @@ const PublicPortfolio = () => {
     const [portfolio, setPortfolio] = useState(null);
     const [instaMetrics, setInstaMetrics] = useState(null);
     const [metricsLoading, setMetricsLoading] = useState(true);
+    const [instaMedia, setInstaMedia] = useState([]);
+    const [mediaLoading, setMediaLoading] = useState(true);
     const [selectedMedia, setSelectedMedia] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
     const modalTimeoutRef = useRef(null);
@@ -80,6 +82,30 @@ const PublicPortfolio = () => {
 
         if (influencerId) {
             fetchInstaMetrics();
+        }
+    }, [influencerId]);
+
+    // Fetch Instagram Media
+    useEffect(() => {
+        const fetchInstaMedia = async () => {
+            try {
+                setMediaLoading(true);
+                const response = await axios.get(`${API_BASE_URL}/api/insta-portfolio-media-metric?influencer_id=${influencerId}`);
+                if (Array.isArray(response.data)) {
+                    setInstaMedia(response.data);
+                } else {
+                    setInstaMedia([]);
+                }
+            } catch (err) {
+                console.error("Failed to fetch Instagram media:", err);
+                setInstaMedia([]);
+            } finally {
+                setMediaLoading(false);
+            }
+        };
+
+        if (influencerId) {
+            fetchInstaMedia();
         }
     }, [influencerId]);
 
@@ -305,21 +331,58 @@ const PublicPortfolio = () => {
                             </svg>
                             <h3 className="font-bebas tracking-wide text-deep-black">Instagram Posts</h3>
                         </div>
-                        <div className="space-y-3">
-                            <div
-                                className="flex items-center gap-4 p-3 bg-pink-50 rounded-lg cursor-pointer hover:bg-pink-100 transition-colors"
-                                onClick={() => setSelectedMedia({ platform: 'instagram', date: null, views: '--', likes: '--', comments: '--', engagement: '--' })}
-                            >
-                                <div className="w-16 h-16 bg-gradient-to-br from-pink-200 to-orange-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <svg className="w-6 h-6 text-pink-400" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z" />
-                                    </svg>
+                        <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                            {mediaLoading ? (
+                                <div className="flex justify-center p-6">
+                                    <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
                                 </div>
-                                <div>
-                                    <p className="text-sm text-gray-500">No posts yet</p>
-                                    <p className="text-xs text-gray-400">Connect Instagram to see content</p>
+                            ) : instaMedia.length > 0 ? (
+                                instaMedia.map((media) => (
+                                    <div
+                                        key={media.id}
+                                        className="flex gap-4 p-3 bg-white border border-gray-100 rounded-lg cursor-pointer hover:border-pink-300 hover:shadow-sm transition-all"
+                                        onClick={() => setSelectedMedia(media)}
+                                    >
+                                        <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+                                            {media.thumbnail_url || media.media_url ? (
+                                                <img
+                                                    src={media.thumbnail_url || media.media_url}
+                                                    alt="Instagram post thumbnail"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <svg className="w-6 h-6 text-pink-400" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M12 2.163c3.204...z" />
+                                                </svg>
+                                            )}
+                                            {media.media_type === 'VIDEO' && (
+                                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                                    <svg className="w-6 h-6 text-white drop-shadow-md" fill="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M8 5v14l11-7z" />
+                                                    </svg>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                            <p className="text-sm font-medium text-deep-black line-clamp-2">
+                                                {media.caption || 'No caption'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="flex items-center gap-4 p-3 bg-pink-50 rounded-lg">
+                                    <div className="w-16 h-16 bg-gradient-to-br from-pink-200 to-orange-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <svg className="w-6 h-6 text-pink-400" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-500">No media found</p>
+                                        <p className="text-xs text-gray-400">Come back later for new content</p>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </Card>
                 </div>
@@ -470,61 +533,46 @@ const PublicPortfolio = () => {
                                 </div>
 
                                 {/* Body: side-by-side on desktop, stacked on mobile */}
-                                <div className="flex flex-col md:flex-row">
+                                <div className="flex flex-col md:flex-row max-h-[85vh] overflow-y-auto">
                                     {/* Media Preview */}
-                                    <div className="w-full md:w-1/2 bg-gradient-to-br from-pink-200 to-orange-200 flex items-center justify-center relative min-h-[250px] md:min-h-[450px]">
-                                        <button className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-100">
-                                            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                                            </svg>
-                                        </button>
-                                        <svg className="w-16 h-16 text-pink-300/50" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z" />
-                                        </svg>
-                                        <button className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-100">
-                                            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                                            </svg>
-                                        </button>
+                                    <div className="w-full md:w-1/2 bg-black flex items-center justify-center relative min-h-[300px] max-h-[50vh] md:max-h-[85vh]">
+                                        {selectedMedia?.media_type === 'VIDEO' ? (
+                                            <video
+                                                src={selectedMedia.media_url}
+                                                controls
+                                                autoPlay
+                                                className="w-full h-full object-contain max-h-[50vh] md:max-h-[80vh]"
+                                            />
+                                        ) : (
+                                            <img
+                                                src={selectedMedia?.media_url}
+                                                alt="Instagram post"
+                                                className="w-full h-full object-contain max-h-[50vh] md:max-h-[80vh]"
+                                            />
+                                        )}
                                     </div>
 
-                                    {/* Stats Panel */}
-                                    <div className="w-full md:w-1/2 p-6">
-                                        <div className="mb-6">
-                                            <p className="text-sm text-gray-500">Published Date</p>
-                                            <p className="font-semibold text-deep-black">--</p>
-                                        </div>
-
-                                        <div className="grid grid-cols-3 gap-3 mb-6">
-                                            <div className="p-3 bg-gray-50 rounded-lg text-center">
-                                                <div className="flex items-center justify-center gap-1 mb-1">
-                                                    <Eye size={14} className="text-gray-500" />
-                                                    <span className="text-xs text-gray-500">Views</span>
-                                                </div>
-                                                <p className="font-semibold text-deep-black">--</p>
-                                            </div>
-                                            <div className="p-3 bg-pink-50 rounded-lg text-center">
-                                                <div className="flex items-center justify-center gap-1 mb-1">
-                                                    <Heart size={14} className="text-pink-500" />
-                                                    <span className="text-xs text-gray-500">Likes</span>
-                                                </div>
-                                                <p className="font-semibold text-deep-black">--</p>
-                                            </div>
-                                            <div className="p-3 bg-blue-50 rounded-lg text-center">
-                                                <div className="flex items-center justify-center gap-1 mb-1">
-                                                    <MessageCircle size={14} className="text-blue-500" />
-                                                    <span className="text-xs text-gray-500">Comments</span>
-                                                </div>
-                                                <p className="font-semibold text-deep-black">--</p>
+                                    {/* Content Panel */}
+                                    <div className="w-full md:w-1/2 p-4 md:p-6 flex flex-col bg-white">
+                                        <div className="flex-1">
+                                            <p className="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wider">Caption</p>
+                                            <div className="text-sm text-gray-800 whitespace-pre-wrap">
+                                                {selectedMedia?.caption || 'No caption available.'}
                                             </div>
                                         </div>
 
-                                        <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-primary-orange rounded-lg mb-6">
-                                            <p className="text-sm text-gray-600">Engagement Rate</p>
-                                            <p className="text-2xl font-bebas tracking-wide text-primary-orange">--%</p>
-                                        </div>
-
-                                        <p className="text-xs text-gray-400 text-center">* When connected to API, actual media content will be displayed here</p>
+                                        {selectedMedia?.permalink && (
+                                            <div className="mt-4 md:mt-6 pt-4 border-t border-gray-100 flex-shrink-0">
+                                                <a
+                                                    href={selectedMedia.permalink}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="block w-full text-center bg-gray-50 hover:bg-pink-50 text-pink-600 font-semibold py-3 rounded-lg border border-pink-100 transition-colors text-sm md:text-base"
+                                                >
+                                                    View on Instagram
+                                                </a>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
