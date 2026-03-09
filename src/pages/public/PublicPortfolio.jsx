@@ -314,8 +314,8 @@ const PublicPortfolio = () => {
                                     <span className="text-sm text-gray-600">Engagement Rate</span>
                                     {metricsLoading ? <Loader2 size={16} className="animate-spin text-gray-400" /> : (
                                         <span className="font-semibold text-pink-500">
-                                            {instaMetrics && instaMetrics.followers_count > 0
-                                                ? ((instaMetrics.accounts_engaged / instaMetrics.followers_count) * 100).toFixed(2) + '%'
+                                            {instaMetrics && instaMetrics.reach > 0
+                                                ? ((instaMetrics.total_interactions / instaMetrics.reach) * 100).toFixed(2) + '%'
                                                 : '--'}
                                         </span>
                                     )}
@@ -361,8 +361,8 @@ const PublicPortfolio = () => {
                             </div>
                             <p className="text-2xl font-bebas tracking-wide text-deep-black">
                                 {metricsLoading ? <Loader2 size={24} className="animate-spin text-gray-400 mx-auto" /> : (
-                                    instaMetrics && instaMetrics.followers_count > 0
-                                        ? ((instaMetrics.accounts_engaged / instaMetrics.followers_count) * 100).toFixed(2) + '%'
+                                    instaMetrics && instaMetrics.reach > 0
+                                        ? ((instaMetrics.total_interactions / instaMetrics.reach) * 100).toFixed(2) + '%'
                                         : '--'
                                 )}
                             </p>
