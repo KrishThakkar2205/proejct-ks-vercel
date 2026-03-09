@@ -194,9 +194,8 @@ const SignupPage = () => {
                 <div className="text-center">
                     <h2 className="text-3xl flex flex-col items-center justify-center gap-1">
                         <span className="font-sans font-bold text-deep-black text-xl uppercase tracking-widest">Join</span>
-                        <div className="flex items-center gap-1">
-                            <span className="font-bebas text-3xl tracking-wide text-deep-black">INFLU</span>
-                            <span className="font-bebas text-3xl tracking-wide text-primary-orange">RUNNER</span>
+                        <div className="flex items-center justify-center mb-2">
+                            <img src="/logo.png" alt="InfluRunner Logo" className="h-12 w-auto mx-auto" />
                         </div>
                     </h2>
                     <p className="mt-2 text-sm text-gray-600">

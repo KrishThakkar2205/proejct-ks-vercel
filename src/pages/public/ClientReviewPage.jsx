@@ -182,9 +182,8 @@ const ClientReviewPage = () => {
             <div className="max-w-2xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <div className="flex items-center justify-center gap-2 mb-4">
-                        <span className="font-bebas text-4xl tracking-wide text-deep-black">INFLU</span>
-                        <span className="font-bebas text-4xl tracking-wide text-primary-orange">RUNNER</span>
+                    <div className="flex items-center justify-center mb-4">
+                        <img src="/logo.png" alt="InfluRunner Logo" className="h-12 w-auto" />
                     </div>
                     <h1 className="text-3xl font-bebas tracking-wide text-deep-black mb-2">Share Your Experience</h1>
                     <p className="text-gray-600">We'd love to hear about your collaboration</p>

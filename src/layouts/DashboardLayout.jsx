@@ -24,9 +24,8 @@ const DashboardLayout = () => {
         <>
             {showBrand && (
                 <div className="p-6 border-b border-gray-100">
-                    <Link to="/" className="text-2xl flex items-center gap-1" onClick={() => setIsMobileMenuOpen(false)}>
-                        <span className="font-bebas text-3xl tracking-wide text-deep-black">INFLU</span>
-                        <span className="font-bebas text-3xl tracking-wide text-primary-orange">RUNNER</span>
+                    <Link to="/brand" className="flex items-center">
+                        <img src="/logo.png" alt="InfluRunner Logo" className="h-8 w-auto px-6 cursor-pointer" />
                     </Link>
                 </div>
             )}
@@ -114,11 +113,12 @@ const DashboardLayout = () => {
                 {/* Top Header - Fixed */}
                 <header className={`fixed top-0 left-0 ${isSidebarCollapsed ? 'md:left-20' : 'md:left-64'} right-0 bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shadow-sm z-40 transition-all duration-300`}>
                     <div className="flex items-center gap-4">
-                        <h1 className="flex items-center gap-1">
-                            <span className="md:hidden font-bebas text-2xl tracking-wide text-deep-black">INFLU</span>
-                            <span className="md:hidden font-bebas text-2xl tracking-wide text-primary-orange">RUNNER</span>
-                            <span className="hidden md:inline text-2xl font-bebas tracking-wide text-deep-black">{navItems.find(i => i.path === location.pathname)?.label || 'Dashboard'}</span>
-                        </h1>
+                        <Link to="/brand" className="hidden md:flex items-center cursor-pointer">
+                            <img src="/logo.png" alt="InfluRunner Logo" className="h-8 w-auto" />
+                        </Link>
+                        <Link to="/brand" className="md:hidden flex items-center cursor-pointer">
+                            <img src="/logo.png" alt="InfluRunner Logo" className="h-6 w-auto" />
+                        </Link>
                     </div>
 
                     <div className="flex items-center space-x-4">

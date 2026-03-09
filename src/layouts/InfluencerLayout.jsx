@@ -27,9 +27,8 @@ const InfluencerLayout = () => {
         <>
             {showBrand && (
                 <div className="p-6 border-b border-gray-100">
-                    <Link to="/" className="text-2xl flex items-center gap-1" onClick={() => setIsMobileMenuOpen(false)}>
-                        <span className="font-bebas text-3xl tracking-wide text-deep-black">INFLU</span>
-                        <span className="font-bebas text-3xl tracking-wide text-primary-orange">RUNNER</span>
+                    <Link to="/influencer" className="flex items-center" onClick={() => setIsMobileMenuOpen(false)}>
+                        <img src="/logo.png" alt="InfluRunner Logo" className="h-8 w-auto px-6 cursor-pointer" />
                     </Link>
                 </div>
             )}
@@ -128,10 +127,9 @@ const InfluencerLayout = () => {
                 {/* Top Header */}
                 <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shadow-sm z-40 flex-shrink-0">
                     <div className="flex items-center gap-4">
-                        <h1 className="flex items-center gap-1">
-                            <span className="font-bebas text-2xl tracking-wide text-deep-black">INFLU</span>
-                            <span className="font-bebas text-2xl tracking-wide text-primary-orange">RUNNER</span>
-                        </h1>
+                        <Link to="/influencer" className="flex items-center">
+                            <img src="/logo.png" alt="InfluRunner Logo" className="h-8 w-auto" />
+                        </Link>
                     </div>
 
                     <div className="flex items-center space-x-4">
