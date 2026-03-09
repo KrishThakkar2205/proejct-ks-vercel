@@ -726,12 +726,12 @@ const PublicPortfolio = () => {
                                                             <p className="font-semibold text-deep-black">{selectedMediaMetrics.reach?.toLocaleString() || '--'}</p>
                                                         </div>
 
-                                                        {/* Engagement Rate calculated locally */}
-                                                        {instaMetrics?.followers_count > 0 && (
+                                                        {/* Engagement Rate calculated locally since API might only return base metrics */}
+                                                        {selectedMediaMetrics.reach > 0 && (
                                                             <div className="col-span-2 p-3 bg-gradient-to-r from-orange-50 to-orange-100 border border-primary-orange/20 rounded-lg text-center mt-1">
-                                                                <p className="text-xs text-gray-600 mb-1">Engagement Rate (Interactions / Followers)</p>
+                                                                <p className="text-xs text-gray-600 mb-1">Engagement Rate (Interactions / Reach)</p>
                                                                 <p className="text-xl font-bebas tracking-wide text-primary-orange">
-                                                                    {((selectedMediaMetrics.total_interactions / instaMetrics.followers_count) * 100).toFixed(2)}%
+                                                                    {((selectedMediaMetrics.total_interactions / selectedMediaMetrics.reach) * 100).toFixed(2)}%
                                                                 </p>
                                                             </div>
                                                         )}
