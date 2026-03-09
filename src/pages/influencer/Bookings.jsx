@@ -3,11 +3,13 @@ import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import { Calendar, Clock, MapPin, Search } from 'lucide-react';
+import SuccessAlert from '../../components/ui/SuccessAlert';
 import { MOCK_INFLUENCER_DATA } from '../../data/mockData';
 
 const Bookings = () => {
     const [activeTab, setActiveTab] = useState('booked');
     const [searchQuery, setSearchQuery] = useState('');
+    const [successAlert, setSuccessAlert] = useState({ isOpen: false, message: '' });
     const { bookings } = MOCK_INFLUENCER_DATA;
 
     const filterBookings = () => {
@@ -67,7 +69,7 @@ const Bookings = () => {
 
     const handleAskForReview = (bookingId) => {
         // In a real app, this would send a request to the backend
-        alert('Review request sent to brand!');
+        setSuccessAlert({ isOpen: true, message: 'Review request sent to brand!' });
     };
 
     return (
@@ -230,6 +232,13 @@ const Bookings = () => {
                     </Card>
                 )}
             </div>
+
+            {/* Success Alert */}
+            <SuccessAlert
+                isOpen={successAlert.isOpen}
+                message={successAlert.message}
+                onClose={() => setSuccessAlert({ isOpen: false, message: '' })}
+            />
         </div>
     );
 };

@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { LayoutDashboard, User, Calendar, ClipboardList, CheckCircle, Star, Bell, LogOut, Menu, X, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import { logout } from '../store/slices/authSlice';
+import { API_BASE_URL } from '../utils/api';
 
 const InfluencerLayout = () => {
     const location = useLocation();
@@ -80,7 +81,7 @@ const InfluencerLayout = () => {
     );
 
     // Get current user from localStorage
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
     return (
         <div className="flex h-screen bg-light-gray font-sans">
@@ -141,12 +142,28 @@ const InfluencerLayout = () => {
                         <Link to="/influencer/profile" className="md:pointer-events-none">
                             <div className="flex items-center gap-3 pl-4 border-l border-gray-100 cursor-pointer md:cursor-default">
                                 <div className="text-right hidden sm:block">
-                                    <div className="text-sm font-medium text-deep-black">{currentUser.name || 'Influencer'}</div>
+                                    <div className="text-sm font-medium text-deep-black">{currentUser?.name || 'Influencer'}</div>
                                     <div className="text-xs text-gray-500">Influencer Account</div>
                                 </div>
-                                <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-primary-orange font-bold border-2 border-white shadow-sm">
-                                    {(currentUser.name || 'I').charAt(0).toUpperCase()}
-                                </div>
+                                {currentUser?.profile_photo_location ? (
+                                    <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm">
+                                        <img
+                                            src={currentUser.profile_photo_location.startsWith('http')
+                                                ? currentUser.profile_photo_location
+                                                : `${API_BASE_URL}${currentUser.profile_photo_location.startsWith('/') ? '' : '/'}${currentUser.profile_photo_location}`}
+                                            alt={currentUser?.name || 'Profile'}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.parentElement.innerHTML = `<div class="w-full h-full bg-orange-100 flex items-center justify-center text-primary-orange font-bold text-sm">${(currentUser?.name || 'I').charAt(0).toUpperCase()}</div>`;
+                                            }}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-primary-orange font-bold border-2 border-white shadow-sm">
+                                        {(currentUser?.name || 'I').charAt(0).toUpperCase()}
+                                    </div>
+                                )}
                             </div>
                         </Link>
                         {/* Placeholder to maintain spacing */}

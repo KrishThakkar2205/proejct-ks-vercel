@@ -5,6 +5,7 @@ import axios from 'axios';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import InteractiveStarRating from '../../components/ui/InteractiveStarRating';
+import ErrorAlert from '../../components/ui/ErrorAlert';
 import { API_BASE_URL } from '../../utils/api';
 
 const ClientReviewPage = () => {
@@ -15,6 +16,7 @@ const ClientReviewPage = () => {
     const [submitted, setSubmitted] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState(null);
+    const [errorAlert, setErrorAlert] = useState({ isOpen: false, message: '' });
 
     const [formData, setFormData] = useState({
         reviewerName: '',
@@ -126,7 +128,7 @@ const ClientReviewPage = () => {
                 err.response?.data?.detail?.[0]?.msg ||
                 err.response?.data?.detail ||
                 'Failed to submit review. Please try again.';
-            alert(typeof msg === 'string' ? msg : 'Failed to submit review.');
+            setErrorAlert({ isOpen: true, message: typeof msg === 'string' ? msg : 'Failed to submit review.' });
         } finally {
             setSubmitting(false);
         }
@@ -352,6 +354,12 @@ const ClientReviewPage = () => {
                     Your review will be visible on the influencer's public portfolio
                 </p>
             </div>
+
+            <ErrorAlert
+                isOpen={errorAlert.isOpen}
+                message={errorAlert.message}
+                onClose={() => setErrorAlert({ isOpen: false, message: '' })}
+            />
         </div>
     );
 };

@@ -5,6 +5,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Card from '../../components/ui/Card';
 import MultiSelect from '../../components/ui/MultiSelect';
+import ErrorAlert from '../../components/ui/ErrorAlert';
 import { Check, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { signupInitiate, verifyOtp, signupFinal, clearError } from '../../store/slices/authSlice';
 
@@ -18,6 +19,7 @@ const SignupPage = () => {
     const [verificationMethod, setVerificationMethod] = useState('email');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [errorAlert, setErrorAlert] = useState({ isOpen: false, message: '' });
 
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -65,25 +67,25 @@ const SignupPage = () => {
 
     const validateStep1 = () => {
         if (!formData.name || !formData.email || !formData.phone || !formData.password || !formData.confirmPassword) {
-            alert('Please fill in all fields');
+            setErrorAlert({ isOpen: true, message: 'Please fill in all fields' });
             return false;
         }
         if (formData.password !== formData.confirmPassword) {
-            alert('Passwords do not match');
+            setErrorAlert({ isOpen: true, message: 'Passwords do not match' });
             return false;
         }
         if (formData.password.length < 8) {
-            alert('Password must be at least 8 characters long');
+            setErrorAlert({ isOpen: true, message: 'Password must be at least 8 characters long' });
             return false;
         }
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(formData.email)) {
-            alert('Please enter a valid email address');
+            setErrorAlert({ isOpen: true, message: 'Please enter a valid email address' });
             return false;
         }
         const phoneRegex = /^[0-9]{10}$/;
         if (!phoneRegex.test(formData.phone)) {
-            alert('Please enter a valid 10-digit phone number');
+            setErrorAlert({ isOpen: true, message: 'Please enter a valid 10-digit phone number' });
             return false;
         }
         return true;
@@ -91,23 +93,23 @@ const SignupPage = () => {
 
     const validateStep3 = () => {
         if (!formData.priceMin || !formData.priceMax) {
-            alert('Please enter your price range');
+            setErrorAlert({ isOpen: true, message: 'Please enter your price range' });
             return false;
         }
         if (parseInt(formData.priceMin) >= parseInt(formData.priceMax)) {
-            alert('Maximum price must be greater than minimum price');
+            setErrorAlert({ isOpen: true, message: 'Maximum price must be greater than minimum price' });
             return false;
         }
         if (formData.categories.length === 0) {
-            alert('Please select at least one category');
+            setErrorAlert({ isOpen: true, message: 'Please select at least one category' });
             return false;
         }
         if (!formData.location) {
-            alert('Please enter your location');
+            setErrorAlert({ isOpen: true, message: 'Please enter your location' });
             return false;
         }
         if (!formData.agreeTerms) {
-            alert('Please agree to the Terms & Conditions');
+            setErrorAlert({ isOpen: true, message: 'Please agree to the Terms & Conditions' });
             return false;
         }
         return true;
@@ -129,7 +131,7 @@ const SignupPage = () => {
             }
         } else if (currentStep === 2) {
             if (otp.length !== 6) {
-                alert('Please enter a valid 6-digit OTP');
+                setErrorAlert({ isOpen: true, message: 'Please enter a valid 6-digit OTP' });
                 return;
             }
 
@@ -503,6 +505,12 @@ const SignupPage = () => {
                     </Link>
                 </div>
             </Card>
+
+            <ErrorAlert
+                isOpen={errorAlert.isOpen}
+                message={errorAlert.message}
+                onClose={() => setErrorAlert({ isOpen: false, message: '' })}
+            />
         </div>
     );
 };

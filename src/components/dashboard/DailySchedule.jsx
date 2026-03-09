@@ -3,15 +3,20 @@ import Card from '../ui/Card';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import RescheduleModal from './RescheduleModal';
-import { Calendar, Clock, MapPin, Video, Camera, Instagram, Facebook, Youtube, CheckCircle, CalendarClock, X, AlertTriangle, Loader2 } from 'lucide-react';
+import { Calendar, Clock, MapPin, Video, Camera, Instagram, Facebook, Youtube, CheckCircle, CalendarClock, X, AlertTriangle, Loader2, Trash2 } from 'lucide-react';
+import ErrorAlert from '../ui/ErrorAlert';
+import ConfirmDialog from '../ui/ConfirmDialog';
 import api from '../../utils/api';
 
 const DailySchedule = ({ shoots = [], uploads = [], onMarkComplete }) => {
     const [completingIds, setCompletingIds] = useState(new Set());
+    const [deletingIds, setDeletingIds] = useState(new Set());
     const [completeErrorId, setCompleteErrorId] = useState(null);
     const [rescheduleModal, setRescheduleModal] = useState({ isOpen: false, event: null });
     const [rescheduledEvents, setRescheduledEvents] = useState({});
     const [isRescheduling, setIsRescheduling] = useState(false);
+    const [errorAlert, setErrorAlert] = useState({ isOpen: false, message: '' });
+    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, event: null });
 
     // Helper to convert 24h to 12h, or just return if already 12h
     const toDisplayTime = (timeStr) => {
@@ -44,6 +49,38 @@ const DailySchedule = ({ shoots = [], uploads = [], onMarkComplete }) => {
             setTimeout(() => setCompleteErrorId(null), 4000);
         } finally {
             setCompletingIds(prev => {
+                const next = new Set(prev);
+                next.delete(event.id);
+                return next;
+            });
+        }
+    };
+
+    // Handle delete button click (opens confirmation dialog)
+    const handleDeleteClick = (event) => {
+        setDeleteConfirm({ isOpen: true, event });
+    };
+
+    // Handle actual deletion after confirmation
+    const handleConfirmDelete = async () => {
+        const event = deleteConfirm.event;
+        setDeleteConfirm({ isOpen: false, event: null });
+
+        if (!event) return;
+
+        setDeletingIds(prev => new Set([...prev, event.id]));
+        try {
+            if (event.type === 'shoot') {
+                await api.delete(`/api/shoots/${event.originalId}`);
+            } else {
+                await api.delete(`/api/uploads/${event.originalId}`);
+            }
+            if (onMarkComplete) onMarkComplete(); // Re-fetch the dashboard
+        } catch (err) {
+            console.error('Failed to delete event:', err);
+            setErrorAlert({ isOpen: true, message: 'Failed to delete event. Please try again.' });
+        } finally {
+            setDeletingIds(prev => {
                 const next = new Set(prev);
                 next.delete(event.id);
                 return next;
@@ -96,7 +133,7 @@ const DailySchedule = ({ shoots = [], uploads = [], onMarkComplete }) => {
             if (onMarkComplete) onMarkComplete();
         } catch (error) {
             console.error('Error rescheduling task:', error);
-            alert('Failed to reschedule task. Please try again.');
+            setErrorAlert({ isOpen: true, message: 'Failed to reschedule task. Please try again.' });
         } finally {
             setIsRescheduling(false);
             handleCloseModal();
@@ -333,8 +370,8 @@ const DailySchedule = ({ shoots = [], uploads = [], onMarkComplete }) => {
                                     variant="outline"
                                     size="sm"
                                     onClick={() => handleReschedule(item)}
-                                    className="flex-1 text-xs"
-                                    disabled={completingIds.has(item.id) || isRescheduling}
+                                    className="flex-1 text-xs px-2"
+                                    disabled={completingIds.has(item.id) || isRescheduling || deletingIds.has(item.id)}
                                 >
                                     {isRescheduling && rescheduleModal?.event?.id === item.id ? (
                                         <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin inline" />
@@ -345,15 +382,29 @@ const DailySchedule = ({ shoots = [], uploads = [], onMarkComplete }) => {
                                     variant="primary"
                                     size="sm"
                                     onClick={() => handleMarkComplete(item)}
-                                    className="flex-1 text-xs"
-                                    disabled={completingIds.has(item.id)}
+                                    className="flex-1 text-xs px-2"
+                                    disabled={completingIds.has(item.id) || deletingIds.has(item.id)}
                                 >
                                     {completingIds.has(item.id) ? (
                                         <>
-                                            <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                                            <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin inline" />
                                             Saving...
                                         </>
                                     ) : 'Mark Complete'}
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDeleteClick(item)}
+                                    className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 hover:text-red-700 transition-colors px-3 flex-shrink-0 flex items-center justify-center"
+                                    disabled={deletingIds.has(item.id) || completingIds.has(item.id)}
+                                    title="Delete event"
+                                >
+                                    {deletingIds.has(item.id) ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Trash2 className="w-4 h-4" />
+                                    )}
                                 </Button>
                             </div>
                         </div>
@@ -367,6 +418,25 @@ const DailySchedule = ({ shoots = [], uploads = [], onMarkComplete }) => {
                 event={rescheduleModal.event}
                 onClose={handleCloseModal}
                 onConfirm={handleRescheduleConfirm}
+            />
+
+            {/* Error Alert */}
+            <ErrorAlert
+                isOpen={errorAlert.isOpen}
+                message={errorAlert.message}
+                onClose={() => setErrorAlert({ isOpen: false, message: '' })}
+            />
+
+            {/* Delete Confirmation Dialog */}
+            <ConfirmDialog
+                isOpen={deleteConfirm.isOpen}
+                title="Delete Scheduled Event"
+                message={`Are you sure you want to delete "${deleteConfirm.event?.title}"? This action cannot be undone.`}
+                confirmText="Yes, Delete it"
+                cancelText="Cancel"
+                variant="danger"
+                onConfirm={handleConfirmDelete}
+                onCancel={() => setDeleteConfirm({ isOpen: false, event: null })}
             />
         </Card>
     );

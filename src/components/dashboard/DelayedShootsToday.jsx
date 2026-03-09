@@ -3,7 +3,9 @@ import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Badge from '../ui/Badge';
 import RescheduleModal from './RescheduleModal';
-import { AlertTriangle, Clock, Calendar, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { AlertTriangle, Clock, Calendar, AlertCircle, CheckCircle, Loader2, Trash2 } from 'lucide-react';
+import ErrorAlert from '../ui/ErrorAlert';
+import ConfirmDialog from '../ui/ConfirmDialog';
 import api from '../../utils/api';
 
 const DelayedShootsToday = ({ delayedShoots: apiShoots = [], delayedUploads: apiUploads = [], onMarkComplete }) => {
@@ -11,6 +13,9 @@ const DelayedShootsToday = ({ delayedShoots: apiShoots = [], delayedUploads: api
     const [completedShoots, setCompletedShoots] = useState([]);
     const [rescheduledShoots, setRescheduledShoots] = useState({});
     const [isRescheduling, setIsRescheduling] = useState(false);
+    const [deletingIds, setDeletingIds] = useState(new Set());
+    const [errorAlert, setErrorAlert] = useState({ isOpen: false, message: '' });
+    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, shoot: null });
 
     // Helper to convert 24h to 12h, or just return if already 12h
     const toDisplayTime = (timeStr) => {
@@ -71,7 +76,7 @@ const DelayedShootsToday = ({ delayedShoots: apiShoots = [], delayedUploads: api
 
         } catch (error) {
             console.error('Error rescheduling task:', error);
-            alert('Failed to reschedule task. Please try again.');
+            setErrorAlert({ isOpen: true, message: 'Failed to reschedule task. Please try again.' });
         } finally {
             setIsRescheduling(false);
             handleCloseModal();
@@ -86,6 +91,38 @@ const DelayedShootsToday = ({ delayedShoots: apiShoots = [], delayedUploads: api
         // Call parent handler to add to completed shoots
         if (onMarkComplete) {
             onMarkComplete(shoot);
+        }
+    };
+
+    // Handle delete button click (opens confirmation dialog)
+    const handleDeleteClick = (shoot) => {
+        setDeleteConfirm({ isOpen: true, shoot });
+    };
+
+    // Handle actual deletion after confirmation
+    const handleConfirmDelete = async () => {
+        const shoot = deleteConfirm.shoot;
+        setDeleteConfirm({ isOpen: false, shoot: null });
+
+        if (!shoot) return;
+
+        setDeletingIds(prev => new Set([...prev, shoot.originalId]));
+        try {
+            if (shoot.type === 'shoot') {
+                await api.delete(`/api/shoots/${shoot.originalId}`);
+            } else {
+                await api.delete(`/api/uploads/${shoot.originalId}`);
+            }
+            if (onMarkComplete) onMarkComplete(); // Re-fetch the dashboard
+        } catch (err) {
+            console.error('Failed to delete event:', err);
+            setErrorAlert({ isOpen: true, message: 'Failed to delete event. Please try again.' });
+        } finally {
+            setDeletingIds(prev => {
+                const next = new Set(prev);
+                next.delete(shoot.originalId);
+                return next;
+            });
         }
     };
 
@@ -269,9 +306,9 @@ const DelayedShootsToday = ({ delayedShoots: apiShoots = [], delayedUploads: api
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            className="flex-1 text-xs"
+                                            className="flex-1 text-xs px-2"
                                             onClick={() => handleReschedule(shoot)}
-                                            disabled={isRescheduling}
+                                            disabled={isRescheduling || deletingIds.has(shoot.originalId)}
                                         >
                                             {isRescheduling && rescheduleModal?.event?.originalId === shoot.originalId ? (
                                                 <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin inline" />
@@ -281,10 +318,25 @@ const DelayedShootsToday = ({ delayedShoots: apiShoots = [], delayedUploads: api
                                         <Button
                                             variant="primary"
                                             size="sm"
-                                            className="flex-1 text-xs"
+                                            className="flex-1 text-xs px-2"
                                             onClick={() => handleMarkComplete(shoot)}
+                                            disabled={deletingIds.has(shoot.originalId)}
                                         >
                                             Mark Complete
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleDeleteClick(shoot)}
+                                            className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 hover:text-red-700 transition-colors px-3 flex-shrink-0 flex items-center justify-center bg-white"
+                                            disabled={deletingIds.has(shoot.originalId)}
+                                            title="Delete event"
+                                        >
+                                            {deletingIds.has(shoot.originalId) ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                <Trash2 className="w-4 h-4" />
+                                            )}
                                         </Button>
                                     </div>
                                 </div>
@@ -300,6 +352,25 @@ const DelayedShootsToday = ({ delayedShoots: apiShoots = [], delayedUploads: api
                 event={rescheduleModal.event}
                 onClose={handleCloseModal}
                 onConfirm={handleRescheduleConfirm}
+            />
+
+            {/* Error Alert */}
+            <ErrorAlert
+                isOpen={errorAlert.isOpen}
+                message={errorAlert.message}
+                onClose={() => setErrorAlert({ isOpen: false, message: '' })}
+            />
+
+            {/* Delete Confirmation Dialog */}
+            <ConfirmDialog
+                isOpen={deleteConfirm.isOpen}
+                title="Delete Delayed Task"
+                message={`Are you sure you want to delete "${deleteConfirm.shoot?.brand}"? This action cannot be undone.`}
+                confirmText="Yes, Delete it"
+                cancelText="Cancel"
+                variant="danger"
+                onConfirm={handleConfirmDelete}
+                onCancel={() => setDeleteConfirm({ isOpen: false, shoot: null })}
             />
         </Card>
     );

@@ -161,13 +161,13 @@ const authSlice = createSlice({
             })
             .addCase(signupFinal.fulfilled, (state, action) => {
                 state.loading = false;
-                const { access_token, id } = action.payload || {};
+                const { access_token, id, name, profile_photo_location } = action.payload || {};
                 if (access_token) {
                     state.token = access_token;
                     state.isAuthenticated = true;
                     localStorage.setItem('token', access_token);
                 }
-                const user = { ...(action.payload?.user || {}), ...(id ? { id } : {}) };
+                const user = { id, name, profile_photo_location };
                 state.user = user;
                 localStorage.setItem('user', JSON.stringify(user));
             })
@@ -184,13 +184,13 @@ const authSlice = createSlice({
             })
             .addCase(login.fulfilled, (state, action) => {
                 state.loading = false;
-                const { access_token, id } = action.payload || {};
+                const { access_token, id, name, profile_photo_location } = action.payload || {};
                 if (access_token) {
                     state.token = access_token;
                     state.isAuthenticated = true;
                     localStorage.setItem('token', access_token);
                 }
-                const user = { ...(action.payload?.user || {}), ...(id ? { id } : {}) };
+                const user = { id, name, profile_photo_location };
                 state.user = user;
                 localStorage.setItem('user', JSON.stringify(user));
             })

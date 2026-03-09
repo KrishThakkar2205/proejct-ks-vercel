@@ -3,6 +3,7 @@ import { Link2, Copy, CheckCircle, Calendar, MapPin, Clock, Search, Loader2, Ext
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
+import ErrorAlert from '../../components/ui/ErrorAlert';
 import api from '../../utils/api';
 
 const CompletedShoots = () => {
@@ -15,6 +16,7 @@ const CompletedShoots = () => {
     const [generatingFor, setGeneratingFor] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [errorAlert, setErrorAlert] = useState({ isOpen: false, message: '' });
 
     // Helper to convert HH:MM:SS or HH:MM to display time
     const toDisplayTime = (timeStr) => {
@@ -97,7 +99,7 @@ const CompletedShoots = () => {
             // Refresh data to get the updated review_generated flag
             fetchData(true);
         } catch (err) {
-            alert(err.response?.data?.detail || 'Failed to generate review link.');
+            setErrorAlert({ isOpen: true, message: err.response?.data?.detail || 'Failed to generate review link.' });
         } finally {
             setGeneratingFor(null);
         }
@@ -445,6 +447,13 @@ const CompletedShoots = () => {
                     </Card>
                 )
             )}
+
+            {/* Error Alert */}
+            <ErrorAlert
+                isOpen={errorAlert.isOpen}
+                message={errorAlert.message}
+                onClose={() => setErrorAlert({ isOpen: false, message: '' })}
+            />
         </div>
     );
 };

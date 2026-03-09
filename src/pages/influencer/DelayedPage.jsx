@@ -6,6 +6,7 @@ import Button from '../../components/ui/Button';
 import RescheduleModal from '../../components/dashboard/RescheduleModal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import SuccessAlert from '../../components/ui/SuccessAlert';
+import ErrorAlert from '../../components/ui/ErrorAlert';
 import { Calendar, Clock, MapPin, Search, Upload, Video, AlertTriangle, Trash2, Loader2 } from 'lucide-react';
 import api from '../../utils/api';
 
@@ -15,6 +16,7 @@ const DelayedPage = () => {
     const [rescheduleModal, setRescheduleModal] = useState({ isOpen: false, event: null, eventType: null });
     const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, itemId: null, itemType: null });
     const [successAlert, setSuccessAlert] = useState({ isOpen: false, message: '' });
+    const [errorAlert, setErrorAlert] = useState({ isOpen: false, message: '' });
 
     // API data
     const [shoots, setShoots] = useState([]);
@@ -132,7 +134,7 @@ const DelayedPage = () => {
             setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
             fetchData(true);
         } catch (err) {
-            alert(err.response?.data?.detail || 'Failed to mark as completed.');
+            setErrorAlert({ isOpen: true, message: err.response?.data?.detail || 'Failed to mark as completed.' });
         }
     };
 
@@ -169,7 +171,7 @@ const DelayedPage = () => {
             setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
             fetchData(true);
         } catch (err) {
-            alert(err.response?.data?.detail || 'Failed to reschedule event.');
+            setErrorAlert({ isOpen: true, message: err.response?.data?.detail || 'Failed to reschedule event.' });
         }
         handleCloseRescheduleModal();
     };
@@ -196,7 +198,7 @@ const DelayedPage = () => {
             setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
             fetchData(true);
         } catch (err) {
-            alert(err.response?.data?.detail || 'Failed to delete event.');
+            setErrorAlert({ isOpen: true, message: err.response?.data?.detail || 'Failed to delete event.' });
         }
         setDeleteConfirm({ isOpen: false, itemId: null, itemType: null });
     };
@@ -518,11 +520,17 @@ const DelayedPage = () => {
                 onCancel={handleCancelDelete}
             />
 
-            {/* Success Alert */}
             <SuccessAlert
                 isOpen={successAlert.isOpen}
                 message={successAlert.message}
                 onClose={() => setSuccessAlert({ isOpen: false, message: '' })}
+            />
+
+            {/* Error Alert */}
+            <ErrorAlert
+                isOpen={errorAlert.isOpen}
+                message={errorAlert.message}
+                onClose={() => setErrorAlert({ isOpen: false, message: '' })}
             />
         </div>
     );

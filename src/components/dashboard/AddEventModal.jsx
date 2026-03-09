@@ -6,6 +6,7 @@ import Button from '../ui/Button';
 import DateInput from '../ui/DateInput';
 import TimeInput from '../ui/TimeInput';
 import Select from '../ui/Select';
+import ErrorAlert from '../ui/ErrorAlert';
 import api from '../../utils/api';
 
 const AddEventModal = ({ isOpen, onClose, onSuccess }) => {
@@ -22,6 +23,7 @@ const AddEventModal = ({ isOpen, onClose, onSuccess }) => {
         contentType: '',
         notes: ''
     });
+    const [errorAlert, setErrorAlert] = useState({ isOpen: false, message: '' });
 
     if (!isOpen) return null;
 
@@ -54,7 +56,7 @@ const AddEventModal = ({ isOpen, onClose, onSuccess }) => {
             scheduledDateTime.setHours(parseInt(hours), parseInt(minutes), 0);
 
             if (scheduledDateTime < now) {
-                alert("You cannot schedule an event in the past. Please select a future time.");
+                setErrorAlert({ isOpen: true, message: 'You cannot schedule an event in the past. Please select a future time.' });
                 return;
             }
         }
@@ -95,7 +97,7 @@ const AddEventModal = ({ isOpen, onClose, onSuccess }) => {
             });
         } catch (err) {
             const msg = err.response?.data?.detail?.[0]?.msg || err.response?.data?.detail || 'Failed to create schedule item.';
-            alert(msg);
+            setErrorAlert({ isOpen: true, message: msg });
         } finally {
             setSubmitting(false);
         }
@@ -297,6 +299,12 @@ const AddEventModal = ({ isOpen, onClose, onSuccess }) => {
                     </form>
                 </div>
             </Card>
+
+            <ErrorAlert
+                isOpen={errorAlert.isOpen}
+                message={errorAlert.message}
+                onClose={() => setErrorAlert({ isOpen: false, message: '' })}
+            />
         </div>,
         document.body
     );

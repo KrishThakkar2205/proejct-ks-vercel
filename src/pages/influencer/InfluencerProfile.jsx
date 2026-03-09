@@ -4,6 +4,8 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
+import SuccessAlert from '../../components/ui/SuccessAlert';
+import ErrorAlert from '../../components/ui/ErrorAlert';
 import { Instagram, MapPin, Mail, Camera, Edit2, Check, X, Loader2 } from 'lucide-react';
 import api, { API_BASE_URL } from '../../utils/api';
 
@@ -18,6 +20,8 @@ const InfluencerProfile = () => {
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [profilePictureFile, setProfilePictureFile] = useState(null);
     const [profilePicturePreview, setProfilePicturePreview] = useState(null);
+    const [successAlert, setSuccessAlert] = useState({ isOpen: false, message: '' });
+    const [errorAlert, setErrorAlert] = useState({ isOpen: false, message: '' });
     const fileInputRef = useRef(null);
 
     const categories = [
@@ -237,7 +241,8 @@ const InfluencerProfile = () => {
                                 onClick={() => {
                                     const link = `${window.location.origin}/portfolio/${formData.id}`;
                                     navigator.clipboard.writeText(link);
-                                    alert('Portfolio link copied to clipboard!');
+                                    setSuccessAlert({ isOpen: true, message: 'Portfolio link copied to clipboard!' });
+                                    setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
                                 }}
                                 className="flex-1"
                             >
@@ -462,7 +467,8 @@ const InfluencerProfile = () => {
                                     onClick={() => {
                                         const link = `${window.location.origin}/portfolio/${formData.id}`;
                                         navigator.clipboard.writeText(link);
-                                        alert('Portfolio link copied to clipboard!');
+                                        setSuccessAlert({ isOpen: true, message: 'Portfolio link copied to clipboard!' });
+                                        setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
                                     }}
                                     className="flex-1"
                                 >
@@ -537,7 +543,7 @@ const InfluencerProfile = () => {
                                                     window.location.href = response.data.url;
                                                 }
                                             } catch (err) {
-                                                alert(err.response?.data?.detail || 'Failed to connect Instagram. Please try again.');
+                                                setErrorAlert({ isOpen: true, message: err.response?.data?.detail || 'Failed to connect Instagram. Please try again.' });
                                             }
                                         }}
                                     >
@@ -570,6 +576,18 @@ const InfluencerProfile = () => {
                     </Card>
                 </div>
             </div>
+
+            <SuccessAlert
+                isOpen={successAlert.isOpen}
+                message={successAlert.message}
+                onClose={() => setSuccessAlert({ isOpen: false, message: '' })}
+            />
+
+            <ErrorAlert
+                isOpen={errorAlert.isOpen}
+                message={errorAlert.message}
+                onClose={() => setErrorAlert({ isOpen: false, message: '' })}
+            />
         </div>
     );
 };

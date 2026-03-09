@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
+import SuccessAlert from '../../components/ui/SuccessAlert';
 import { Download, Search, Calendar, DollarSign, Instagram, Youtube, Facebook, FileText } from 'lucide-react';
 
 const ClosedDeals = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [dateFilter, setDateFilter] = useState('all'); // 'all' or 'thisMonth'
+    const [successAlert, setSuccessAlert] = useState({ isOpen: false, message: '' });
 
     // Mock data for closed deals
     const closedDeals = [
@@ -338,7 +340,10 @@ const ClosedDeals = () => {
                                         <Button
                                             variant="ghost"
                                             className="flex items-center gap-2 text-sm"
-                                            onClick={() => alert(`Downloading invoice ${deal.invoiceId}`)}
+                                            onClick={() => {
+                                                setSuccessAlert({ isOpen: true, message: `Downloading invoice ${deal.invoiceId}` });
+                                                setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
+                                            }}
                                         >
                                             <Download size={16} />
                                             Invoice
@@ -415,7 +420,10 @@ const ClosedDeals = () => {
                             <Button
                                 variant="secondary"
                                 className="w-full flex items-center justify-center gap-2"
-                                onClick={() => alert(`Downloading invoice ${deal.invoiceId}`)}
+                                onClick={() => {
+                                    setSuccessAlert({ isOpen: true, message: `Downloading invoice ${deal.invoiceId}` });
+                                    setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
+                                }}
                             >
                                 <Download size={16} />
                                 Download Invoice
@@ -431,6 +439,12 @@ const ClosedDeals = () => {
                     </div>
                 )}
             </div>
+
+            <SuccessAlert
+                isOpen={successAlert.isOpen}
+                message={successAlert.message}
+                onClose={() => setSuccessAlert({ isOpen: false, message: '' })}
+            />
         </div>
     );
 };

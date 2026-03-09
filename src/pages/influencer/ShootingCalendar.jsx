@@ -9,6 +9,7 @@ import TimeInput from '../../components/ui/TimeInput';
 import RescheduleModal from '../../components/dashboard/RescheduleModal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import SuccessAlert from '../../components/ui/SuccessAlert';
+import ErrorAlert from '../../components/ui/ErrorAlert';
 import AddEventModal from '../../components/dashboard/AddEventModal';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Upload, Video, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
 import api from '../../utils/api';
@@ -19,6 +20,7 @@ const ShootingCalendar = () => {
     const [rescheduleModal, setRescheduleModal] = useState({ isOpen: false, event: null, eventType: null });
     const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, itemId: null, itemType: null });
     const [successAlert, setSuccessAlert] = useState({ isOpen: false, message: '' });
+    const [errorAlert, setErrorAlert] = useState({ isOpen: false, message: '' });
     const [selectedDate, setSelectedDate] = useState(new Date().getDate());
 
     // API data
@@ -232,7 +234,7 @@ const ShootingCalendar = () => {
             setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
             fetchData(true); // Silent refresh
         } catch (err) {
-            alert(err.response?.data?.detail || 'Failed to reschedule event.');
+            setErrorAlert({ isOpen: true, message: err.response?.data?.detail || 'Failed to reschedule event.' });
         }
         handleCloseRescheduleModal();
     };
@@ -259,7 +261,7 @@ const ShootingCalendar = () => {
             setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
             fetchData(true); // Silent refresh
         } catch (err) {
-            alert(err.response?.data?.detail || 'Failed to delete event.');
+            setErrorAlert({ isOpen: true, message: err.response?.data?.detail || 'Failed to delete event.' });
         }
         setDeleteConfirm({ isOpen: false, itemId: null, itemType: null });
     };
@@ -704,6 +706,13 @@ const ShootingCalendar = () => {
                 isOpen={successAlert.isOpen}
                 message={successAlert.message}
                 onClose={() => setSuccessAlert({ isOpen: false, message: '' })}
+            />
+
+            {/* Error Alert */}
+            <ErrorAlert
+                isOpen={errorAlert.isOpen}
+                message={errorAlert.message}
+                onClose={() => setErrorAlert({ isOpen: false, message: '' })}
             />
         </div>
     );
