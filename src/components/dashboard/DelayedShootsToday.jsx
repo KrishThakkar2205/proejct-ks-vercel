@@ -7,6 +7,7 @@ import { AlertTriangle, Clock, Calendar, AlertCircle, CheckCircle, Loader2, Tras
 import ErrorAlert from '../ui/ErrorAlert';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import api from '../../utils/api';
+import { utcToIST, utcToISTDate } from '../../utils/dateUtils';
 
 const DelayedShootsToday = ({ delayedShoots: apiShoots = [], delayedUploads: apiUploads = [], onMarkComplete }) => {
     const [rescheduleModal, setRescheduleModal] = useState({ isOpen: false, event: null });
@@ -17,21 +18,9 @@ const DelayedShootsToday = ({ delayedShoots: apiShoots = [], delayedUploads: api
     const [errorAlert, setErrorAlert] = useState({ isOpen: false, message: '' });
     const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, shoot: null });
 
-    // Convert UTC date + time from backend → user's local 12h time
-    const utcToLocalDisplay = (utcDate, utcTime) => {
-        if (!utcDate || !utcTime) return '12:00 PM';
-        const d = new Date(`${utcDate}T${utcTime}:00Z`);
-        if (isNaN(d.getTime())) return utcTime;
-        return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    };
-
-    // Convert UTC date + time → local YYYY-MM-DD
-    const utcDateToLocal = (utcDate, utcTime) => {
-        if (!utcDate) return utcDate;
-        const d = new Date(`${utcDate}T${utcTime || '00:00'}:00Z`);
-        if (isNaN(d.getTime())) return utcDate;
-        return d.toLocaleDateString('en-CA');
-    };
+    // IST display helpers (imported from dateUtils)
+    const utcToLocalDisplay = (d, t) => utcToIST(d, t) || '12:00 PM';
+    const utcDateToLocal = utcToISTDate;
 
     // Handle opening reschedule modal
     const handleReschedule = (shoot) => {

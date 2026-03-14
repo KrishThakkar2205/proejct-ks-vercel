@@ -13,6 +13,7 @@ import ErrorAlert from '../../components/ui/ErrorAlert';
 import AddEventModal from '../../components/dashboard/AddEventModal';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Upload, Video, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
 import api from '../../utils/api';
+import { utcToIST, utcToISTDate } from '../../utils/dateUtils';
 
 const ShootingCalendar = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -79,21 +80,9 @@ const ShootingCalendar = () => {
         return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     };
 
-    // Convert UTC date + time from backend → user's local 12h time
-    const utcToLocalDisplay = (utcDate, utcTime) => {
-        if (!utcDate || !utcTime) return '';
-        const d = new Date(`${utcDate}T${utcTime}:00Z`);
-        if (isNaN(d.getTime())) return utcTime;
-        return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    };
-
-    // Convert UTC date + time → local YYYY-MM-DD (for calendar day matching)
-    const utcDateToLocal = (utcDate, utcTime) => {
-        if (!utcDate) return utcDate;
-        const d = new Date(`${utcDate}T${utcTime || '00:00'}:00Z`);
-        if (isNaN(d.getTime())) return utcDate;
-        return d.toLocaleDateString('en-CA'); // YYYY-MM-DD
-    };
+    // IST display helpers (imported from dateUtils)
+    const utcToLocalDisplay = (d, t) => utcToIST(d, t);
+    const utcDateToLocal = utcToISTDate;
 
     // Map API data to the format the component expects
     const bookings = shoots.map(s => ({

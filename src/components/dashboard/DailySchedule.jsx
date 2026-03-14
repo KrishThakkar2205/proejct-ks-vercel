@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Card from '../ui/Card';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
@@ -7,6 +7,7 @@ import { Calendar, Clock, MapPin, Video, Camera, Instagram, Facebook, Youtube, C
 import ErrorAlert from '../ui/ErrorAlert';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import api from '../../utils/api';
+import { utcToIST, utcToISTDate } from '../../utils/dateUtils';
 
 const DailySchedule = ({ shoots = [], uploads = [], onMarkComplete }) => {
     const [completingIds, setCompletingIds] = useState(new Set());
@@ -18,28 +19,9 @@ const DailySchedule = ({ shoots = [], uploads = [], onMarkComplete }) => {
     const [errorAlert, setErrorAlert] = useState({ isOpen: false, message: '' });
     const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, event: null });
 
-    // Convert UTC date + time from backend into the user's local time (12h display)
-    const utcToLocalDisplay = (utcDate, utcTime) => {
-        if (!utcDate || !utcTime) return '12:00 PM';
-        // Build a UTC Date object by appending 'Z'
-        const utcISO = `${utcDate}T${utcTime}:00Z`;
-        const d = new Date(utcISO);
-        if (isNaN(d.getTime())) return utcTime; // fallback
-        return d.toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-        });
-    };
-
-    // Convert UTC date string to local date string (YYYY-MM-DD)
-    const utcDateToLocal = (utcDate, utcTime) => {
-        if (!utcDate) return utcDate;
-        const utcISO = `${utcDate}T${utcTime || '00:00'}:00Z`;
-        const d = new Date(utcISO);
-        if (isNaN(d.getTime())) return utcDate;
-        return d.toLocaleDateString('en-CA'); // YYYY-MM-DD in local tz
-    };
+    // IST display helpers (imported from dateUtils)
+    const utcToLocalDisplay = (d, t) => utcToIST(d, t) || '12:00 PM';
+    const utcDateToLocal = utcToISTDate;
 
     // Handle marking event as complete — calls the backend API
     const handleMarkComplete = async (event) => {

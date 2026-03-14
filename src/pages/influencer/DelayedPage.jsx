@@ -9,6 +9,7 @@ import SuccessAlert from '../../components/ui/SuccessAlert';
 import ErrorAlert from '../../components/ui/ErrorAlert';
 import { Calendar, Clock, MapPin, Search, Upload, Video, AlertTriangle, Trash2, Loader2 } from 'lucide-react';
 import api from '../../utils/api';
+import { utcToIST, utcToISTDate } from '../../utils/dateUtils';
 
 const DelayedPage = () => {
     const [activeTab, setActiveTab] = useState('shoots');
@@ -33,21 +34,9 @@ const DelayedPage = () => {
 
     const yesterdayStr = getYesterdayStr();
 
-    // Convert UTC date + time from backend → user's local 12h time
-    const utcToLocalDisplay = (utcDate, utcTime) => {
-        if (!utcDate || !utcTime) return '';
-        const d = new Date(`${utcDate}T${utcTime}:00Z`);
-        if (isNaN(d.getTime())) return utcTime;
-        return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    };
-
-    // Convert UTC date + time → local YYYY-MM-DD
-    const utcDateToLocal = (utcDate, utcTime) => {
-        if (!utcDate) return utcDate;
-        const d = new Date(`${utcDate}T${utcTime || '00:00'}:00Z`);
-        if (isNaN(d.getTime())) return utcDate;
-        return d.toLocaleDateString('en-CA');
-    };
+    // IST display helpers (imported from dateUtils)
+    const utcToLocalDisplay = (d, t) => utcToIST(d, t);
+    const utcDateToLocal = utcToISTDate;
 
     // Fetch delayed (past due, not completed) shoots and uploads
     const fetchData = useCallback(async (silent = false) => {
