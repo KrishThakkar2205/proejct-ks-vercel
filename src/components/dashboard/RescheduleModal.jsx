@@ -56,7 +56,11 @@ const RescheduleModal = ({ isOpen, event, onClose, onConfirm }) => {
             return;
         }
 
-        onConfirm(rescheduleData);
+        // Convert local date + time to UTC before passing up
+        const local = new Date(`${rescheduleData.date}T${rescheduleData.time}:00`);
+        const utcDate = local.toISOString().split('T')[0];
+        const utcTime = local.toISOString().split('T')[1].slice(0, 5);
+        onConfirm({ date: utcDate, time: utcTime });
         handleClose();
     };
 

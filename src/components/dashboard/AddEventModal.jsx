@@ -40,6 +40,14 @@ const AddEventModal = ({ isOpen, onClose, onSuccess }) => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    // Convert local date + time to UTC date + time strings
+    const toUTC = (date, time) => {
+        const local = new Date(`${date}T${time || '00:00'}:00`);
+        const utcDate = local.toISOString().split('T')[0];          // YYYY-MM-DD UTC
+        const utcTime = local.toISOString().split('T')[1].slice(0, 5); // HH:mm UTC
+        return { utcDate, utcTime };
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -63,10 +71,12 @@ const AddEventModal = ({ isOpen, onClose, onSuccess }) => {
 
         setSubmitting(true);
         try {
+            const { utcDate, utcTime } = toUTC(formData.date, formData.time);
+
             if (scheduleType === 'shoot') {
                 await api.post('/api/shoots', {
-                    shoot_date: formData.date,
-                    shoot_time: formData.time || null,
+                    shoot_date: utcDate,
+                    shoot_time: formData.time ? utcTime : null,
                     location: formData.location || null,
                     name: formData.campaign || null,
                     brand_name: formData.brandName || null,
@@ -74,8 +84,8 @@ const AddEventModal = ({ isOpen, onClose, onSuccess }) => {
                 });
             } else {
                 await api.post('/api/uploads', {
-                    upload_date: formData.date,
-                    upload_time: formData.time || null,
+                    upload_date: utcDate,
+                    upload_time: formData.time ? utcTime : null,
                     name: formData.campaign || null,
                     platform: formData.platform || null,
                     brand_name: formData.brandName || null,
