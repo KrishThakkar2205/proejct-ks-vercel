@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../ui/Button';
 import { Calendar, Clock, X, AlertTriangle, Camera, Video } from 'lucide-react';
+import { istToUTC, getISTNow } from '../../utils/dateUtils';
 
 const RescheduleModal = ({ isOpen, event, onClose, onConfirm }) => {
     const [rescheduleData, setRescheduleData] = useState({ date: '', time: '' });
@@ -14,8 +15,8 @@ const RescheduleModal = ({ isOpen, event, onClose, onConfirm }) => {
             // Trigger animation after render
             setTimeout(() => setIsAnimating(true), 10);
 
-            // Set current date and time as default
-            const today = new Date().toISOString().split('T')[0];
+            // Set current date and time as default (in IST)
+            const today = getISTNow().toISOString().split('T')[0];
             let rawTime = event.originalTime || event.time || event.scheduledTime || '12:00';
             if (rawTime.toLowerCase().includes('am') || rawTime.toLowerCase().includes('pm')) {
                 const [timePart, period] = rawTime.split(' ');
@@ -42,11 +43,11 @@ const RescheduleModal = ({ isOpen, event, onClose, onConfirm }) => {
     };
 
     const handleSubmit = () => {
-        // Validate that the new date/time is not in the past
-        const selectedDateTime = new Date(`${rescheduleData.date}T${rescheduleData.time}`);
-        const now = new Date();
+        // Validate that the new date/time is not in the past relative to IST
+        const selectedDateTime = new Date(`${rescheduleData.date}T${rescheduleData.time}:00Z`);
+        const now = getISTNow();
 
-        if (selectedDateTime < now) {
+        if (selectedDateTime.getTime() < now.getTime()) {
             setRescheduleError('Cannot reschedule to a past date or time. Please select a future date and time.');
             return;
         }
@@ -56,10 +57,8 @@ const RescheduleModal = ({ isOpen, event, onClose, onConfirm }) => {
             return;
         }
 
-        // Convert local date + time to UTC before passing up
-        const local = new Date(`${rescheduleData.date}T${rescheduleData.time}:00`);
-        const utcDate = local.toISOString().split('T')[0];
-        const utcTime = local.toISOString().split('T')[1].slice(0, 5);
+        // Convert IST date + time to UTC before passing up
+        const { utcDate, utcTime } = istToUTC(rescheduleData.date, rescheduleData.time);
         onConfirm({ date: utcDate, time: utcTime });
         handleClose();
     };

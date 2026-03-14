@@ -8,6 +8,7 @@ import TimeInput from '../ui/TimeInput';
 import Select from '../ui/Select';
 import ErrorAlert from '../ui/ErrorAlert';
 import api from '../../utils/api';
+import { istToUTC, getISTNow } from '../../utils/dateUtils';
 
 const AddEventModal = ({ isOpen, onClose, onSuccess }) => {
     const [isClosing, setIsClosing] = useState(false);
@@ -16,7 +17,7 @@ const AddEventModal = ({ isOpen, onClose, onSuccess }) => {
     const [formData, setFormData] = useState({
         brandName: '',
         campaign: '',
-        date: new Date().toISOString().split('T')[0],
+        date: getISTNow().toISOString().split('T')[0],
         time: '',
         location: '',
         platform: '',
@@ -40,23 +41,19 @@ const AddEventModal = ({ isOpen, onClose, onSuccess }) => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // Convert local date + time to UTC date + time strings
-    const toUTC = (date, time) => {
-        const local = new Date(`${date}T${time || '00:00'}:00`);
-        const utcDate = local.toISOString().split('T')[0];          // YYYY-MM-DD UTC
-        const utcTime = local.toISOString().split('T')[1].slice(0, 5); // HH:mm UTC
-        return { utcDate, utcTime };
-    };
+    // Convert IST date + time entered by user to UTC for backend
+    const toUTC = (date, time) => istToUTC(date, time);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validate: No past dates/times
-        const now = new Date();
-        const selectedDate = new Date(formData.date);
+        // Validate: No past dates/times relative to IST
+        const now = getISTNow();
+        const selectedDateStr = formData.date;
+        const nowStr = now.toISOString().split('T')[0];
 
-        // Check if selected date is today
-        const isToday = selectedDate.toDateString() === now.toDateString();
+        // Check if selected date is today in IST
+        const isToday = selectedDateStr === nowStr;
 
         if (isToday && formData.time) {
             const [hours, minutes] = formData.time.split(':');
@@ -98,7 +95,7 @@ const AddEventModal = ({ isOpen, onClose, onSuccess }) => {
             setFormData({
                 brandName: '',
                 campaign: '',
-                date: new Date().toISOString().split('T')[0],
+                date: getISTNow().toISOString().split('T')[0],
                 time: '',
                 location: '',
                 platform: '',

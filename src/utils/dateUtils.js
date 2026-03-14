@@ -54,3 +54,47 @@ export const utcToISTDate = (utcDate, utcTime) => {
     const day = String(ist.getUTCDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
 };
+
+/**
+ * Converts a string date ("2025-03-14") and string time ("10:00")
+ * entered as IST into UTC date and time strings for the backend.
+ *
+ * @param {string} istDate  e.g. "2025-03-14"
+ * @param {string} istTime  e.g. "10:00"
+ * @returns {object}        { utcDate, utcTime } e.g. { "2025-03-14", "04:30" }
+ */
+export const istToUTC = (istDate, istTime) => {
+    if (!istDate || !istTime) return { utcDate: istDate, utcTime: istTime };
+
+    // Create a date object treating the input as UTC first, then subtract the IST offset
+    // to get the true UTC moment.
+    const d = new Date(`${istDate}T${istTime}:00Z`);
+    if (isNaN(d.getTime())) return { utcDate: istDate, utcTime: istTime };
+
+    const utcMs = d.getTime() - IST_OFFSET_MINUTES * 60 * 1000;
+    const utc = new Date(utcMs);
+
+    const y = utc.getUTCFullYear();
+    const m = String(utc.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(utc.getUTCDate()).padStart(2, '0');
+    const hours = String(utc.getUTCHours()).padStart(2, '0');
+    const minutes = String(utc.getUTCMinutes()).padStart(2, '0');
+
+    return {
+        utcDate: `${y}-${m}-${day}`,
+        utcTime: `${hours}:${minutes}`
+    };
+};
+
+/**
+ * Returns the current date and time as a Date object in IST (UTC+5:30).
+ * Useful for validation (e.g. no past dates) regardless of device location.
+ *
+ * @returns {Date}
+ */
+export const getISTNow = () => {
+    const now = new Date();
+    // Neutralize to UTC moment, then add IST offset
+    const istMs = now.getTime() + (now.getTimezoneOffset() * 60 * 1000) + (IST_OFFSET_MINUTES * 60 * 1000);
+    return new Date(istMs);
+};
