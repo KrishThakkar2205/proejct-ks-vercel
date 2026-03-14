@@ -28,6 +28,8 @@
     "@capacitor/cli": "^8.2.0",
     "@capacitor/core": "^8.2.0",
     "@capacitor/ios": "^8.2.0",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.1",
     "@reduxjs/toolkit": "^2.11.2",
     "axios": "^1.13.6",
     "lucide-react": "^0.554.0",
