@@ -27,11 +27,46 @@ import InfluencerReviews from './pages/influencer/InfluencerReviews';
 import PlaceholderPage from './pages/PlaceholderPage';
 import NotFound from './pages/NotFound';
 import ScrollToTop from './components/ScrollToTop';
+import { useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { App as CapApp } from '@capacitor/app';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { Capacitor } from '@capacitor/core';
+
+// Handle Android hardware back button
+const BackButtonHandler = () => {
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    useEffect(() => {
+        // Set premium status bar style on load
+        if (Capacitor.isNativePlatform()) {
+            StatusBar.setStyle({ style: Style.Light });
+        }
+        
+        const handler = CapApp.addListener('backButton', ({ canGoBack }) => {
+            if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/influencer' || location.pathname === '/brand') {
+                // Exit app if on main pages
+                CapApp.exitApp();
+            } else {
+                // Otherwise navigate back
+                navigate(-1);
+            }
+        });
+
+        return () => {
+            handler.then(h => h.remove());
+        };
+    }, [location, navigate]);
+
+    return null;
+};
 
 function App() {
     return (
         <Router>
             <ScrollToTop />
+            <BackButtonHandler />
             <Routes>
                 {/* Public Routes (landing page always accessible) */}
                 <Route element={<PublicLayout />}>
