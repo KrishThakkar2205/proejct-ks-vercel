@@ -18,17 +18,27 @@ const DailySchedule = ({ shoots = [], uploads = [], onMarkComplete }) => {
     const [errorAlert, setErrorAlert] = useState({ isOpen: false, message: '' });
     const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, event: null });
 
-    // Helper to convert 24h to 12h, or just return if already 12h
-    const toDisplayTime = (timeStr) => {
-        if (!timeStr) return '';
-        if (timeStr.toLowerCase().includes('am') || timeStr.toLowerCase().includes('pm')) return timeStr;
-        const [hours, minutes] = timeStr.split(':');
-        if (!minutes) return timeStr;
-        const hour = parseInt(hours, 10);
-        if (isNaN(hour)) return timeStr;
-        const ampm = hour >= 12 ? 'PM' : 'AM';
-        const displayHour = hour % 12 || 12;
-        return `${displayHour}:${minutes} ${ampm}`;
+    // Convert UTC date + time from backend into the user's local time (12h display)
+    const utcToLocalDisplay = (utcDate, utcTime) => {
+        if (!utcDate || !utcTime) return '12:00 PM';
+        // Build a UTC Date object by appending 'Z'
+        const utcISO = `${utcDate}T${utcTime}:00Z`;
+        const d = new Date(utcISO);
+        if (isNaN(d.getTime())) return utcTime; // fallback
+        return d.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+        });
+    };
+
+    // Convert UTC date string to local date string (YYYY-MM-DD)
+    const utcDateToLocal = (utcDate, utcTime) => {
+        if (!utcDate) return utcDate;
+        const utcISO = `${utcDate}T${utcTime || '00:00'}:00Z`;
+        const d = new Date(utcISO);
+        if (isNaN(d.getTime())) return utcDate;
+        return d.toLocaleDateString('en-CA'); // YYYY-MM-DD in local tz
     };
 
     // Handle marking event as complete — calls the backend API
@@ -118,11 +128,9 @@ const DailySchedule = ({ shoots = [], uploads = [], onMarkComplete }) => {
                 });
             }
 
-            // Convert 24-hour time to 12-hour format for display
-            const hour = parseInt(hours);
-            const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
-            const ampm = hour >= 12 ? 'PM' : 'AM';
-            const displayTime = `${displayHour}:${minutes} ${ampm}`;
+            // The rescheduleData already contains UTC date+time (from RescheduleModal's UTC conversion)
+            // Convert back to local for display
+            const displayTime = utcToLocalDisplay(rescheduleData.date, rescheduleData.time);
 
             setRescheduledEvents(prev => ({
                 ...prev,
@@ -148,7 +156,8 @@ const DailySchedule = ({ shoots = [], uploads = [], onMarkComplete }) => {
             type: 'shoot',
             title: s.brand_name || 'Untitled Brand',
             campaign: s.campaign,
-            time: toDisplayTime(s.shoot_time) || '12:00 PM', // Fallback if no time provided
+            time: utcToLocalDisplay(s.shoot_date, s.shoot_time),
+            localDate: utcDateToLocal(s.shoot_date, s.shoot_time),
             location: s.location,
             status: s.status || 'upcoming',
             platform: null,
@@ -160,7 +169,8 @@ const DailySchedule = ({ shoots = [], uploads = [], onMarkComplete }) => {
             type: 'upload',
             title: u.brand_name || 'Untitled Brand',
             campaign: u.campaign,
-            time: toDisplayTime(u.upload_time) || '12:00 PM', // Fallback if no time provided
+            time: utcToLocalDisplay(u.upload_date, u.upload_time),
+            localDate: utcDateToLocal(u.upload_date, u.upload_time),
             platform: u.platform?.toLowerCase() || null,
             status: u.status || 'upcoming',
             location: null,

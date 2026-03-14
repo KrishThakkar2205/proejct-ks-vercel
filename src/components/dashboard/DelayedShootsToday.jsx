@@ -17,17 +17,20 @@ const DelayedShootsToday = ({ delayedShoots: apiShoots = [], delayedUploads: api
     const [errorAlert, setErrorAlert] = useState({ isOpen: false, message: '' });
     const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, shoot: null });
 
-    // Helper to convert 24h to 12h, or just return if already 12h
-    const toDisplayTime = (timeStr) => {
-        if (!timeStr) return '';
-        if (timeStr.toLowerCase().includes('am') || timeStr.toLowerCase().includes('pm')) return timeStr;
-        const [hours, minutes] = timeStr.split(':');
-        if (!minutes) return timeStr;
-        const hour = parseInt(hours, 10);
-        if (isNaN(hour)) return timeStr;
-        const ampm = hour >= 12 ? 'PM' : 'AM';
-        const displayHour = hour % 12 || 12;
-        return `${displayHour}:${minutes} ${ampm}`;
+    // Convert UTC date + time from backend → user's local 12h time
+    const utcToLocalDisplay = (utcDate, utcTime) => {
+        if (!utcDate || !utcTime) return '12:00 PM';
+        const d = new Date(`${utcDate}T${utcTime}:00Z`);
+        if (isNaN(d.getTime())) return utcTime;
+        return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    };
+
+    // Convert UTC date + time → local YYYY-MM-DD
+    const utcDateToLocal = (utcDate, utcTime) => {
+        if (!utcDate) return utcDate;
+        const d = new Date(`${utcDate}T${utcTime || '00:00'}:00Z`);
+        if (isNaN(d.getTime())) return utcDate;
+        return d.toLocaleDateString('en-CA');
     };
 
     // Handle opening reschedule modal
@@ -60,11 +63,9 @@ const DelayedShootsToday = ({ delayedShoots: apiShoots = [], delayedUploads: api
                 });
             }
 
-            // Convert 24-hour time to 12-hour format for display
-            const hour = parseInt(hours);
-            const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
-            const ampm = hour >= 12 ? 'PM' : 'AM';
-            const displayTime = `${displayHour}:${minutes} ${ampm}`;
+            // rescheduleData already has UTC date+time (from RescheduleModal)
+            // Convert to local for immediate display before soft-reload
+            const displayTime = utcToLocalDisplay(rescheduleData.date, rescheduleData.time);
 
             setRescheduledShoots(prev => ({
                 ...prev,
@@ -152,8 +153,8 @@ const DelayedShootsToday = ({ delayedShoots: apiShoots = [], delayedUploads: api
             brand: s.brand_name || 'Untitled Brand',
             campaign: s.campaign,
             type: 'shoot',
-            scheduledTime: toDisplayTime(s.shoot_time) || '12:00 PM',
-            scheduledDate: s.shoot_date,
+            scheduledTime: utcToLocalDisplay(s.shoot_date, s.shoot_time),
+            scheduledDate: utcDateToLocal(s.shoot_date, s.shoot_time),
             delayHours: parseDelayHours(s.shoot_date, s.shoot_time),
             notes: s.notes
         })),
@@ -163,8 +164,8 @@ const DelayedShootsToday = ({ delayedShoots: apiShoots = [], delayedUploads: api
             brand: u.brand_name || 'Untitled Brand',
             campaign: u.campaign,
             type: 'upload',
-            scheduledTime: toDisplayTime(u.upload_time) || '12:00 PM',
-            scheduledDate: u.upload_date,
+            scheduledTime: utcToLocalDisplay(u.upload_date, u.upload_time),
+            scheduledDate: utcDateToLocal(u.upload_date, u.upload_time),
             delayHours: parseDelayHours(u.upload_date, u.upload_time),
             notes: u.notes
         }))

@@ -34,14 +34,20 @@ const Schedule = () => {
 
     const todayStr = getTodayStr();
 
-    // Helper to convert HH:MM:SS or HH:MM to display time
-    const toDisplayTime = (timeStr) => {
-        if (!timeStr) return '';
-        const [hours, minutes] = timeStr.split(':');
-        const hour = parseInt(hours);
-        const ampm = hour >= 12 ? 'PM' : 'AM';
-        const displayHour = hour % 12 || 12;
-        return `${displayHour}:${minutes} ${ampm}`;
+    // Convert UTC date + time from backend → user's local 12h time
+    const utcToLocalDisplay = (utcDate, utcTime) => {
+        if (!utcDate || !utcTime) return '';
+        const d = new Date(`${utcDate}T${utcTime}:00Z`);
+        if (isNaN(d.getTime())) return utcTime;
+        return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    };
+
+    // Convert UTC date + time → local YYYY-MM-DD
+    const utcDateToLocal = (utcDate, utcTime) => {
+        if (!utcDate) return utcDate;
+        const d = new Date(`${utcDate}T${utcTime || '00:00'}:00Z`);
+        if (isNaN(d.getTime())) return utcDate;
+        return d.toLocaleDateString('en-CA');
     };
 
     // Fetch today's shoots and uploads
@@ -79,8 +85,8 @@ const Schedule = () => {
         id: s.id,
         brandName: s.brand_name || '',
         campaign: s.name || '',
-        shootDate: s.shoot_date,
-        shootTime: toDisplayTime(s.shoot_time),
+        shootDate: utcDateToLocal(s.shoot_date, s.shoot_time),
+        shootTime: utcToLocalDisplay(s.shoot_date, s.shoot_time),
         location: s.location || '',
         status: s.completed ? 'completed' : 'confirmed',
         notes: s.notes || '',
@@ -91,8 +97,8 @@ const Schedule = () => {
         id: u.id,
         brandName: u.brand_name || '',
         campaign: u.name || '',
-        uploadDate: u.upload_date,
-        uploadTime: toDisplayTime(u.upload_time),
+        uploadDate: utcDateToLocal(u.upload_date, u.upload_time),
+        uploadTime: utcToLocalDisplay(u.upload_date, u.upload_time),
         platform: u.platform || '',
         contentType: 'Video',
         status: u.completed ? 'uploaded' : 'confirmed',
