@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
@@ -283,42 +284,35 @@ const Schedule = () => {
 
     return (
         <div className="space-y-8">
-            {/* Header - Mobile Only */}
-            <div className="md:hidden">
-                <h1 className="text-3xl font-bebas tracking-wide text-deep-black">Schedule</h1>
-                <p className="text-gray-600 text-sm mt-1">Today's shoots and uploads</p>
-            </div>
 
-            {/* Today's Summary Card */}
-            {(todaysShoot.length > 0 || todaysUploads.length > 0) && (
-                <Card className="p-6 bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-primary-orange">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                            <h2 className="text-xl font-bebas tracking-wide font-bold text-deep-black">Today's Schedule</h2>
-                        </div>
-                        <Badge variant="error" className="animate-pulse">Live</Badge>
+            {/* Today's Schedule Card */}
+            <Card className="p-6 bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-primary-orange">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                        <h2 className="text-xl font-bebas tracking-wide font-bold text-deep-black">Today's Schedule</h2>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="bg-white p-4 rounded-lg border-l-4 border-primary-orange">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Video size={20} className="text-primary-orange" />
-                                <h3 className="font-semibold text-deep-black">Shoots</h3>
-                            </div>
-                            <p className="text-3xl font-bold text-primary-orange">{todaysShoot.length}</p>
-                            <p className="text-sm text-gray-600 mt-1">scheduled today</p>
+                    <Badge variant="error" className="animate-pulse">Live</Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white p-4 rounded-lg border-l-4 border-primary-orange">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Video size={20} className="text-primary-orange" />
+                            <h3 className="font-semibold text-deep-black">Shoots</h3>
                         </div>
-                        <div className="bg-white p-4 rounded-lg border-l-4 border-gray-700">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Upload size={20} className="text-gray-700" />
-                                <h3 className="font-semibold text-deep-black">Uploads</h3>
-                            </div>
-                            <p className="text-3xl font-bold text-gray-700">{todaysUploads.length}</p>
-                            <p className="text-sm text-gray-600 mt-1">to upload today</p>
-                        </div>
+                        <p className="text-3xl font-bold text-primary-orange">{todaysShoot.length}</p>
+                        <p className="text-sm text-gray-600 mt-1">scheduled today</p>
                     </div>
-                </Card>
-            )}
+                    <div className="bg-white p-4 rounded-lg border-l-4 border-gray-700">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Upload size={20} className="text-gray-700" />
+                            <h3 className="font-semibold text-deep-black">Uploads</h3>
+                        </div>
+                        <p className="text-3xl font-bold text-gray-700">{todaysUploads.length}</p>
+                        <p className="text-sm text-gray-600 mt-1">to upload today</p>
+                    </div>
+                </div>
+            </Card>
 
             {/* Tabs */}
             <div className="flex flex-wrap gap-2">

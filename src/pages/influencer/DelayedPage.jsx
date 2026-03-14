@@ -229,11 +229,7 @@ const DelayedPage = () => {
 
     return (
         <div className="space-y-8">
-            {/* Header - Mobile Only */}
-            <div className="md:hidden">
-                <h1 className="text-3xl font-bebas tracking-wide text-deep-black">Delayed Items</h1>
-                <p className="text-gray-600 text-sm mt-1">Overdue shoots and uploads</p>
-            </div>
+
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

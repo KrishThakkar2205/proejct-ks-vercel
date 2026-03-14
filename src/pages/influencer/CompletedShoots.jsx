@@ -177,11 +177,7 @@ const CompletedShoots = () => {
 
     return (
         <div className="space-y-8">
-            {/* Header - Mobile Only */}
-            <div className="md:hidden">
-                <h1 className="text-3xl font-bebas tracking-wide text-deep-black">Completed Shoots & Uploads</h1>
-                <p className="text-gray-600 text-sm mt-1">Manage completed shoots and uploads</p>
-            </div>
+
 
             {/* Tabs */}
             <div className="flex flex-wrap gap-2">

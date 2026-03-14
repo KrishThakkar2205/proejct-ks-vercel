@@ -309,19 +309,102 @@ const SignupPage = () => {
     ];
 
     return (
-        <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-warm-cream/50">
-            <Card className="max-w-md w-full space-y-8 p-8 sm:p-10">
-                <div className="text-center">
-                    <h2 className="text-3xl flex flex-col items-center justify-center gap-1">
-                        <span className="font-sans font-bold text-deep-black text-xl uppercase tracking-widest">Join</span>
-                        <div className="flex items-center justify-center mb-2">
-                            <img src="/logo.png" alt="InfluRunner Logo" className="h-12 w-auto mx-auto" />
-                        </div>
-                    </h2>
-                    <p className="mt-2 text-sm text-gray-600">
-                        Create your influencer account to get started
-                    </p>
-                </div>
+        <div style={{
+            minHeight: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px 20px',
+            background: 'linear-gradient(160deg, #ffffff 0%, #fff4eb 30%, #ffe8d5 50%, #fff4eb 70%, #ffffff 100%)',
+            position: 'relative',
+            overflow: 'hidden',
+        }}>
+            {/* Large top-right orb */}
+            <div style={{
+                position: 'absolute', top: '-120px', right: '-100px',
+                width: '420px', height: '420px',
+                background: 'radial-gradient(circle, rgba(255,107,26,0.2) 0%, rgba(255,140,74,0.08) 50%, transparent 70%)',
+                borderRadius: '50%', pointerEvents: 'none',
+            }} />
+            {/* Bottom-left orb */}
+            <div style={{
+                position: 'absolute', bottom: '-100px', left: '-80px',
+                width: '350px', height: '350px',
+                background: 'radial-gradient(circle, rgba(255,107,26,0.15) 0%, rgba(255,160,100,0.05) 50%, transparent 70%)',
+                borderRadius: '50%', pointerEvents: 'none',
+            }} />
+            {/* Center-left accent blob */}
+            <div style={{
+                position: 'absolute', top: '30%', left: '-40px',
+                width: '200px', height: '200px',
+                background: 'radial-gradient(circle, rgba(255,107,26,0.1) 0%, transparent 70%)',
+                borderRadius: '50%', pointerEvents: 'none',
+                filter: 'blur(40px)',
+            }} />
+            {/* Top-left geometric ring */}
+            <div style={{
+                position: 'absolute', top: '60px', left: '30px',
+                width: '80px', height: '80px',
+                border: '3px solid rgba(255,107,26,0.12)',
+                borderRadius: '50%', pointerEvents: 'none',
+            }} />
+            {/* Bottom-right geometric ring */}
+            <div style={{
+                position: 'absolute', bottom: '80px', right: '40px',
+                width: '60px', height: '60px',
+                border: '3px solid rgba(255,107,26,0.1)',
+                borderRadius: '50%', pointerEvents: 'none',
+            }} />
+            {/* Small floating dot top */}
+            <div style={{
+                position: 'absolute', top: '15%', right: '20%',
+                width: '12px', height: '12px',
+                background: 'rgba(255,107,26,0.2)',
+                borderRadius: '50%', pointerEvents: 'none',
+            }} />
+            {/* Small floating dot bottom */}
+            <div style={{
+                position: 'absolute', bottom: '25%', left: '15%',
+                width: '8px', height: '8px',
+                background: 'rgba(255,107,26,0.25)',
+                borderRadius: '50%', pointerEvents: 'none',
+            }} />
+            {/* Diagonal accent stripe */}
+            <div style={{
+                position: 'absolute', top: 0, right: 0,
+                width: '100%', height: '100%',
+                background: 'linear-gradient(135deg, transparent 0%, transparent 45%, rgba(255,107,26,0.03) 45%, rgba(255,107,26,0.03) 55%, transparent 55%)',
+                pointerEvents: 'none',
+            }} />
+
+            {/* Logo + Brand */}
+            <div style={{ textAlign: 'center', marginBottom: '24px', position: 'relative', zIndex: 1 }}>
+                <img
+                    src="/logo.png"
+                    alt="InfluRunner Logo"
+                    style={{
+                        width: '72px', height: '72px',
+                        borderRadius: '16px',
+                        objectFit: 'contain',
+                        display: 'block',
+                        margin: '0 auto 10px',
+                        filter: 'drop-shadow(0 4px 16px rgba(255,107,26,0.3))',
+                    }}
+                />
+                <h1 style={{ color: '#1A1A1A', fontSize: '20px', fontFamily: 'Bebas Neue, sans-serif', letterSpacing: '3px', margin: 0 }}>INFLURUNNER</h1>
+                <p style={{ color: 'rgba(0,0,0,0.4)', fontSize: '11px', margin: '4px 0 0', letterSpacing: '1px' }}>CREATE YOUR ACCOUNT</p>
+            </div>
+
+            {/* Card */}
+            <div style={{
+                width: '100%', maxWidth: '420px', position: 'relative', zIndex: 1,
+                background: '#ffffff',
+                borderRadius: '24px',
+                border: '1px solid rgba(0,0,0,0.08)',
+                padding: '28px 24px',
+                boxShadow: '0 12px 40px rgba(0,0,0,0.08)',
+            }}>
 
                 {/* Error Display */}
                 {error && (
@@ -623,13 +706,11 @@ const SignupPage = () => {
                     </form>
                 )}
 
-                <div className="text-center text-sm">
-                    <span className="text-gray-600">Already have an account? </span>
-                    <Link to="/login" className="font-medium text-primary-orange hover:text-orange-600">
-                        Log In
-                    </Link>
-                </div>
-            </Card>
+                <p style={{ textAlign: 'center', color: 'rgba(0,0,0,0.4)', fontSize: '13px', marginTop: '16px', marginBottom: 0 }}>
+                    Already have an account?{' '}
+                    <Link to="/login" style={{ color: '#FF6B1A', fontWeight: '600', textDecoration: 'none' }}>Log In</Link>
+                </p>
+            </div>
 
             <ErrorAlert
                 isOpen={errorAlert.isOpen}

@@ -35,11 +35,7 @@ const InfluencerMessages = () => {
 
     return (
         <div className="space-y-6">
-            {/* Header - Mobile Only */}
-            <div className="md:hidden">
-                <h1 className="text-3xl font-bebas tracking-wide text-deep-black">Messages</h1>
-                <p className="text-gray-600 text-sm mt-1">Chat with brands</p>
-            </div>
+
 
             <Card className="h-[calc(100vh-200px)] md:h-[600px] flex overflow-hidden">
                 {/* Conversations List */}

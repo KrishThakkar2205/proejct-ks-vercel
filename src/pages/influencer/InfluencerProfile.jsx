@@ -1,15 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
 import SuccessAlert from '../../components/ui/SuccessAlert';
 import ErrorAlert from '../../components/ui/ErrorAlert';
-import { Instagram, MapPin, Mail, Camera, Edit2, Check, X, Loader2 } from 'lucide-react';
+import { Instagram, MapPin, Mail, Camera, Edit2, Check, X, Loader2, LogOut } from 'lucide-react';
 import api, { API_BASE_URL } from '../../utils/api';
+import { logout, setCredentials } from '../../store/slices/authSlice';
 
 const InfluencerProfile = () => {
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -159,6 +163,17 @@ const InfluencerProfile = () => {
             setFormData(mapped);
             setProfilePictureFile(null);
             setProfilePicturePreview(null);
+
+            // Update Redux state & localStorage so the header photo updates immediately
+            dispatch(setCredentials({
+                user: {
+                    id: data.id,
+                    name: data.name,
+                    profile_photo_location: data.profile_picture_location
+                },
+                token: localStorage.getItem('token')
+            }));
+
             setIsEditing(false);
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 3000);
@@ -211,11 +226,7 @@ const InfluencerProfile = () => {
 
     return (
         <div className="space-y-8">
-            {/* Header - Mobile Only */}
-            <div className="md:hidden">
-                <h1 className="text-3xl font-bebas tracking-wide text-deep-black">Profile</h1>
-                <p className="text-gray-600 text-sm mt-1">Manage your profile and social connections</p>
-            </div>
+
 
             {/* Share Portfolio - Mobile Only (Top Position) */}
             <div className="md:hidden">
@@ -230,7 +241,7 @@ const InfluencerProfile = () => {
                     <div className="space-y-3">
                         <input
                             type="text"
-                            value={`${window.location.origin}/portfolio/${formData.id}`}
+                            value={`https://influrunner.com/portfolio/${formData.id}`}
                             readOnly
                             className="w-full px-3 py-2 text-sm border border-orange-200 rounded-lg bg-white overflow-x-auto"
                         />
@@ -456,7 +467,7 @@ const InfluencerProfile = () => {
                         <div className="space-y-3">
                             <input
                                 type="text"
-                                value={`${window.location.origin}/portfolio/${formData.id}`}
+                                value={`https://influrunner.com/portfolio/${formData.id}`}
                                 readOnly
                                 className="w-full px-3 py-2 text-sm border border-orange-200 rounded-lg bg-white overflow-x-auto"
                             />
@@ -573,6 +584,21 @@ const InfluencerProfile = () => {
                                 <p className="text-deep-black font-medium">Influencer</p>
                             </div>
                         </div>
+                    </Card>
+
+                    {/* Logout Button */}
+                    <Card className="p-4 border-t-4 border-red-500">
+                        <Button
+                            variant="white"
+                            className="w-full text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300 flex items-center justify-center gap-2"
+                            onClick={() => {
+                                dispatch(logout());
+                                navigate('/login');
+                            }}
+                        >
+                            <LogOut size={20} />
+                            Log Out
+                        </Button>
                     </Card>
                 </div>
             </div>

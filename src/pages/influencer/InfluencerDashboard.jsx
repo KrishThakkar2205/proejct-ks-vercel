@@ -154,22 +154,19 @@ const InfluencerDashboard = () => {
     ];
 
     const quickActions = [
-        { label: 'View Calendar', path: '/influencer/calendar', icon: <Calendar size={20} />, color: 'bg-blue-50 text-blue-600 hover:bg-blue-100' },
-        { label: 'Check Schedule', path: '/influencer/schedule', icon: <Clock size={20} />, color: 'bg-orange-50 text-primary-orange hover:bg-orange-100' },
         {
             label: 'Add to Calendar',
             onClick: () => setShowAddModal(true),
             icon: <Calendar size={20} />,
-            color: 'bg-purple-50 text-purple-600 hover:bg-purple-100'
-        },
-        { label: 'Edit Profile', path: '/influencer/profile', icon: <TrendingUp size={20} />, color: 'bg-green-50 text-green-600 hover:bg-green-100' },
+            color: 'bg-white/60 backdrop-blur-md border border-white hover:border-primary-orange/50 text-gray-800 shadow-[0_4px_16px_rgba(255,107,26,0.04)]'
+        }
     ];
 
     // Portfolio link — /portfolio/{influencer_id}
     const influencerId = authUser?.influencer_id || authUser?.id || authUser?.email_id;
     const portfolioUrl = influencerId
-        ? `${window.location.origin}/portfolio/${influencerId}`
-        : `${window.location.origin}/portfolio`;
+        ? `https://influrunner.com/portfolio/${influencerId}`
+        : `https://influrunner.com/portfolio`;
 
     const handleCopyPortfolioLink = () => {
         navigator.clipboard.writeText(portfolioUrl).then(() => {
@@ -180,46 +177,42 @@ const InfluencerDashboard = () => {
 
     return (
         <div className="space-y-8">
-            {/* Header - Mobile Only */}
-            <div className="md:hidden">
-                <h1 className="text-3xl font-bebas tracking-wide text-deep-black">Dashboard</h1>
-                <p className="text-gray-600 text-sm mt-1">Overview of your influencer activities and performance</p>
-            </div>
+
 
             {/* Share Portfolio & Quick Actions Row */}
-            <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
-                {/* Share Portfolio Button */}
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                {/* Share Portfolio Button - Premium Glass Styling */}
                 <button
                     onClick={handleCopyPortfolioLink}
-                    className="p-2 sm:p-3 bg-gradient-to-r from-primary-orange to-orange-600 border border-orange-700 rounded-lg flex flex-col items-center justify-center gap-1 sm:gap-2 hover:opacity-90 transition-opacity"
+                    className="p-3 bg-white/60 backdrop-blur-md border border-white hover:border-primary-orange/50 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all shadow-[0_4px_16px_rgba(255,107,26,0.04)] group"
                 >
-                    <div className="flex-shrink-0">
-                        {copied ? <Check size={16} className="text-white sm:w-5 sm:h-5" /> : <Share2 size={16} className="text-white sm:w-5 sm:h-5" />}
+                    <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-primary-orange group-hover:scale-110 transition-transform">
+                        {copied ? <Check size={18} /> : <Share2 size={18} />}
                     </div>
-                    <h4 className="font-semibold text-[10px] sm:text-sm md:text-base text-white text-center leading-tight">
-                        {copied ? 'Copied!' : 'Share'}
+                    <h4 className="font-semibold text-xs sm:text-sm text-gray-800 text-center leading-tight">
+                        {copied ? 'Copied!' : 'Share Portfolio'}
                     </h4>
                 </button>
 
                 {/* Quick Actions */}
                 {quickActions.map((action, index) => (
                     action.path ? (
-                        <Link key={index} to={action.path}>
-                            <Card className={`p-2 sm:p-3 h-full flex flex-col items-center justify-center gap-1 sm:gap-2 hover:border-primary-orange transition-all cursor-pointer group ${action.color}`}>
-                                <div className="flex-shrink-0">
-                                    {React.cloneElement(action.icon, { size: 16, className: 'sm:w-5 sm:h-5' })}
+                        <Link key={index} to={action.path} className="block h-full">
+                            <div className={`p-3 h-full rounded-2xl flex flex-col items-center justify-center gap-2 transition-all cursor-pointer group ${action.color}`}>
+                                <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-primary-orange group-hover:scale-110 transition-transform">
+                                    {React.cloneElement(action.icon, { size: 18 })}
                                 </div>
-                                <h4 className="font-semibold text-[10px] sm:text-sm md:text-base text-center leading-tight">{action.label}</h4>
-                            </Card>
+                                <h4 className="font-semibold text-xs sm:text-sm text-center leading-tight">{action.label}</h4>
+                            </div>
                         </Link>
                     ) : (
-                        <button key={index} onClick={action.onClick} className="w-full">
-                            <Card className={`p-2 sm:p-3 h-full flex flex-col items-center justify-center gap-1 sm:gap-2 hover:border-primary-orange transition-all cursor-pointer group ${action.color}`}>
-                                <div className="flex-shrink-0">
-                                    {React.cloneElement(action.icon, { size: 16, className: 'sm:w-5 sm:h-5' })}
+                        <button key={index} onClick={action.onClick} className="w-full h-full">
+                            <div className={`p-3 h-full rounded-2xl flex flex-col items-center justify-center gap-2 transition-all cursor-pointer group ${action.color}`}>
+                                <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-primary-orange group-hover:scale-110 transition-transform">
+                                    {React.cloneElement(action.icon, { size: 18 })}
                                 </div>
-                                <h4 className="font-semibold text-[10px] sm:text-sm md:text-base text-center leading-tight">{action.label}</h4>
-                            </Card>
+                                <h4 className="font-semibold text-xs sm:text-sm text-center leading-tight">{action.label}</h4>
+                            </div>
                         </button>
                     )
                 ))}

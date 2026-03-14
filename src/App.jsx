@@ -68,16 +68,17 @@ function App() {
             <ScrollToTop />
             <BackButtonHandler />
             <Routes>
-                {/* Public Routes (landing page always accessible) */}
+                {/* Public Routes */}
                 <Route element={<PublicLayout />}>
-                    <Route path="/" element={<LandingPage />} />
+                    {/* Root redirects directly to login */}
+                    <Route path="/" element={<Navigate to="/login" replace />} />
+                </Route>
 
-                    {/* Auth pages — redirect to dashboard if already logged in */}
-                    <Route element={<RedirectIfAuthenticated />}>
-                        <Route path="/login" element={<LoginPage />} />
-                        <Route path="/signup" element={<SignupPage />} />
-                        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                    </Route>
+                {/* Auth pages (no navbar) — redirect to dashboard if already logged in */}
+                <Route element={<RedirectIfAuthenticated />}>
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/signup" element={<SignupPage />} />
+                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 </Route>
 
                 {/* Portfolio Route (public) */}

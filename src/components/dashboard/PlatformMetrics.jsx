@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../ui/Card';
-import { Instagram } from 'lucide-react';
+import Button from '../ui/Button';
+import { Instagram, Loader2 } from 'lucide-react';
 import api from '../../utils/api';
 
 const PlatformMetrics = () => {
     const [instaData, setInstaData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [credentialsNotFound, setCredentialsNotFound] = useState(false);
+    const [connecting, setConnecting] = useState(false);
 
     useEffect(() => {
         const fetchInstaData = async () => {
@@ -13,7 +16,14 @@ const PlatformMetrics = () => {
                 const response = await api.get('/api/dashboard-insta-metric');
                 setInstaData(response.data);
             } catch (error) {
-                console.error("Error fetching instagram metrics:", error);
+                if (
+                    error.response?.status === 404 &&
+                    error.response?.data?.detail === 'Credentials not found'
+                ) {
+                    setCredentialsNotFound(true);
+                } else {
+                    console.error("Error fetching instagram metrics:", error);
+                }
             } finally {
                 setLoading(false);
             }
@@ -21,6 +31,21 @@ const PlatformMetrics = () => {
 
         fetchInstaData();
     }, []);
+
+    const handleConnectInstagram = async () => {
+        try {
+            setConnecting(true);
+            const response = await api.get('/api/social-media/connect/instagram');
+            if (response.data?.url) {
+                window.location.href = response.data.url;
+            }
+        } catch (err) {
+            console.error("Error connecting Instagram:", err);
+            alert(err.response?.data?.detail || 'Failed to connect Instagram. Please try again.');
+        } finally {
+            setConnecting(false);
+        }
+    };
 
     const data = {
         name: 'Instagram',
@@ -38,6 +63,52 @@ const PlatformMetrics = () => {
         if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
         return num.toString();
     };
+
+    // Show Connect Instagram card when credentials are not found
+    if (credentialsNotFound) {
+        return (
+            <Card className="p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 className="text-2xl font-bebas tracking-wide text-deep-black">Instagram Metrics</h2>
+                        <p className="text-sm text-gray-600 mt-1">Track your performance on Instagram</p>
+                    </div>
+                </div>
+
+                <div className="flex flex-col items-center justify-center py-8 px-4 bg-gradient-to-br from-pink-50 via-orange-50 to-white rounded-2xl border border-dashed border-orange-200">
+                    <div className="w-16 h-16 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+                        <Instagram size={32} className="text-white" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-deep-black mb-2">Connect Your Instagram</h3>
+                    <p className="text-sm text-gray-500 text-center max-w-sm mb-5">
+                        Link your Instagram account to view follower count, reach, engagement, and more — all in one place.
+                    </p>
+                    <Button
+                        variant="primary"
+                        onClick={handleConnectInstagram}
+                        disabled={connecting}
+                        className="px-8"
+                        style={{
+                            background: 'linear-gradient(135deg, #833AB4, #E1306C, #F77737)',
+                            boxShadow: '0 4px 20px rgba(225,48,108,0.35)',
+                        }}
+                    >
+                        {connecting ? (
+                            <span className="flex items-center gap-2">
+                                <Loader2 size={18} className="animate-spin" />
+                                Connecting...
+                            </span>
+                        ) : (
+                            <span className="flex items-center gap-2">
+                                <Instagram size={18} />
+                                Connect Instagram
+                            </span>
+                        )}
+                    </Button>
+                </div>
+            </Card>
+        );
+    }
 
     return (
         <Card className="p-6">
