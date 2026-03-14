@@ -7,6 +7,126 @@ import Card from '../../components/ui/Card';
 import MultiSelect from '../../components/ui/MultiSelect';
 import ErrorAlert from '../../components/ui/ErrorAlert';
 import { Check, Eye, EyeOff, Loader2 } from 'lucide-react';
+import PhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/style.css';
+
+const phoneInputStyles = `
+  /* Container */
+  .phone-field .react-tel-input { width: 100%; }
+
+  /* Input */
+  .phone-field .react-tel-input .form-control {
+    width: 100% !important;
+    height: 44px !important;
+    font-size: 14px !important;
+    font-family: 'Outfit', sans-serif !important;
+    border: 1.5px solid #e5e7eb !important;
+    border-radius: 10px !important;
+    padding-left: 54px !important;
+    background: #fff !important;
+    color: #1A1A1A !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+  }
+  .phone-field .react-tel-input .form-control:focus {
+    outline: none !important;
+    border-color: #FF6B1A !important;
+    box-shadow: 0 0 0 3px rgba(255,107,26,0.12) !important;
+  }
+  .phone-field .react-tel-input .form-control::placeholder {
+    color: #9ca3af !important;
+  }
+
+  /* Flag button */
+  .phone-field .react-tel-input .flag-dropdown {
+    border: 1.5px solid #e5e7eb !important;
+    border-right: none !important;
+    border-radius: 10px 0 0 10px !important;
+    background: linear-gradient(135deg, #fff8f0 0%, #fff 100%) !important;
+    transition: background 0.2s !important;
+  }
+  .phone-field .react-tel-input .flag-dropdown:hover,
+  .phone-field .react-tel-input .flag-dropdown.open {
+    background: linear-gradient(135deg, #fff0e0 0%, #ffe8d0 100%) !important;
+  }
+  .phone-field .react-tel-input .flag-dropdown.open {
+    border-color: #FF6B1A !important;
+  }
+  .phone-field .react-tel-input .selected-flag {
+    padding: 0 8px 0 10px !important;
+    border-radius: 10px 0 0 10px !important;
+    background: transparent !important;
+  }
+  .phone-field .react-tel-input .selected-flag .arrow {
+    border-top-color: #FF6B1A !important;
+    margin-left: 4px !important;
+  }
+  .phone-field .react-tel-input .selected-flag .arrow.up {
+    border-bottom-color: #FF6B1A !important;
+    border-top: none !important;
+  }
+
+  /* Dropdown */
+  .phone-field .react-tel-input .country-list {
+    border-radius: 12px !important;
+    border: 1.5px solid #f3f4f6 !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.12) !important;
+    margin-top: 4px !important;
+    max-height: 220px !important;
+    font-family: 'Outfit', sans-serif !important;
+    font-size: 13px !important;
+    overflow-y: auto !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: #FF6B1A #f3f4f6 !important;
+  }
+  .phone-field .react-tel-input .country-list .country {
+    padding: 8px 12px !important;
+    transition: background 0.15s !important;
+  }
+  .phone-field .react-tel-input .country-list .country:hover {
+    background: #fff8f0 !important;
+  }
+  .phone-field .react-tel-input .country-list .country.highlight {
+    background: #fff0e0 !important;
+    color: #FF6B1A !important;
+    font-weight: 600 !important;
+  }
+  .phone-field .react-tel-input .country-list .country-name {
+    color: #1A1A1A !important;
+  }
+  .phone-field .react-tel-input .country-list .dial-code {
+    color: #FF6B1A !important;
+    font-weight: 500 !important;
+  }
+
+  /* Search box */
+  .phone-field .react-tel-input .country-list .search {
+    padding: 8px 10px !important;
+    background: #fff !important;
+    border-bottom: 1px solid #f3f4f6 !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1 !important;
+  }
+  .phone-field .react-tel-input .country-list .search-box {
+    width: 100% !important;
+    border: 1.5px solid #e5e7eb !important;
+    border-radius: 8px !important;
+    padding: 6px 10px !important;
+    font-size: 13px !important;
+    font-family: 'Outfit', sans-serif !important;
+    outline: none !important;
+    transition: border-color 0.2s !important;
+  }
+  .phone-field .react-tel-input .country-list .search-box:focus {
+    border-color: #FF6B1A !important;
+    box-shadow: 0 0 0 2px rgba(255,107,26,0.1) !important;
+  }
+  .phone-field .react-tel-input .divider {
+    border-bottom: 1px solid #f3f4f6 !important;
+    margin: 4px 0 !important;
+  }
+`;
 import { signupInitiate, verifyOtp, signupFinal, clearError } from '../../store/slices/authSlice';
 
 const SignupPage = () => {
@@ -83,9 +203,9 @@ const SignupPage = () => {
             setErrorAlert({ isOpen: true, message: 'Please enter a valid email address' });
             return false;
         }
-        const phoneRegex = /^[0-9]{10}$/;
+        const phoneRegex = /^[0-9]{8,15}$/;
         if (!phoneRegex.test(formData.phone)) {
-            setErrorAlert({ isOpen: true, message: 'Please enter a valid 10-digit phone number' });
+            setErrorAlert({ isOpen: true, message: 'Please enter a valid phone number' });
             return false;
         }
         return true;
@@ -260,16 +380,22 @@ const SignupPage = () => {
                             onChange={handleChange}
                         />
 
-                        <Input
-                            label="Phone Number"
-                            type="tel"
-                            name="phone"
-                            required
-                            placeholder="9876543210"
-                            value={formData.phone}
-                            onChange={handleChange}
-                            maxLength="10"
-                        />
+                        <div>
+                            <style>{phoneInputStyles}</style>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number <span className="text-red-500">*</span></label>
+                            <div className="phone-field">
+                                <PhoneInput
+                                    country="in"
+                                    value={formData.phone}
+                                    onChange={(phone) => setFormData({ ...formData, phone })}
+                                    containerStyle={{ width: '100%' }}
+                                    enableSearch
+                                    searchPlaceholder="Search country..."
+                                    preferredCountries={['in', 'us', 'gb', 'ae', 'sg']}
+                                    inputProps={{ name: 'phone', required: true, placeholder: '98765 43210' }}
+                                />
+                            </div>
+                        </div>
 
                         <div className="relative">
                             <Input
