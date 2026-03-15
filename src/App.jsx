@@ -75,6 +75,7 @@ const BackButtonHandler = () => {
 
     return null;
 };
+
 // Handle Push Notifications (Android only)
 const PushNotificationHandler = () => {
     const dispatch = useDispatch();
@@ -85,95 +86,85 @@ const PushNotificationHandler = () => {
         // Only run native setup if the user is fully logged in
         if (!Capacitor.isNativePlatform() || !isAuthenticated) return;
 
+        let listeners = [];
+
         const setup = async () => {
             try {
-                // Check current permission state first
+                // ── STEP 1: Attach ALL listeners FIRST, before calling register() ──
+                // This is critical: if register() fires a token before a listener is
+                // attached, Capacitor 8 throws a native unhandled exception.
+
+                // Got FCM token — send to backend
+                const regListener = await PushNotifications.addListener('registration', async (token) => {
+                    try {
+                        await api.post('/api/notifications/register-token', {
+                            token: token.value,
+                            platform: 'android',
+                        });
+                    } catch (e) {
+                        console.warn('Failed to send push token to backend:', e);
+                    }
+                });
+
+                // Handle FCM registration errors silently — do NOT let this crash the app
+                const regErrorListener = await PushNotifications.addListener('registrationError', (err) => {
+                    console.warn('FCM registration error (non-fatal):', err.error);
+                });
+
+                // Foreground notification → show in-app banner
+                const foregroundListener = await PushNotifications.addListener(
+                    'pushNotificationReceived',
+                    (notification) => {
+                        dispatch(showBanner({
+                            title: notification.title || 'InfluRunner',
+                            body: notification.body || '',
+                        }));
+                    }
+                );
+
+                // Tapped notification → navigate based on data payload
+                const tapListener = await PushNotifications.addListener(
+                    'pushNotificationActionPerformed',
+                    (action) => {
+                        const data = action.notification.data || {};
+                        navigate(data.route || '/influencer');
+                    }
+                );
+
+                listeners = [regListener, regErrorListener, foregroundListener, tapListener];
+
+                // ── STEP 2: Check/request permissions AFTER listeners are ready ──
                 let permStatus = await PushNotifications.checkPermissions();
-                
-                // Request only if we haven't already
                 if (permStatus.receive === 'prompt') {
                     permStatus = await PushNotifications.requestPermissions();
                 }
+                if (permStatus.receive !== 'granted') return;
 
-                if (permStatus.receive !== 'granted') {
-                    console.log('User denied push notifications');
-                    return;
-                }
-
-                // Create default notification channel (Required for Android 8.0+)
+                // ── STEP 3: Create Android notification channel ──
                 if (Capacitor.getPlatform() === 'android') {
                     await PushNotifications.createChannel({
                         id: 'default',
-                        name: 'Default',
-                        description: 'General notifications',
-                        importance: 4, // High importance
-                        visibility: 1, // Public
+                        name: 'InfluRunner Notifications',
+                        importance: 4,
+                        visibility: 1,
                         vibration: true,
                     });
                 }
 
-            // Register with FCM - Wrap in try/catch to avoid native crashes if firebase is missing
-            try {
+                // ── STEP 4: Register — listeners are already attached, safe to call ──
                 await PushNotifications.register();
-            } catch (regError) {
-                console.warn('Failed to register device with FCM (likely missing network or firebase setup):', regError);
-                // If we can't register, we shouldn't attach listeners that rely on it
-                return;
-            }
 
-            // Got FCM token — send to backend
-            const regListener = await PushNotifications.addListener('registration', async (token) => {
-                try {
-                    await api.post('/api/notifications/register-token', {
-                        token: token.value,
-                        platform: 'android',
-                    });
-                } catch (e) {
-                    console.warn('Failed to register push token:', e);
-                }
-            });
-
-            // Foreground notification → show in-app banner
-            const foregroundListener = await PushNotifications.addListener(
-                'pushNotificationReceived',
-                (notification) => {
-                    dispatch(showBanner({
-                        title: notification.title || 'InfluRunner',
-                        body: notification.body || '',
-                    }));
-                }
-            );
-
-            // Tapped notification → navigate based on data payload
-            const tapListener = await PushNotifications.addListener(
-                'pushNotificationActionPerformed',
-                (action) => {
-                    const data = action.notification.data || {};
-                    if (data.route) {
-                        navigate(data.route);
-                    } else {
-                        navigate('/influencer');
-                    }
-                }
-            );
-
-            return () => {
-                regListener.remove();
-                foregroundListener.remove();
-                tapListener.remove();
-            };
             } catch (e) {
-                console.warn('Push notification setup failed:', e);
+                console.warn('Push notification setup error (non-fatal):', e);
             }
         };
 
-        // Delay setup slightly to ensure the native Android Activity is fully bound
-        // Requesting permissions too early in the React lifecycle can crash Capacitor 8.
-        const timer = setTimeout(() => {
-            setup();
-        }, 2000);
+        const timer = setTimeout(setup, 2000);
 
-        return () => clearTimeout(timer);
+        return () => {
+            clearTimeout(timer);
+            listeners.forEach(l => l?.remove?.());
+        };
     }, [dispatch, navigate, isAuthenticated]);
 
     return null;
