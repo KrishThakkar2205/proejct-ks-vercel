@@ -84,9 +84,31 @@ const PushNotificationHandler = () => {
         if (!Capacitor.isNativePlatform()) return;
 
         const setup = async () => {
-            // Request permission
-            const permResult = await PushNotifications.requestPermissions();
-            if (permResult.receive !== 'granted') return;
+            try {
+                // Check current permission state first
+                let permStatus = await PushNotifications.checkPermissions();
+                
+                // Request only if we haven't already
+                if (permStatus.receive === 'prompt') {
+                    permStatus = await PushNotifications.requestPermissions();
+                }
+
+                if (permStatus.receive !== 'granted') {
+                    console.log('User denied push notifications');
+                    return;
+                }
+
+                // Create default notification channel (Required for Android 8.0+)
+                if (Capacitor.getPlatform() === 'android') {
+                    await PushNotifications.createChannel({
+                        id: 'default',
+                        name: 'Default',
+                        description: 'General notifications',
+                        importance: 4, // High importance
+                        visibility: 1, // Public
+                        vibration: true,
+                    });
+                }
 
             // Register with FCM
             await PushNotifications.register();
@@ -132,6 +154,9 @@ const PushNotificationHandler = () => {
                 foregroundListener.remove();
                 tapListener.remove();
             };
+            } catch (e) {
+                console.warn('Push notification setup failed:', e);
+            }
         };
 
         const cleanup = setup();
