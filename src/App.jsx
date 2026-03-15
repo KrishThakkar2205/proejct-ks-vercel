@@ -146,7 +146,7 @@ const PushNotificationHandler = () => {
                         id: 'influrunner_main',
                         name: 'InfluRunner Notifications',
                         description: 'Shoot requests, messages, and updates',
-                        importance: 4,
+                        importance: 5,
                         visibility: 1,
                         vibration: true,
                         sound: 'default',
