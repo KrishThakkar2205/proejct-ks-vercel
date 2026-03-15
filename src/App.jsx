@@ -84,6 +84,7 @@ const PushNotificationHandler = () => {
         if (!Capacitor.isNativePlatform()) return;
 
         const setup = async () => {
+
             try {
                 // Check current permission state first
                 let permStatus = await PushNotifications.checkPermissions();
@@ -159,8 +160,13 @@ const PushNotificationHandler = () => {
             }
         };
 
-        const cleanup = setup();
-        return () => { cleanup.then(fn => fn && fn()); };
+        // Delay setup slightly to ensure the native Android Activity is fully bound
+        // Requesting permissions too early in the React lifecycle can crash Capacitor 8.
+        const timer = setTimeout(() => {
+            setup();
+        }, 2000);
+
+        return () => clearTimeout(timer);
     }, [dispatch, navigate]);
 
     return null;
