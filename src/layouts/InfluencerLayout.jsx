@@ -169,7 +169,10 @@ const InfluencerLayout = () => {
                 {/* In-app push notification banner */}
                 <NotificationBanner />
                 {/* Mobile Top Header - Floating Overlay */}
-                <header className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 pt-12 pb-3 bg-gradient-to-b from-white/90 to-transparent backdrop-blur-[2px] pointer-events-none">
+                <header 
+                    className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 bg-gradient-to-b from-white/90 to-transparent backdrop-blur-[2px] pointer-events-none"
+                    style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top))', paddingBottom: '0.75rem' }}
+                >
                     <div className="flex items-center gap-3 pointer-events-auto">
                         <span className="text-lg font-bold text-primary-orange tracking-tight drop-shadow-sm">InfluRunner</span>
                     </div>
@@ -206,7 +209,10 @@ const InfluencerLayout = () => {
                 </main>
 
                 {/* Mobile Bottom Navigation - Tight Vignette */}
-                <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-100 pointer-events-none pt-1 pb-1">
+                <nav 
+                    className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-100 pointer-events-none pt-1"
+                    style={{ paddingBottom: 'calc(0.25rem + env(safe-area-inset-bottom))' }}
+                >
                     <div className="flex items-center justify-around h-16 px-1 pointer-events-auto">
                         {bottomNavItems.map((item) => (
                             <Link

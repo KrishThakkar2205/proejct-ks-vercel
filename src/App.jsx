@@ -52,9 +52,10 @@ const BackButtonHandler = () => {
     const location = useLocation();
 
     useEffect(() => {
-        // Set premium status bar style on load
+        // Set premium native status bar style and brand color on load
         if (Capacitor.isNativePlatform()) {
-            StatusBar.setStyle({ style: Style.Light });
+            StatusBar.setStyle({ style: Style.Dark }); // 'Dark' means light text for orange bg
+            StatusBar.setBackgroundColor({ color: '#FF6B1A' });
         }
         
         const handler = CapApp.addListener('backButton', ({ canGoBack }) => {
