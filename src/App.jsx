@@ -111,8 +111,14 @@ const PushNotificationHandler = () => {
                     });
                 }
 
-            // Register with FCM
-            await PushNotifications.register();
+            // Register with FCM - Wrap in try/catch to avoid native crashes if firebase is missing
+            try {
+                await PushNotifications.register();
+            } catch (regError) {
+                console.warn('Failed to register device with FCM (likely missing network or firebase setup):', regError);
+                // If we can't register, we shouldn't attach listeners that rely on it
+                return;
+            }
 
             // Got FCM token — send to backend
             const regListener = await PushNotifications.addListener('registration', async (token) => {
