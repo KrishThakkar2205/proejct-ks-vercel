@@ -143,7 +143,7 @@ const PushNotificationHandler = () => {
                 // ── STEP 3: Create Android notification channel ──
                 if (Capacitor.getPlatform() === 'android') {
                     await PushNotifications.createChannel({
-                        id: 'influrunner_main',
+                        id: 'influrunner_main_v2',
                         name: 'InfluRunner Notifications',
                         description: 'Shoot requests, messages, and updates',
                         importance: 5,
