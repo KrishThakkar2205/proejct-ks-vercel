@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { showBanner } from '../../store/slices/notificationSlice';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import PlatformMetrics from '../../components/dashboard/PlatformMetrics';
@@ -13,6 +14,7 @@ import AddEventModal from '../../components/dashboard/AddEventModal';
 import SuccessAlert from '../../components/ui/SuccessAlert';
 
 const InfluencerDashboard = () => {
+    const dispatch = useDispatch();
     const [copied, setCopied] = useState(false);
 
     // Loading & Error State
@@ -158,6 +160,15 @@ const InfluencerDashboard = () => {
             label: 'Add to Calendar',
             onClick: () => setShowAddModal(true),
             icon: <Calendar size={20} />,
+            color: 'bg-white/60 backdrop-blur-md border border-white hover:border-primary-orange/50 text-gray-800 shadow-[0_4px_16px_rgba(255,107,26,0.04)]'
+        },
+        {
+            label: 'Test Push Banner',
+            onClick: () => dispatch(showBanner({ 
+                title: 'New Shoot Request!', 
+                body: 'Nike sent you a new request for next Tuesday.' 
+            })),
+            icon: <Star size={20} />,
             color: 'bg-white/60 backdrop-blur-md border border-white hover:border-primary-orange/50 text-gray-800 shadow-[0_4px_16px_rgba(255,107,26,0.04)]'
         }
     ];
