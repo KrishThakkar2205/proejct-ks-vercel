@@ -1,4 +1,13 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
+
+// Handles root path — detects Instagram OAuth callback (?auth_status=success)
+const RootRedirect = () => {
+    const [searchParams] = useSearchParams();
+    if (searchParams.get('auth_status') === 'success') {
+        return <Navigate to="/influencer/profile?instagram=connected" replace />;
+    }
+    return <Navigate to="/login" replace />;
+};
 import PublicLayout from './layouts/PublicLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import RedirectIfAuthenticated from './components/RedirectIfAuthenticated';
@@ -32,6 +41,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { App as CapApp } from '@capacitor/app';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
+import { PushNotifications } from '@capacitor/push-notifications';
+import { useDispatch } from 'react-redux';
+import { showBanner } from './store/slices/notificationSlice';
+import api from './utils/api';
 
 // Handle Android hardware back button
 const BackButtonHandler = () => {
@@ -62,16 +75,83 @@ const BackButtonHandler = () => {
     return null;
 };
 
+// Handle Push Notifications (Android only)
+const PushNotificationHandler = () => {
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (!Capacitor.isNativePlatform()) return;
+
+        const setup = async () => {
+            // Request permission
+            const permResult = await PushNotifications.requestPermissions();
+            if (permResult.receive !== 'granted') return;
+
+            // Register with FCM
+            await PushNotifications.register();
+
+            // Got FCM token — send to backend
+            const regListener = await PushNotifications.addListener('registration', async (token) => {
+                try {
+                    await api.post('/api/notifications/register-token', {
+                        token: token.value,
+                        platform: 'android',
+                    });
+                } catch (e) {
+                    console.warn('Failed to register push token:', e);
+                }
+            });
+
+            // Foreground notification → show in-app banner
+            const foregroundListener = await PushNotifications.addListener(
+                'pushNotificationReceived',
+                (notification) => {
+                    dispatch(showBanner({
+                        title: notification.title || 'InfluRunner',
+                        body: notification.body || '',
+                    }));
+                }
+            );
+
+            // Tapped notification → navigate based on data payload
+            const tapListener = await PushNotifications.addListener(
+                'pushNotificationActionPerformed',
+                (action) => {
+                    const data = action.notification.data || {};
+                    if (data.route) {
+                        navigate(data.route);
+                    } else {
+                        navigate('/influencer');
+                    }
+                }
+            );
+
+            return () => {
+                regListener.remove();
+                foregroundListener.remove();
+                tapListener.remove();
+            };
+        };
+
+        const cleanup = setup();
+        return () => { cleanup.then(fn => fn && fn()); };
+    }, [dispatch, navigate]);
+
+    return null;
+};
+
 function App() {
     return (
         <Router>
             <ScrollToTop />
             <BackButtonHandler />
+            <PushNotificationHandler />
             <Routes>
                 {/* Public Routes */}
                 <Route element={<PublicLayout />}>
                     {/* Root redirects directly to login */}
-                    <Route path="/" element={<Navigate to="/login" replace />} />
+                    <Route path="/" element={<RootRedirect />} />
                 </Route>
 
                 {/* Auth pages (no navbar) — redirect to dashboard if already logged in */}

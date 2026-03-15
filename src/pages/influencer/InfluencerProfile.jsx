@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -14,6 +14,7 @@ import { logout, setCredentials } from '../../store/slices/authSlice';
 const InfluencerProfile = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
+    const [searchParams] = useSearchParams();
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -93,6 +94,16 @@ const InfluencerProfile = () => {
 
         fetchProfile();
     }, []);
+
+    // Detect Instagram OAuth return (?instagram=connected)
+    useEffect(() => {
+        if (searchParams.get('instagram') === 'connected') {
+            setSuccessAlert({ isOpen: true, message: '🎉 Instagram connected successfully!' });
+            setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 4000);
+            // Clean the URL param without re-rendering the whole page
+            navigate('/influencer/profile', { replace: true });
+        }
+    }, [searchParams, navigate]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -250,7 +261,7 @@ const InfluencerProfile = () => {
                                 variant="primary"
                                 size="sm"
                                 onClick={() => {
-                                    const link = `${window.location.origin}/portfolio/${formData.id}`;
+                                    const link = `https://influrunner.com/portfolio/${formData.id}`;
                                     navigator.clipboard.writeText(link);
                                     setSuccessAlert({ isOpen: true, message: 'Portfolio link copied to clipboard!' });
                                     setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
@@ -261,8 +272,6 @@ const InfluencerProfile = () => {
                             </Button>
                             <Link
                                 to={`/portfolio/${formData.id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
                                 className="flex-1"
                             >
                                 <Button
@@ -476,7 +485,7 @@ const InfluencerProfile = () => {
                                     variant="primary"
                                     size="sm"
                                     onClick={() => {
-                                        const link = `${window.location.origin}/portfolio/${formData.id}`;
+                                        const link = `https://influrunner.com/portfolio/${formData.id}`;
                                         navigator.clipboard.writeText(link);
                                         setSuccessAlert({ isOpen: true, message: 'Portfolio link copied to clipboard!' });
                                         setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
@@ -487,8 +496,6 @@ const InfluencerProfile = () => {
                                 </Button>
                                 <Link
                                     to={`/portfolio/${formData.id}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
                                     className="flex-1"
                                 >
                                     <Button

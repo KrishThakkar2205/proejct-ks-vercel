@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { LayoutDashboard, User, Calendar, ClipboardList, CheckCircle, Star, LogOut, AlertTriangle, MoreHorizontal, X } from 'lucide-react';
 import { logout } from '../store/slices/authSlice';
 import { API_BASE_URL } from '../utils/api';
+import NotificationBanner from '../components/ui/NotificationBanner';
 
 const InfluencerLayout = () => {
     const location = useLocation();
@@ -93,8 +94,7 @@ const InfluencerLayout = () => {
             display: 'flex',
             background: 'linear-gradient(160deg, #ffffff 0%, #fff4eb 30%, #ffe8d5 50%, #fff4eb 70%, #ffffff 100%)',
             position: 'relative',
-            overflow: 'hidden',
-        }} className="font-sans w-full">
+        }} className="font-sans w-full overflow-hidden">
             {/* --- Auth Page Matched Background --- */}
             {/* Large top-right orb */}
             <div style={{
@@ -166,10 +166,12 @@ const InfluencerLayout = () => {
 
 
             <div className="flex-1 flex flex-col overflow-hidden relative z-10 w-full">
+                {/* In-app push notification banner */}
+                <NotificationBanner />
                 {/* Mobile Top Header - Floating Overlay */}
-                <header className="md:hidden absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-6 pt-4 pb-2 bg-gradient-to-b from-white/80 to-transparent backdrop-blur-[2px] pointer-events-none">
+                <header className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 pt-4 pb-2 bg-gradient-to-b from-white/80 to-transparent backdrop-blur-[2px] pointer-events-none">
                     <div className="flex items-center gap-3 pointer-events-auto">
-                        <img src="/logo.png" alt="InfluRunner Logo" className="h-[28px] w-auto drop-shadow-sm" />
+                        <span className="text-lg font-bold text-primary-orange tracking-tight drop-shadow-sm">InfluRunner</span>
                     </div>
 
                     {/* Actions on the Right: Calendar + Profile Photo */}
@@ -204,7 +206,7 @@ const InfluencerLayout = () => {
                 </main>
 
                 {/* Mobile Bottom Navigation - Tight Vignette */}
-                <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-black/[0.04] to-transparent backdrop-blur-[2px] pointer-events-none pt-3 pb-1">
+                <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-100 pointer-events-none pt-1 pb-1">
                     <div className="flex items-center justify-around h-16 px-1 pointer-events-auto">
                         {bottomNavItems.map((item) => (
                             <Link

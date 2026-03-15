@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
@@ -10,6 +10,7 @@ import { API_BASE_URL } from '../../utils/api';
 
 const PublicPortfolio = () => {
     const { influencerId } = useParams();
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [portfolio, setPortfolio] = useState(null);
@@ -228,6 +229,14 @@ const PublicPortfolio = () => {
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-orange-50">
             {/* Hero Section */}
             <div className="relative text-white py-16 px-6 overflow-hidden">
+                {/* Back Button */}
+                <button
+                    onClick={() => navigate(-1)}
+                    className="absolute top-4 left-4 z-20 flex items-center gap-1.5 bg-black/30 hover:bg-black/50 backdrop-blur-sm text-white px-3 py-2 rounded-full text-sm font-medium transition-all active:scale-95"
+                >
+                    <ChevronLeft size={18} />
+                    Back
+                </button>
                 {/* Blurred background image */}
                 {profilePicture ? (
                     <div

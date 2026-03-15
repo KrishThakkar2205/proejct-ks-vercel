@@ -3,7 +3,8 @@
   "appName": "InfluRunner",
   "webDir": "dist",
   "android": {
-    "allowMixedContent": true
+    "allowMixedContent": true,
+    "orientation": "portrait"
   },
   "ios": {
     "contentInset": "automatic"
