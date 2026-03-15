@@ -8,7 +8,8 @@ import PlatformMetrics from '../../components/dashboard/PlatformMetrics';
 import DailySchedule from '../../components/dashboard/DailySchedule';
 import CompletedShootsToday from '../../components/dashboard/CompletedShootsToday';
 import DelayedShootsToday from '../../components/dashboard/DelayedShootsToday';
-import { Calendar, CheckCircle, Star, Clock, TrendingUp, Share2, Check, Loader2, AlertCircle } from 'lucide-react';
+import { Calendar, CheckCircle, Star, Clock, TrendingUp, Share2, Check, Loader2, AlertCircle, Copy } from 'lucide-react';
+import { PushNotifications } from '@capacitor/push-notifications';
 import api from '../../utils/api';
 import AddEventModal from '../../components/dashboard/AddEventModal';
 import SuccessAlert from '../../components/ui/SuccessAlert';
@@ -169,6 +170,28 @@ const InfluencerDashboard = () => {
                 body: 'Nike sent you a new request for next Tuesday.' 
             })),
             icon: <Star size={20} />,
+            color: 'bg-white/60 backdrop-blur-md border border-white hover:border-primary-orange/50 text-gray-800 shadow-[0_4px_16px_rgba(255,107,26,0.04)]'
+        },
+        {
+            label: 'Copy FCM Token',
+            onClick: async () => {
+                try {
+                    const permResult = await PushNotifications.requestPermissions();
+                    if (permResult.receive !== 'granted') throw new Error('Permission denied');
+                    
+                    await PushNotifications.register();
+                    
+                    const listener = await PushNotifications.addListener('registration', async (token) => {
+                        await navigator.clipboard.writeText(token.value);
+                        setSuccessAlert({ isOpen: true, message: 'FCM Token copied!' });
+                        setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
+                        listener.remove(); // Cleanup listener once we have the token
+                    });
+                } catch (e) {
+                    alert('Error getting token: ' + e.message);
+                }
+            },
+            icon: <Copy size={20} />,
             color: 'bg-white/60 backdrop-blur-md border border-white hover:border-primary-orange/50 text-gray-800 shadow-[0_4px_16px_rgba(255,107,26,0.04)]'
         }
     ];
