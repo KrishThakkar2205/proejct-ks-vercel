@@ -148,6 +148,7 @@ const PushNotificationHandler = () => {
                         importance: 4,
                         visibility: 1,
                         vibration: true,
+                        sound: 'default',
                     });
                 }
 
