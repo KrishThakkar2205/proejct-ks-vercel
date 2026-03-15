@@ -74,17 +74,17 @@ const BackButtonHandler = () => {
 
     return null;
 };
-
 // Handle Push Notifications (Android only)
 const PushNotificationHandler = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const isAuthenticated = useSelector(state => state.auth.isAuthenticated);
 
     useEffect(() => {
-        if (!Capacitor.isNativePlatform()) return;
+        // Only run native setup if the user is fully logged in
+        if (!Capacitor.isNativePlatform() || !isAuthenticated) return;
 
         const setup = async () => {
-
             try {
                 // Check current permission state first
                 let permStatus = await PushNotifications.checkPermissions();
@@ -173,7 +173,7 @@ const PushNotificationHandler = () => {
         }, 2000);
 
         return () => clearTimeout(timer);
-    }, [dispatch, navigate]);
+    }, [dispatch, navigate, isAuthenticated]);
 
     return null;
 };
