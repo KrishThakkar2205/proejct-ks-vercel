@@ -169,7 +169,7 @@ const InfluencerLayout = () => {
                 {/* In-app push notification banner */}
                 <NotificationBanner />
                 {/* Mobile Top Header - Floating Overlay */}
-                <header className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 pt-4 pb-2 bg-gradient-to-b from-white/80 to-transparent backdrop-blur-[2px] pointer-events-none">
+                <header className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 pt-12 pb-3 bg-gradient-to-b from-white/90 to-transparent backdrop-blur-[2px] pointer-events-none">
                     <div className="flex items-center gap-3 pointer-events-auto">
                         <span className="text-lg font-bold text-primary-orange tracking-tight drop-shadow-sm">InfluRunner</span>
                     </div>
