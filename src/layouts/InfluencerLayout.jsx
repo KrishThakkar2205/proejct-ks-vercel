@@ -213,7 +213,7 @@ const InfluencerLayout = () => {
                     className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-100 pointer-events-none pt-1"
                     style={{ paddingBottom: 'calc(0.25rem + env(safe-area-inset-bottom))' }}
                 >
-                    <div className="flex items-center justify-around h-16 px-1 pointer-events-auto">
+                    <div className="flex items-center justify-around h-12 px-1 pointer-events-auto">
                         {bottomNavItems.map((item) => (
                             <Link
                                 key={item.path}
@@ -224,7 +224,7 @@ const InfluencerLayout = () => {
                                     }`}
                             >
                                 <span className={`transition-transform ${isActive(item.path) ? 'scale-110' : ''}`}>
-                                    {React.cloneElement(item.icon, { size: 22 })}
+                                    {React.cloneElement(item.icon, { size: 18 })}
                                 </span>
                                 <span className="text-[10px] font-medium leading-tight">{item.label}</span>
                             </Link>

@@ -316,7 +316,7 @@ const CompletedShoots = () => {
                                                 variant="outline"
                                                 size="sm"
                                                 className="w-full"
-                                                onClick={() => copyToClipboard(`${window.location.origin}/review/${shoot.reviewId}`, shoot.id)}
+                                                onClick={() => copyToClipboard(`https://influrunner.com/review/${shoot.reviewId}`, shoot.id)}
                                             >
                                                 <Copy size={16} className="mr-2" />
                                                 {copiedLink === shoot.id ? 'Copied!' : 'Copy Link'}
