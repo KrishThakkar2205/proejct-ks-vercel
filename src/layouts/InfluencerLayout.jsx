@@ -89,70 +89,31 @@ const InfluencerLayout = () => {
     );
 
     return (
-        <div style={{
-            height: '100dvh',
-            display: 'flex',
-            background: 'linear-gradient(160deg, #ffffff 0%, #fff4eb 30%, #ffe8d5 50%, #fff4eb 70%, #ffffff 100%)',
-            position: 'relative',
-        }} className="font-sans w-full overflow-hidden">
-            {/* --- Auth Page Matched Background --- */}
-            {/* Large top-right orb */}
-            <div style={{
-                position: 'absolute', top: '-120px', right: '-100px',
-                width: '420px', height: '420px',
-                background: 'radial-gradient(circle, rgba(255,107,26,0.2) 0%, rgba(255,140,74,0.08) 50%, transparent 70%)',
-                borderRadius: '50%', pointerEvents: 'none',
-            }} />
-            {/* Bottom-left orb */}
-            <div style={{
-                position: 'absolute', bottom: '-100px', left: '-80px',
-                width: '350px', height: '350px',
-                background: 'radial-gradient(circle, rgba(255,107,26,0.15) 0%, rgba(255,160,100,0.05) 50%, transparent 70%)',
-                borderRadius: '50%', pointerEvents: 'none',
-            }} />
-            {/* Center-left accent blob */}
-            <div style={{
-                position: 'absolute', top: '30%', left: '-40px',
-                width: '200px', height: '200px',
-                background: 'radial-gradient(circle, rgba(255,107,26,0.1) 0%, transparent 70%)',
-                borderRadius: '50%', pointerEvents: 'none',
-                filter: 'blur(40px)',
-            }} />
-            {/* Top-left geometric ring */}
-            <div style={{
-                position: 'absolute', top: '60px', left: '30px',
-                width: '80px', height: '80px',
-                border: '3px solid rgba(255,107,26,0.12)',
-                borderRadius: '50%', pointerEvents: 'none',
-            }} />
-            {/* Bottom-right geometric ring */}
-            <div style={{
-                position: 'absolute', bottom: '80px', right: '40px',
-                width: '60px', height: '60px',
-                border: '3px solid rgba(255,107,26,0.1)',
-                borderRadius: '50%', pointerEvents: 'none',
-            }} />
-            {/* Small floating dot top */}
-            <div style={{
-                position: 'absolute', top: '15%', right: '20%',
-                width: '12px', height: '12px',
-                background: 'rgba(255,107,26,0.2)',
-                borderRadius: '50%', pointerEvents: 'none',
-            }} />
-            {/* Small floating dot bottom */}
-            <div style={{
-                position: 'absolute', bottom: '25%', left: '15%',
-                width: '8px', height: '8px',
-                background: 'rgba(255,107,26,0.25)',
-                borderRadius: '50%', pointerEvents: 'none',
-            }} />
-            {/* Diagonal accent stripe */}
-            <div style={{
-                position: 'absolute', top: 0, right: 0,
-                width: '100%', height: '100%',
-                background: 'linear-gradient(135deg, transparent 0%, transparent 45%, rgba(255,107,26,0.03) 45%, rgba(255,107,26,0.03) 55%, transparent 55%)',
-                pointerEvents: 'none',
-            }} />
+        <div className="min-h-screen w-full font-sans overflow-hidden relative flex bg-warm-cream">
+            {/* --- Premium Mesh Background --- */}
+            <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+                {/* Base Gradient */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,#ffffff,0%,#fffaf7_100%)]" />
+                
+                {/* Animated Mesh Blobs */}
+                <div 
+                    className="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] rounded-full bg-primary-orange/10 blur-[100px] animate-mesh-1" 
+                    style={{ mixBlendMode: 'multiply' }}
+                />
+                <div 
+                    className="absolute top-[20%] -right-[10%] w-[60%] h-[60%] rounded-full bg-orange-200/20 blur-[110px] animate-mesh-2" 
+                    style={{ mixBlendMode: 'multiply' }}
+                />
+                <div 
+                    className="absolute -bottom-[20%] left-[20%] w-[50%] h-[50%] rounded-full bg-primary-orange/5 blur-[90px] animate-mesh-3" 
+                    style={{ mixBlendMode: 'multiply' }}
+                />
+
+                {/* Subtle Grain/Noise Overlay for Texture */}
+                <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay pointer-events-none" 
+                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} 
+                />
+            </div>
 
 
             {/* Desktop Sidebar (Glassmorphism) */}
@@ -170,8 +131,8 @@ const InfluencerLayout = () => {
                 <NotificationBanner />
                 {/* Mobile Top Header - Floating Overlay */}
                 <header 
-                    className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 bg-gradient-to-b from-white/90 to-transparent backdrop-blur-[2px] pointer-events-none"
-                    style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top))', paddingBottom: '0.75rem' }}
+                    className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 bg-white/60 backdrop-blur-[1px] border-b border-white/20 pointer-events-none"
+                    style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))', paddingBottom: '0.75rem' }}
                 >
                     <div className="flex items-center gap-3 pointer-events-auto">
                         <span className="text-lg font-bold text-primary-orange tracking-tight drop-shadow-sm">InfluRunner</span>

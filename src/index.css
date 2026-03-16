@@ -73,6 +73,29 @@
   animation: gradient-shift 15s ease infinite;
 }
 
+/* Mesh Gradient Animations */
+@keyframes mesh-blob-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(10%, 10%) scale(1.1); }
+  66% { transform: translate(-5%, 15%) scale(0.9); }
+}
+
+@keyframes mesh-blob-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-15%, 5%) scale(1.05); }
+  66% { transform: translate(10%, -10%) scale(0.95); }
+}
+
+@keyframes mesh-blob-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(5%, -15%) scale(0.9); }
+  66% { transform: translate(-10%, 10%) scale(1.1); }
+}
+
+.animate-mesh-1 { animation: mesh-blob-1 20s infinite alternate cubic-bezier(0.45, 0, 0.55, 1); }
+.animate-mesh-2 { animation: mesh-blob-2 25s infinite alternate cubic-bezier(0.45, 0, 0.55, 1); }
+.animate-mesh-3 { animation: mesh-blob-3 22s infinite alternate cubic-bezier(0.45, 0, 0.55, 1); }
+
 @keyframes slideDown {
   from {
     opacity: 0;
