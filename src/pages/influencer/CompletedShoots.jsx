@@ -23,6 +23,24 @@ const CompletedShoots = () => {
     const utcToLocalDisplay = (d, t) => utcToIST(d, t);
     const utcDateToLocal = utcToISTDate;
 
+    // Convert a UTC ISO datetime string (e.g. completedAt) to IST 12hr for display
+    const utcISOToIST = (isoString) => {
+        if (!isoString) return '';
+        const d = new Date(isoString);
+        if (isNaN(d.getTime())) return '';
+        const istMs = d.getTime() + 330 * 60 * 1000;
+        const ist = new Date(istMs);
+        const pad = (n) => String(n).padStart(2, '0');
+        const month = pad(ist.getUTCMonth() + 1);
+        const day = pad(ist.getUTCDate());
+        const year = ist.getUTCFullYear();
+        const hours = ist.getUTCHours();
+        const minutes = pad(ist.getUTCMinutes());
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const h12 = hours % 12 || 12;
+        return `${month}/${day}/${year}, ${h12}:${minutes} ${ampm}`;
+    };
+
     // Fetch completed shoots, uploads, and reviews
     const fetchData = useCallback(async (silent = false) => {
         try {
@@ -392,7 +410,7 @@ const CompletedShoots = () => {
                                     {upload.completedAt && (
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
                                             <Clock size={16} className="text-gray-400" />
-                                            <span>Uploaded: {new Date(upload.completedAt).toLocaleString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                                            <span>Uploaded: {utcISOToIST(upload.completedAt)}</span>
                                         </div>
                                     )}
                                     {upload.platform && (

@@ -98,3 +98,28 @@ export const getISTNow = () => {
     const istMs = now.getTime() + (now.getTimezoneOffset() * 60 * 1000) + (IST_OFFSET_MINUTES * 60 * 1000);
     return new Date(istMs);
 };
+
+/**
+ * Converts a UTC ISO datetime string (e.g. "2025-03-14T04:30:00Z" or a completedAt timestamp)
+ * directly to a IST 12-hour formatted string like "14/03/2025, 10:00 AM".
+ *
+ * @param {string} isoString  UTC ISO datetime string from backend
+ * @returns {string}          e.g. "14/03/2025, 10:00 AM"
+ */
+export const utcISOToIST = (isoString) => {
+    if (!isoString) return '';
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return '';
+    // Add IST offset manually to avoid device-timezone influence
+    const istMs = d.getTime() + IST_OFFSET_MINUTES * 60 * 1000;
+    const ist = new Date(istMs);
+    const pad = (n) => String(n).padStart(2, '0');
+    const day = pad(ist.getUTCDate());
+    const month = pad(ist.getUTCMonth() + 1);
+    const year = ist.getUTCFullYear();
+    const hours = ist.getUTCHours();
+    const minutes = pad(ist.getUTCMinutes());
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const h12 = hours % 12 || 12;
+    return `${day}/${month}/${year}, ${h12}:${minutes} ${ampm}`;
+};

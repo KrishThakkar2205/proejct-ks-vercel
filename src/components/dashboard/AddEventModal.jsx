@@ -197,7 +197,7 @@ const AddEventModal = ({ isOpen, onClose, onSuccess }) => {
                                     value={formData.date}
                                     onChange={handleInputChange}
                                     required
-                                    min={new Date().toISOString().split('T')[0]}
+                                    min={getISTNow().toISOString().split('T')[0]}
                                 />
                             </div>
 
