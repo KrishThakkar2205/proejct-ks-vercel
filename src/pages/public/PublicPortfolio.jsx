@@ -21,6 +21,18 @@ const PublicPortfolio = () => {
     const [selectedMediaMetrics, setSelectedMediaMetrics] = useState(null);
     const [mediaMetricsLoading, setMediaMetricsLoading] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
+    const [collaborationModalOpen, setCollaborationModalOpen] = useState(false);
+    const [collaborationModalVisible, setCollaborationModalVisible] = useState(false);
+    const [submittingCollaboration, setSubmittingCollaboration] = useState(false);
+    const [collaborationFormData, setCollaborationFormData] = useState({
+        brandName: '',
+        contactPersonName: '',
+        personEmail: '',
+        personPhoneNumber: '',
+        businessInfo: '',
+        notes: '',
+        budget: ''
+    });
     const [slideDirection, setSlideDirection] = useState(''); // 'slide-left', 'slide-right', or ''
     const modalTimeoutRef = useRef(null);
 
@@ -92,6 +104,56 @@ const PublicPortfolio = () => {
             setSelectedMedia(null);
         }, 200);
     }, []);
+
+    const openCollaborationModal = () => {
+        setCollaborationModalOpen(true);
+        requestAnimationFrame(() => setCollaborationModalVisible(true));
+    };
+
+    const closeCollaborationModal = () => {
+        setCollaborationModalVisible(false);
+        setTimeout(() => {
+            setCollaborationModalOpen(false);
+            setCollaborationFormData({
+                brandName: '',
+                contactPersonName: '',
+                personEmail: '',
+                personPhoneNumber: '',
+                businessInfo: '',
+                notes: '',
+                budget: ''
+            });
+        }, 200);
+    };
+
+    const handleCollaborationInputChange = (e) => {
+        const { name, value } = e.target;
+        setCollaborationFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleCollaborationSubmit = async (e) => {
+        e.preventDefault();
+        setSubmittingCollaboration(true);
+        try {
+            // Include influencerId in the data sent to backend
+            const payload = {
+                ...collaborationFormData,
+                influencer_id: influencerId
+            };
+            
+            // Placeholder for API call
+            console.log('Collaboration Data:', payload);
+            // Simulate API delay
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            alert('Collaboration request sent successfully!');
+            closeCollaborationModal();
+        } catch (err) {
+            console.error('Failed to send collaboration request:', err);
+            alert('Failed to send request. Please try again.');
+        } finally {
+            setSubmittingCollaboration(false);
+        }
+    };
 
     // Fetch portfolio data (public endpoint, no auth)
     useEffect(() => {
@@ -574,12 +636,12 @@ const PublicPortfolio = () => {
                     <p className="text-orange-100 mb-6 max-w-2xl mx-auto">
                         I'm always open to exciting brand partnerships and creative collaborations. Let's create something amazing together!
                     </p>
-                    <a
-                        href="/signup"
+                    <button
+                        onClick={openCollaborationModal}
                         className="inline-block bg-white text-primary-orange px-8 py-3 rounded-lg font-semibold hover:bg-orange-50 transition-colors"
                     >
                         Get in Touch
-                    </a>
+                    </button>
                 </Card>
             </div>
 
@@ -755,6 +817,146 @@ const PublicPortfolio = () => {
                     </div>
                 )
             }
+            {/* Collaboration Modal */}
+            {collaborationModalOpen && (
+                <div
+                    className={`fixed inset-0 z-[100] overflow-y-auto backdrop-blur-sm transition-all duration-300 ease-out flex items-center justify-center p-4 ${collaborationModalVisible ? 'bg-black/60' : 'bg-black/0'}`}
+                    onClick={closeCollaborationModal}
+                >
+                    <div
+                        className={`bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden transition-all duration-300 ease-out transform ${collaborationModalVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-white to-orange-50">
+                            <h3 className="text-2xl font-bebas tracking-wide text-deep-black">Connect with {name}</h3>
+                            <button onClick={closeCollaborationModal} className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full">
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        {/* Form Body */}
+                        <form onSubmit={handleCollaborationSubmit} className="p-6 md:p-8 space-y-5 max-h-[75vh] overflow-y-auto scrollbar-thin">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">Brand Name *</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        name="brandName"
+                                        placeholder="e.g. Acme Corp"
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary-orange focus:ring-4 focus:ring-orange-500/10 outline-none transition-all placeholder:text-gray-300 text-sm"
+                                        value={collaborationFormData.brandName}
+                                        onChange={handleCollaborationInputChange}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">Contact Person Name *</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        name="contactPersonName"
+                                        placeholder="Your Full Name"
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary-orange focus:ring-4 focus:ring-orange-500/10 outline-none transition-all placeholder:text-gray-300 text-sm"
+                                        value={collaborationFormData.contactPersonName}
+                                        onChange={handleCollaborationInputChange}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">Person Email *</label>
+                                    <input
+                                        required
+                                        type="email"
+                                        name="personEmail"
+                                        placeholder="work@brand.com"
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary-orange focus:ring-4 focus:ring-orange-500/10 outline-none transition-all placeholder:text-gray-300 text-sm"
+                                        value={collaborationFormData.personEmail}
+                                        onChange={handleCollaborationInputChange}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">Person Phone Number</label>
+                                    <input
+                                        type="tel"
+                                        name="personPhoneNumber"
+                                        placeholder="+1 (555) 000-0000"
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary-orange focus:ring-4 focus:ring-orange-500/10 outline-none transition-all placeholder:text-gray-300 text-sm"
+                                        value={collaborationFormData.personPhoneNumber}
+                                        onChange={handleCollaborationInputChange}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">Business Info *</label>
+                                <textarea
+                                    required
+                                    name="businessInfo"
+                                    rows="3"
+                                    placeholder="Tell more about your business and brand objectives."
+                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary-orange focus:ring-4 focus:ring-orange-500/10 outline-none transition-all placeholder:text-gray-300 text-sm resize-none"
+                                    value={collaborationFormData.businessInfo}
+                                    onChange={handleCollaborationInputChange}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">Budget</label>
+                                    <input
+                                        type="text"
+                                        name="budget"
+                                        placeholder="e.g. $1000 - $5000"
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary-orange focus:ring-4 focus:ring-orange-500/10 outline-none transition-all placeholder:text-gray-300 text-sm"
+                                        value={collaborationFormData.budget}
+                                        onChange={handleCollaborationInputChange}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">Notes</label>
+                                    <input
+                                        type="text"
+                                        name="notes"
+                                        placeholder="Any additional requests or notes"
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary-orange focus:ring-4 focus:ring-orange-500/10 outline-none transition-all placeholder:text-gray-300 text-sm"
+                                        value={collaborationFormData.notes}
+                                        onChange={handleCollaborationInputChange}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Footer Buttons */}
+                            <div className="flex gap-4 pt-4 border-t border-gray-50">
+                                <button
+                                    type="button"
+                                    onClick={closeCollaborationModal}
+                                    className="flex-1 px-6 py-3.5 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50 transition-all text-sm"
+                                    disabled={submittingCollaboration}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-[2] px-6 py-3.5 rounded-xl bg-gradient-to-r from-primary-orange to-orange-600 text-white font-semibold hover:shadow-lg hover:shadow-orange-500/20 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
+                                    disabled={submittingCollaboration}
+                                >
+                                    {submittingCollaboration ? (
+                                        <>
+                                            <Loader2 size={18} className="animate-spin" />
+                                            Sending Request...
+                                        </>
+                                    ) : (
+                                        'Send Collaboration Request'
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div >
     );
 };
