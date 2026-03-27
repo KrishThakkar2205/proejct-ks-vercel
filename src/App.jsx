@@ -24,7 +24,10 @@ import CompletedShoots from './pages/influencer/CompletedShoots';
 import DelayedPage from './pages/influencer/DelayedPage';
 import InfluencerMessages from './pages/influencer/InfluencerMessages';
 import InfluencerReviews from './pages/influencer/InfluencerReviews';
+import NotificationsPage from './pages/influencer/NotificationsPage';
 import PlaceholderPage from './pages/PlaceholderPage';
+import PrivacyPolicy from './pages/public/PrivacyPolicy';
+import TermsAndConditions from './pages/public/TermsAndConditions';
 import NotFound from './pages/NotFound';
 import ScrollToTop from './components/ScrollToTop';
 
@@ -43,6 +46,8 @@ function App() {
                         <Route path="/signup" element={<SignupPage />} />
                         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                     </Route>
+                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                    <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
                 </Route>
 
                 {/* Portfolio Route (public) */}
@@ -75,6 +80,7 @@ function App() {
                         <Route path="delayed" element={<DelayedPage />} />
                         <Route path="messages" element={<InfluencerMessages />} />
                         <Route path="reviews" element={<InfluencerReviews />} />
+                        <Route path="notifications" element={<NotificationsPage />} />
                     </Route>
                 </Route>
 

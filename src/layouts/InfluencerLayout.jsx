@@ -11,6 +11,7 @@ const InfluencerLayout = () => {
     const dispatch = useDispatch();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+
     const isActive = (path) => location.pathname === path;
 
     const navItems = [
@@ -21,6 +22,7 @@ const InfluencerLayout = () => {
         { icon: <CheckCircle size={20} />, label: 'Completed Shoots', path: '/influencer/completed-shoots' },
         { icon: <AlertTriangle size={20} />, label: 'Delayed', path: '/influencer/delayed' },
         { icon: <Star size={20} />, label: 'Reviews', path: '/influencer/reviews' },
+        { icon: <Bell size={20} />, label: 'Notifications', path: '/influencer/notifications' },
     ];
 
     const SidebarContent = ({ showBrand = true, isCollapsed = false }) => (
@@ -125,7 +127,7 @@ const InfluencerLayout = () => {
                 </button>
 
                 {/* Top Header */}
-                <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shadow-sm z-40 flex-shrink-0">
+                <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 md:px-6 shadow-sm z-40 flex-shrink-0">
                     <div className="flex items-center gap-4">
                         <Link to="/influencer" className="flex items-center">
                             <img src="/logo.png" alt="InfluRunner Logo" className="h-8 w-auto" />
@@ -133,10 +135,14 @@ const InfluencerLayout = () => {
                     </div>
 
                     <div className="flex items-center space-x-4">
-                        <button className="p-2 text-gray-400 hover:text-primary-orange transition-colors relative">
+                        <Link 
+                            to="/influencer/notifications"
+                            className={`p-2 transition-colors relative rounded-full ${isActive('/influencer/notifications') ? 'text-primary-orange bg-orange-50' : 'text-gray-400 hover:text-primary-orange hover:bg-gray-50'}`}
+                            title="Notifications"
+                        >
                             <Bell size={20} />
-                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-                        </button>
+                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white animate-pulse"></span>
+                        </Link>
                         <Link to="/influencer/profile" className="md:pointer-events-none">
                             <div className="flex items-center gap-3 pl-4 border-l border-gray-100 cursor-pointer md:cursor-default">
                                 <div className="text-right hidden sm:block">
@@ -170,7 +176,7 @@ const InfluencerLayout = () => {
                 </header>
 
                 {/* Main Content */}
-                <main className="flex-1 overflow-y-auto p-6 bg-gray-50/50">
+                <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50/50">
                     <Outlet />
                 </main>
             </div>

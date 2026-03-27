@@ -135,21 +135,25 @@ const PublicPortfolio = () => {
         e.preventDefault();
         setSubmittingCollaboration(true);
         try {
-            // Include influencerId in the data sent to backend
             const payload = {
-                ...collaborationFormData,
+                brand_name: collaborationFormData.brandName,
+                contact_person_name: collaborationFormData.contactPersonName,
+                person_email: collaborationFormData.personEmail,
+                person_phone_number: collaborationFormData.personPhoneNumber,
+                business_info: collaborationFormData.businessInfo,
+                budget: collaborationFormData.budget,
+                notes: collaborationFormData.notes,
                 influencer_id: influencerId
             };
             
-            // Placeholder for API call
-            console.log('Collaboration Data:', payload);
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            await axios.post(`${API_BASE_URL}/api/collab-notification`, payload);
+            
             alert('Collaboration request sent successfully!');
             closeCollaborationModal();
         } catch (err) {
             console.error('Failed to send collaboration request:', err);
-            alert('Failed to send request. Please try again.');
+            const errorMessage = err.response?.data?.detail || err.response?.data?.message || 'Failed to send request. Please try again.';
+            alert(errorMessage);
         } finally {
             setSubmittingCollaboration(false);
         }
