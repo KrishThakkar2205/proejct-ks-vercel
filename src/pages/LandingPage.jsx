@@ -521,7 +521,7 @@ const LANDING_STYLES = `
   .lp-cta-box h2 {
     font-size: clamp(36px, 5vw, 62px);
     font-weight: 800;
-    letter-spacing: -2.5px;
+    letter-spacing: 4px;
     line-height: 1.05;
     margin-bottom: 18px;
     position: relative; z-index: 1;
@@ -916,7 +916,7 @@ export default function LandingPage() {
         <ul className="lp-nav-links">
           <li><a onClick={() => scrollTo('lp-features')}>Features</a></li>
           <li><a onClick={() => scrollTo('lp-how')}>How It Works</a></li>
-          <li><a onClick={() => scrollTo('lp-brands')}>For Brands</a></li>
+          <li><a href="https://portfolio.influrunner.com" target="_blank" rel="noopener noreferrer">View Our Work</a></li>
         </ul>
         <div className="lp-nav-cta">
           <button className="lp-btn-ghost" onClick={() => navigate('/login')}>Log In</button>
