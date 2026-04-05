@@ -36,10 +36,11 @@ function App() {
         <Router>
             <ScrollToTop />
             <Routes>
-                {/* Public Routes (landing page always accessible) */}
-                <Route element={<PublicLayout />}>
-                    <Route path="/" element={<LandingPage />} />
+                {/* Landing page — standalone with its own dark nav & footer */}
+                <Route path="/" element={<LandingPage />} />
 
+                {/* Public Routes with white header/footer */}
+                <Route element={<PublicLayout />}>
                     {/* Auth pages — redirect to dashboard if already logged in */}
                     <Route element={<RedirectIfAuthenticated />}>
                         <Route path="/login" element={<LoginPage />} />
