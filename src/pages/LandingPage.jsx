@@ -270,7 +270,7 @@ const LANDING_STYLES = `
   .lp-marquee-track {
     display: flex;
     gap: 48px;
-    animation: lp-marquee 22s linear infinite;
+    animation: lp-marquee 12s linear infinite;
     white-space: nowrap;
   }
 
