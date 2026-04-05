@@ -938,30 +938,13 @@ export default function LandingPage() {
           <button className="lp-btn-hero-ghost" onClick={() => scrollTo('lp-features')}>
             See How It Works
           </button>
-        </div>
-        <div style={{ position: 'relative', zIndex: 2, marginTop: '20px', animation: 'lp-fadeUp 0.8s 0.45s ease both' }}>
           <a
             href="https://portfolio.influrunner.com/work"
             target="_blank"
             rel="noopener noreferrer"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              color: 'rgba(255,255,255,0.5)',
-              fontSize: '14px',
-              fontWeight: 500,
-              fontFamily: "'Outfit', sans-serif",
-              textDecoration: 'none',
-              letterSpacing: '0.3px',
-              transition: 'color 0.22s',
-              borderBottom: '1px solid rgba(255,255,255,0.15)',
-              paddingBottom: '2px',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = 'rgba(255,92,0,0.9)'; e.currentTarget.style.borderBottomColor = 'rgba(255,92,0,0.5)'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderBottomColor = 'rgba(255,255,255,0.15)'; }}
+            className="lp-btn-hero-ghost"
           >
-            <span>✦</span> View Our Work <span style={{ fontSize: '12px' }}>↗</span>
+            View Our Work ↗
           </a>
         </div>
       </section>
