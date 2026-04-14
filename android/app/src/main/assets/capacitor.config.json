@@ -1,0 +1,20 @@
+{
+	"appId": "com.influrunner.app",
+	"appName": "InfluRunner",
+	"webDir": "dist",
+	"android": {
+		"allowMixedContent": true,
+		"orientation": "portrait"
+	},
+	"ios": {
+		"contentInset": "automatic"
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 2000,
+			"backgroundColor": "#FF6B1A",
+			"androidSplashResourceName": "splash",
+			"showSpinner": false
+		}
+	}
+}
