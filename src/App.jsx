@@ -30,10 +30,13 @@ import PrivacyPolicy from './pages/public/PrivacyPolicy';
 import TermsAndConditions from './pages/public/TermsAndConditions';
 import NotFound from './pages/NotFound';
 import ScrollToTop from './components/ScrollToTop';
+import usePageTracking from './hooks/usePageTracking';
 
-function App() {
+// Inner component so it has access to Router context (needed for useLocation)
+function AppRoutes() {
+    usePageTracking();
     return (
-        <Router>
+        <>
             <ScrollToTop />
             <Routes>
                 {/* Landing page — standalone with its own dark nav & footer */}
@@ -88,6 +91,14 @@ function App() {
                 {/* 404 Route */}
                 <Route path="*" element={<NotFound />} />
             </Routes>
+        </>
+    );
+}
+
+function App() {
+    return (
+        <Router>
+            <AppRoutes />
         </Router>
     );
 }
