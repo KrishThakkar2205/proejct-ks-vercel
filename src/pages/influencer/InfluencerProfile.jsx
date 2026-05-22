@@ -8,6 +8,7 @@ import SuccessAlert from '../../components/ui/SuccessAlert';
 import ErrorAlert from '../../components/ui/ErrorAlert';
 import { Instagram, MapPin, Mail, Camera, Edit2, Check, X, Loader2 } from 'lucide-react';
 import api, { API_BASE_URL } from '../../utils/api';
+import ImageCropperModal from '../../components/dashboard/ImageCropperModal';
 
 const InfluencerProfile = () => {
     const [isEditing, setIsEditing] = useState(false);
@@ -22,6 +23,8 @@ const InfluencerProfile = () => {
     const [profilePicturePreview, setProfilePicturePreview] = useState(null);
     const [successAlert, setSuccessAlert] = useState({ isOpen: false, message: '' });
     const [errorAlert, setErrorAlert] = useState({ isOpen: false, message: '' });
+    const [showCropper, setShowCropper] = useState(false);
+    const [rawImageFile, setRawImageFile] = useState(null);
     const fileInputRef = useRef(null);
 
     const categories = [
@@ -104,11 +107,52 @@ const InfluencerProfile = () => {
     const handleProfilePictureChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            setProfilePictureFile(file);
-            const reader = new FileReader();
-            reader.onloadend = () => setProfilePicturePreview(reader.result);
-            reader.readAsDataURL(file);
+            // Validate size (max 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                setErrorAlert({
+                    isOpen: true,
+                    message: 'File size exceeds the 2MB limit. Please upload a smaller image.'
+                });
+                e.target.value = '';
+                return;
+            }
+
+            // Validate file format
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+            if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+                setErrorAlert({
+                    isOpen: true,
+                    message: 'Unsupported file format. Please upload a JPG, JPEG, PNG, GIF, or WEBP image.'
+                });
+                e.target.value = '';
+                return;
+            }
+
+            setRawImageFile(file);
+            setShowCropper(true);
+            
+            // Clear input value so selecting the same file again triggers onChange
+            e.target.value = '';
         }
+    };
+
+    const handleCropApply = (croppedFile) => {
+        setProfilePictureFile(croppedFile);
+        
+        // Create a local URL preview
+        const previewUrl = URL.createObjectURL(croppedFile);
+        setProfilePicturePreview(previewUrl);
+        
+        setShowCropper(false);
+        setRawImageFile(null);
+    };
+
+    const handleCropClose = () => {
+        setShowCropper(false);
+        setRawImageFile(null);
     };
 
     const handleSave = async () => {
@@ -324,7 +368,7 @@ const InfluencerProfile = () => {
                                     <input
                                         type="file"
                                         ref={fileInputRef}
-                                        accept="image/jpeg,image/png,image/gif"
+                                        accept="image/jpeg,image/png,image/gif,image/webp,image/jpg,.jpg,.jpeg,.png,.gif,.webp"
                                         className="hidden"
                                         onChange={handleProfilePictureChange}
                                     />
@@ -584,11 +628,19 @@ const InfluencerProfile = () => {
             />
 
             <ErrorAlert
-                isOpen={errorAlert.isOpen}
-                message={errorAlert.message}
-                onClose={() => setErrorAlert({ isOpen: false, message: '' })}
-            />
-        </div>
+                                                isOpen={errorAlert.isOpen}
+                                                message={errorAlert.message}
+                                                onClose={() => setErrorAlert({ isOpen: false, message: '' })}
+                                            />
+
+                                            {showCropper && rawImageFile && (
+                                                <ImageCropperModal
+                                                    file={rawImageFile}
+                                                    onClose={handleCropClose}
+                                                    onCrop={handleCropApply}
+                                                />
+                                            )}
+                                        </div>
     );
 };
 
