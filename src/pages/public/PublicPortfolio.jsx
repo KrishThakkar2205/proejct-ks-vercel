@@ -331,7 +331,7 @@ const PublicPortfolio = () => {
                                         <span className="text-orange-100">{location}</span>
                                     </div>
                                 )}
-                                <div className="flex gap-2">
+                                <div className="flex flex-wrap gap-2 justify-center md:justify-start">
                                     {categoryList.map((cat, idx) => (
                                         <Badge key={idx} className="bg-white/20 text-white border-white/30">
                                             {cat}
