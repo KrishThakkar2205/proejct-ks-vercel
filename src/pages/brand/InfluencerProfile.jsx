@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { MapPin, Instagram, Youtube, Facebook, MessageSquare, Share2, Star, CheckCircle, TrendingUp, Users, Heart } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
+import Lightbox from '../../components/ui/Lightbox';
 
 const InfluencerProfile = () => {
     const { id } = useParams();
@@ -57,6 +58,17 @@ const InfluencerProfile = () => {
         : influencer.platforms[0].id;
 
     const [activeTab, setActiveTab] = React.useState(initialTab);
+    const [lightboxImage, setLightboxImage] = useState({ isOpen: false, src: '', alt: '', caption: '' });
+
+    const openLightbox = (src, caption = '') => {
+        // Use high-res version if Unsplash
+        const highResSrc = src.includes('unsplash.com') ? src.replace('w=200', 'w=800').replace('w=400', 'w=800') : src;
+        setLightboxImage({ isOpen: true, src: highResSrc, alt: caption, caption });
+    };
+
+    const closeLightbox = () => {
+        setLightboxImage(prev => ({ ...prev, isOpen: false }));
+    };
 
     const currentStats = influencer.stats[activeTab];
     const currentContent = influencer.content[activeTab];
@@ -78,7 +90,8 @@ const InfluencerProfile = () => {
                                 <img
                                     src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200"
                                     alt={influencer.name}
-                                    className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-white shadow-lg object-cover"
+                                    className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-white shadow-lg object-cover cursor-pointer hover:scale-105 transition-transform duration-300"
+                                    onClick={() => openLightbox("https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200", `${influencer.name}'s Profile Picture`)}
                                 />
                                 {influencer.verified && (
                                     <div className="absolute bottom-1 right-1 md:bottom-2 md:right-2 bg-white rounded-full p-1 shadow-sm">
@@ -160,7 +173,11 @@ const InfluencerProfile = () => {
                                 </div>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                     {currentContent.map((img, idx) => (
-                                        <div key={idx} className="aspect-square rounded-lg overflow-hidden group cursor-pointer relative">
+                                        <div 
+                                            key={idx} 
+                                            className="aspect-square rounded-lg overflow-hidden group cursor-pointer relative"
+                                            onClick={() => openLightbox(img, `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} content photo ${idx + 1}`)}
+                                        >
                                             <img src={img} alt="Content" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                                             <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                 <div className="bg-white/90 p-2 rounded-full text-deep-black transform translate-y-4 group-hover:translate-y-0 transition-transform">
@@ -216,6 +233,13 @@ const InfluencerProfile = () => {
                     </div>
                 </div>
             </Card>
+            <Lightbox
+                isOpen={lightboxImage.isOpen}
+                onClose={closeLightbox}
+                imageSrc={lightboxImage.src}
+                imageAlt={lightboxImage.alt}
+                caption={lightboxImage.caption}
+            />
         </div>
     );
 };

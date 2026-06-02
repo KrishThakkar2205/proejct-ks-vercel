@@ -7,12 +7,14 @@ import StarRating from '../../components/ui/StarRating';
 import { MapPin, Star, Loader2, Calendar, X, Eye, Heart, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '../../utils/api';
+import Lightbox from '../../components/ui/Lightbox';
 
 const PublicPortfolio = () => {
     const { influencerId } = useParams();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [portfolio, setPortfolio] = useState(null);
+    const [isProfilePicLightboxOpen, setIsProfilePicLightboxOpen] = useState(false);
     const [instaMetrics, setInstaMetrics] = useState(null);
     const [metricsLoading, setMetricsLoading] = useState(true);
     const [instaMedia, setInstaMedia] = useState([]);
@@ -313,7 +315,10 @@ const PublicPortfolio = () => {
                 <div className="max-w-6xl mx-auto relative z-10">
                     <div className="flex flex-col md:flex-row items-center gap-8">
                         {/* Profile Image */}
-                        <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center text-primary-orange text-5xl font-bold shadow-2xl overflow-hidden">
+                        <div 
+                            className={`w-32 h-32 bg-white rounded-full flex items-center justify-center text-primary-orange text-5xl font-bold shadow-2xl overflow-hidden transition-all duration-300 ${profilePicture ? 'cursor-pointer hover:scale-105 hover:shadow-orange-500/20 active:scale-95' : ''}`}
+                            onClick={() => profilePicture && setIsProfilePicLightboxOpen(true)}
+                        >
                             {profilePicture ? (
                                 <img src={`${API_BASE_URL}/${profilePicture}`} alt={name} className="w-full h-full object-cover" />
                             ) : (
@@ -960,6 +965,16 @@ const PublicPortfolio = () => {
                         </form>
                     </div>
                 </div>
+            )}
+            {/* Profile Picture Lightbox */}
+            {profilePicture && (
+                <Lightbox
+                    isOpen={isProfilePicLightboxOpen}
+                    onClose={() => setIsProfilePicLightboxOpen(false)}
+                    imageSrc={`${API_BASE_URL}/${profilePicture}`}
+                    imageAlt={`${name}'s Profile Picture`}
+                    caption={`${name}'s Profile Picture`}
+                />
             )}
         </div >
     );
