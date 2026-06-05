@@ -74,6 +74,7 @@ const InfluencerProfile = () => {
                     joinedDate: data.created_at || new Date().toISOString(),
                     profilePicture: data.profile_picture_location ? `${API_BASE_URL}/${data.profile_picture_location}` : null,
                     instagram: data.instagram || false,
+                    whatsapp_notification: data.whatsapp_notification !== undefined ? data.whatsapp_notification : true,
                 };
 
                 setProfileData(mapped);
@@ -173,6 +174,8 @@ const InfluencerProfile = () => {
             if (profilePictureFile) {
                 payload.append('profile_picture', profilePictureFile);
             }
+            // Send whatsapp_notification toggle state to backend
+            payload.append('whatsapp_notification', formData.whatsapp_notification);
 
             await api.put('/api/profile', payload, {
                 headers: { 'Content-Type': 'multipart/form-data' },
@@ -197,6 +200,7 @@ const InfluencerProfile = () => {
                 joinedDate: data.created_at || new Date().toISOString(),
                 profilePicture: data.profile_picture_location ? `${API_BASE_URL}/${data.profile_picture_location}` : null,
                 instagram: data.instagram || false,
+                whatsapp_notification: data.whatsapp_notification !== undefined ? data.whatsapp_notification : true,
             };
 
             setProfileData(mapped);
@@ -546,6 +550,24 @@ const InfluencerProfile = () => {
                                     type="checkbox"
                                     checked={formData.availability}
                                     onChange={(e) => setFormData({ ...formData, availability: e.target.checked })}
+                                    disabled={!isEditing}
+                                    className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-orange"></div>
+                            </label>
+                        </div>
+                    </Card>
+
+                    {/* Notification Settings */}
+                    <Card className="p-6">
+                        <h3 className="font-semibold text-deep-black mb-4">Notification Settings</h3>
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600">Receive WhatsApp & System reminders</span>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.whatsapp_notification}
+                                    onChange={(e) => setFormData({ ...formData, whatsapp_notification: e.target.checked })}
                                     disabled={!isEditing}
                                     className="sr-only peer"
                                 />
