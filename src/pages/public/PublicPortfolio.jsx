@@ -467,6 +467,43 @@ const PublicPortfolio = () => {
                     </div>
                 </div>
 
+                {/* Audience Demographics */}
+                {instaMetrics?.engaged_audience_demographics_city && instaMetrics.engaged_audience_demographics_city.length > 0 && (
+                    <div>
+                        <h2 className="text-3xl font-bebas tracking-wide text-deep-black mb-6">Audience Demographics</h2>
+                        <Card className="p-6 border border-orange-100 bg-gradient-to-br from-white to-orange-50/30">
+                            <div className="flex items-center gap-2 mb-6">
+                                <div className="w-10 h-10 bg-gradient-to-br from-primary-orange to-orange-600 rounded-lg flex items-center justify-center text-white shadow-md">
+                                    <MapPin size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bebas tracking-wide text-deep-black text-xl">Top Engaged Cities</h3>
+                                    <p className="text-xs text-gray-500">Distribution of engaged audience by city</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                                {instaMetrics.engaged_audience_demographics_city.map((item, idx) => (
+                                    <div key={idx} className="space-y-2">
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="font-semibold text-gray-700 flex items-center gap-1.5">
+                                                <span className="inline-block w-2 h-2 rounded-full bg-primary-orange"></span>
+                                                {item.city}
+                                            </span>
+                                            <span className="font-bold text-primary-orange">{item.percentage}%</span>
+                                        </div>
+                                        <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+                                            <div
+                                                className="h-full bg-gradient-to-r from-primary-orange to-orange-500 rounded-full transition-all duration-1000 ease-out"
+                                                style={{ width: `${item.percentage}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </Card>
+                    </div>
+                )}
+
                 {/* Recent Content Performance */}
                 <div>
                     <h2 className="text-3xl font-bebas tracking-wide text-deep-black mb-6">Recent Content Performance</h2>
