@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { LayoutDashboard, User, Calendar, ClipboardList, CheckCircle, Star, Bell, LogOut, Menu, X, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
+import { LayoutDashboard, User, Calendar, ClipboardList, CheckCircle, Star, Bell, LogOut, Menu, X, ChevronLeft, ChevronRight, AlertTriangle, Instagram } from 'lucide-react';
 import { logout } from '../store/slices/authSlice';
 import { API_BASE_URL } from '../utils/api';
 
@@ -17,6 +17,7 @@ const InfluencerLayout = () => {
     const navItems = [
         { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/influencer' },
         { icon: <User size={20} />, label: 'Profile', path: '/influencer/profile' },
+        { icon: <Instagram size={20} />, label: 'Instagram Reports', path: '/influencer/media-reports' },
         { icon: <Calendar size={20} />, label: 'Calendar', path: '/influencer/calendar' },
         { icon: <ClipboardList size={20} />, label: 'Schedule', path: '/influencer/schedule' },
         { icon: <CheckCircle size={20} />, label: 'Completed Shoots', path: '/influencer/completed-shoots' },

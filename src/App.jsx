@@ -25,6 +25,8 @@ import DelayedPage from './pages/influencer/DelayedPage';
 import InfluencerMessages from './pages/influencer/InfluencerMessages';
 import InfluencerReviews from './pages/influencer/InfluencerReviews';
 import NotificationsPage from './pages/influencer/NotificationsPage';
+import MediaReports from './pages/influencer/MediaReports';
+import PublicMediaReport from './pages/public/PublicMediaReport';
 import PlaceholderPage from './pages/PlaceholderPage';
 import PrivacyPolicy from './pages/public/PrivacyPolicy';
 import TermsAndConditions from './pages/public/TermsAndConditions';
@@ -60,6 +62,9 @@ function AppRoutes() {
                 {/* Review Submission Route (public) */}
                 <Route path="/review/:token" element={<ClientReviewPage />} />
 
+                {/* Media Performance Report Route (public) */}
+                <Route path="/media-report/:influencerId/:mediaId" element={<PublicMediaReport />} />
+
                 {/* Protected: Brand Dashboard Routes */}
                 <Route element={<ProtectedRoute />}>
                     <Route path="/brand" element={<DashboardLayout />}>
@@ -83,6 +88,8 @@ function AppRoutes() {
                         <Route path="completed-shoots" element={<CompletedShoots />} />
                         <Route path="delayed" element={<DelayedPage />} />
                         <Route path="messages" element={<InfluencerMessages />} />
+                        {/* Media Reports Route */}
+                        <Route path="media-reports" element={<MediaReports />} />
                         <Route path="reviews" element={<InfluencerReviews />} />
                         <Route path="notifications" element={<NotificationsPage />} />
                     </Route>

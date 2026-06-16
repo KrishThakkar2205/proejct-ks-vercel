@@ -4,7 +4,7 @@ import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import StarRating from '../../components/ui/StarRating';
-import { MapPin, Star, Loader2, Calendar, X, Eye, Heart, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MapPin, Star, Loader2, Calendar, X, Eye, Heart, MessageCircle, ChevronLeft, ChevronRight, Instagram } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '../../utils/api';
 import Lightbox from '../../components/ui/Lightbox';
@@ -18,6 +18,7 @@ const PublicPortfolio = () => {
     const [instaMetrics, setInstaMetrics] = useState(null);
     const [metricsLoading, setMetricsLoading] = useState(true);
     const [instaMedia, setInstaMedia] = useState([]);
+    const [visibleCount, setVisibleCount] = useState(5);
     const [mediaLoading, setMediaLoading] = useState(true);
     const [selectedMedia, setSelectedMedia] = useState(null);
     const [selectedMediaMetrics, setSelectedMediaMetrics] = useState(null);
@@ -514,68 +515,88 @@ const PublicPortfolio = () => {
                             </svg>
                             <h3 className="font-bebas tracking-wide text-deep-black">Instagram Posts</h3>
                         </div>
-                        <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                            {mediaLoading ? (
-                                <div className="flex justify-center p-6">
-                                    <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-                                </div>
-                            ) : instaMedia.length > 0 ? (
-                                instaMedia.map((media) => (
-                                    <div
-                                        key={media.id}
-                                        className="flex gap-4 p-3 bg-white border border-gray-100 rounded-lg cursor-pointer hover:border-pink-300 hover:shadow-sm transition-all"
-                                        onClick={() => setSelectedMedia(media)}
-                                    >
-                                        <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden relative">
-                                            {media.thumbnail_url || media.media_url ? (
-                                                <img
-                                                    src={media.thumbnail_url || media.media_url}
-                                                    alt="Instagram post thumbnail"
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            ) : (
-                                                <svg className="w-6 h-6 text-pink-400" fill="currentColor" viewBox="0 0 24 24">
-                                                    <path d="M12 2.163c3.204...z" />
-                                                </svg>
-                                            )}
-                                            {media.media_type === 'VIDEO' && (
-                                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                                                    <svg className="w-6 h-6 text-white drop-shadow-md" fill="currentColor" viewBox="0 0 24 24">
-                                                        <path d="M8 5v14l11-7z" />
-                                                    </svg>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                            {media.timestamp && (
-                                                <p className="text-xs text-gray-500 mb-1">
-                                                    {new Date(media.timestamp).toLocaleDateString('en-US', {
-                                                        month: 'short',
-                                                        day: 'numeric',
-                                                        year: 'numeric'
-                                                    })}
+                        {mediaLoading ? (
+                            <div className="flex justify-center p-6">
+                                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                            </div>
+                        ) : instaMedia.length > 0 ? (
+                            <>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+                                    {instaMedia.slice(0, visibleCount).map((media) => (
+                                        <div
+                                            key={media.id}
+                                            className="group bg-white overflow-hidden border border-gray-100 hover:border-pink-300 hover:shadow-lg rounded-xl transition-all duration-300 cursor-pointer flex flex-col relative"
+                                            onClick={() => setSelectedMedia(media)}
+                                        >
+                                            {/* Media Preview Container */}
+                                            <div className="aspect-square bg-gray-50 overflow-hidden relative flex items-center justify-center select-none">
+                                                {media.thumbnail_url || media.media_url ? (
+                                                    <img
+                                                        src={media.thumbnail_url || media.media_url}
+                                                        alt="Instagram content"
+                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                        loading="lazy"
+                                                    />
+                                                ) : (
+                                                    <Instagram className="w-12 h-12 text-pink-200" />
+                                                )}
+
+                                                {/* Media Type Overlays */}
+                                                {media.media_type === 'VIDEO' && (
+                                                    <div className="absolute top-3 right-3 bg-black/50 text-white p-1.5 rounded-full backdrop-blur-sm shadow-md">
+                                                        <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
+                                                            <path d="M8 5v14l11-7z" />
+                                                        </svg>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Info Section */}
+                                            <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between space-y-2">
+                                                <p className="text-xs sm:text-sm font-medium text-gray-800 line-clamp-2 leading-relaxed flex-1">
+                                                    {media.caption || <span className="text-gray-400 italic">No caption</span>}
                                                 </p>
-                                            )}
-                                            <p className="text-sm font-medium text-deep-black line-clamp-2">
-                                                {media.caption || 'No caption'}
-                                            </p>
+                                                <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-0 sm:items-center sm:justify-between text-[10px] sm:text-xs text-gray-400 border-t border-gray-50 pt-2 sm:pt-2.5">
+                                                    <span className="flex items-center gap-1">
+                                                        <Calendar size={12} />
+                                                        {media.timestamp ? new Date(media.timestamp).toLocaleDateString('en-US', {
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            year: 'numeric'
+                                                        }) : 'N/A'}
+                                                    </span>
+                                                    <span className="font-semibold text-pink-500 bg-pink-50 px-2 py-0.5 rounded-full text-[10px] self-start sm:self-auto">
+                                                        {media.media_type || 'POST'}
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="flex items-center gap-4 p-3 bg-pink-50 rounded-lg">
-                                    <div className="w-16 h-16 bg-gradient-to-br from-pink-200 to-orange-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <svg className="w-6 h-6 text-pink-400" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-gray-500">No media found</p>
-                                        <p className="text-xs text-gray-400">Come back later for new content</p>
-                                    </div>
+                                    ))}
                                 </div>
-                            )}
-                        </div>
+                                
+                                {visibleCount < instaMedia.length && (
+                                    <div className="flex justify-center mt-6">
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setVisibleCount(prev => prev + 5)}
+                                            className="px-8 py-2 border border-gray-200 hover:border-pink-300 hover:text-pink-600 transition-colors duration-300 font-semibold"
+                                        >
+                                            Load More
+                                        </Button>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="flex items-center gap-4 p-4 bg-pink-50 rounded-xl">
+                                <div className="w-12 h-12 bg-gradient-to-br from-pink-200 to-orange-200 rounded-lg flex items-center justify-center flex-shrink-0 text-pink-500">
+                                    <Instagram size={24} />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-gray-700">No media found</p>
+                                    <p className="text-xs text-gray-500">Come back later for new content</p>
+                                </div>
+                            </div>
+                        )}
                     </Card>
                 </div>
 
