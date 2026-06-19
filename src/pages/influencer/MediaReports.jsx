@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -185,97 +186,98 @@ const MediaReports = () => {
                     </Button>
                 </Card>
             ) : (
-                /* Media Grid */
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-6 animate-fadeIn">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 animate-fadeIn">
                     {instaMedia.map((media) => (
-                        <Card 
+                        <div 
                             key={media.id} 
-                            className="group bg-white overflow-hidden border border-gray-100 hover:border-pink-300 hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col relative"
+                            className="group relative aspect-[3/4] bg-gray-900 rounded-xl overflow-hidden border border-gray-100 hover:border-pink-300 hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 cursor-pointer select-none"
                             onClick={() => setSelectedMedia(media)}
                         >
-                            {/* Media Preview Container */}
-                            <div className="aspect-square bg-gray-50 overflow-hidden relative flex items-center justify-center select-none">
-                                {media.thumbnail_url || media.media_url ? (
-                                    <img 
-                                        src={media.thumbnail_url || media.media_url} 
-                                        alt="Instagram content" 
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                        loading="lazy"
-                                    />
-                                ) : (
+                            {media.thumbnail_url || media.media_url ? (
+                                <img 
+                                    src={media.thumbnail_url || media.media_url} 
+                                    alt="Instagram content" 
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                    loading="lazy"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center">
                                     <Instagram className="w-12 h-12 text-pink-200" />
-                                )}
-
-                                {/* Media Type Overlays */}
-                                {media.media_type === 'VIDEO' && (
-                                    <div className="absolute top-3 right-3 bg-black/50 text-white p-1.5 rounded-full backdrop-blur-sm shadow-md">
-                                        <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
-                                            <path d="M8 5v14l11-7z" />
-                                        </svg>
-                                    </div>
-                                )}
-                                
-                                {/* Share Quick Button (on Hover) */}
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                                    <button 
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setSelectedMedia(media);
-                                        }}
-                                        className="p-2.5 bg-white text-deep-black hover:text-pink-600 rounded-xl shadow-md transition-all transform hover:scale-110 flex items-center gap-1.5 font-semibold text-xs"
-                                        title="Analyze Metrics"
-                                    >
-                                        <BarChart2 size={16} />
-                                        Analyze
-                                    </button>
-                                    <button 
-                                        onClick={(e) => handleCopyLink(e, media.id, false)}
-                                        className="p-2.5 bg-white text-deep-black hover:text-orange-500 rounded-xl shadow-md transition-all transform hover:scale-110 flex items-center gap-1.5 font-semibold text-xs"
-                                        title="Copy Public Link"
-                                    >
-                                        {copiedId === media.id ? (
-                                            <>
-                                                <Check size={16} className="text-green-500" />
-                                                <span className="text-green-600">Copied!</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Copy size={16} />
-                                                Share Link
-                                            </>
-                                        )}
-                                    </button>
                                 </div>
-                            </div>
+                            )}
 
-                            {/* Info Section */}
-                            <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between space-y-2.5">
-                                <p className="text-xs sm:text-sm font-medium text-gray-800 line-clamp-2 leading-relaxed flex-1">
-                                    {media.caption || <span className="text-gray-400 italic">No caption</span>}
+                            {/* Media Type Overlays */}
+                            {media.media_type === 'VIDEO' && (
+                                <div className="absolute top-3 right-3 bg-black/50 text-white p-1.5 rounded-full backdrop-blur-sm shadow-md z-10">
+                                    <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z" />
+                                    </svg>
+                                </div>
+                            )}
+                            
+                            {/* Dark Gradient Overlay for text readability */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent transition-opacity duration-300 group-hover:via-black/50" />
+
+                            {/* Caption & Details Overlay in Right Bottom Corner */}
+                            <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 flex flex-col items-end text-right text-white space-y-1 sm:space-y-1.5 z-10">
+                                <p className="text-xs sm:text-sm font-semibold text-white/95 line-clamp-2 leading-snug drop-shadow-md max-w-[90%]">
+                                    {media.caption || <span className="text-gray-300/80 italic">No caption</span>}
                                 </p>
-                                <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-0 sm:items-center sm:justify-between text-[10px] sm:text-xs text-gray-500 border-t border-gray-50 pt-2.5 sm:pt-3">
-                                    <span className="flex items-center gap-1">
-                                        <Calendar size={12} />
+                                <div className="flex flex-col items-end gap-1.5 text-[10px] sm:text-xs text-white/80">
+                                    <span className="flex items-center gap-1 font-medium bg-black/30 px-1.5 py-0.5 rounded-md backdrop-blur-[2px]">
+                                        <Calendar size={11} className="text-white/70" />
                                         {media.timestamp ? new Date(media.timestamp).toLocaleDateString('en-US', {
                                             month: 'short',
                                             day: 'numeric',
                                             year: 'numeric'
                                         }) : 'Unknown Date'}
                                     </span>
-                                    <span className="font-semibold text-pink-500 bg-pink-50 px-2 py-0.5 rounded-full self-start sm:self-auto">
+                                    <span className="font-bold text-pink-400 bg-pink-950/70 px-1.5 py-0.5 rounded-md backdrop-blur-[2px] border border-pink-500/20 text-[9px] uppercase tracking-wider">
                                         {media.media_type || 'POST'}
                                     </span>
                                 </div>
                             </div>
-                        </Card>
+
+                            {/* Share Quick Button (on Hover) */}
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 z-20">
+                                <button 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedMedia(media);
+                                    }}
+                                    className="p-2.5 bg-white text-deep-black hover:text-pink-600 rounded-xl shadow-md transition-all transform hover:scale-110 flex items-center gap-1.5 font-semibold text-xs"
+                                    title="Analyze Metrics"
+                                >
+                                    <BarChart2 size={16} />
+                                    Analyze
+                                </button>
+                                <button 
+                                    onClick={(e) => handleCopyLink(e, media.id, false)}
+                                    className="p-2.5 bg-white text-deep-black hover:text-orange-500 rounded-xl shadow-md transition-all transform hover:scale-110 flex items-center gap-1.5 font-semibold text-xs"
+                                    title="Copy Public Link"
+                                >
+                                    {copiedId === media.id ? (
+                                        <>
+                                            <Check size={16} className="text-green-500" />
+                                            <span className="text-green-600">Copied!</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Copy size={16} />
+                                            Share Link
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
                     ))}
                 </div>
             )}
 
             {/* Analysis Modal */}
-            {selectedMedia && (
+            {selectedMedia && createPortal(
                 <div 
-                    className="fixed inset-0 z-50 overflow-y-auto backdrop-blur-sm bg-black/60 flex items-center justify-center p-4 transition-opacity duration-300"
+                    className="fixed inset-0 z-[9999] overflow-y-auto backdrop-blur-sm bg-black/60 flex items-center justify-center p-4 transition-opacity duration-300"
                     onClick={() => setSelectedMedia(null)}
                 >
                     <div 
@@ -435,7 +437,8 @@ const MediaReports = () => {
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
