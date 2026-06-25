@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
 import Card from '../../components/ui/Card';
@@ -7,7 +7,8 @@ import Badge from '../../components/ui/Badge';
 import { 
     Instagram, Eye, Heart, MessageCircle, Share2, Copy, Check, 
     ExternalLink, Loader2, X, ChevronLeft, ChevronRight, BarChart2,
-    Calendar, TrendingUp, AlertCircle
+    Calendar, TrendingUp, AlertCircle, Bookmark, Percent, Clock, SkipForward,
+    Play, Pause, Volume2, VolumeX
 } from 'lucide-react';
 import api, { API_BASE_URL } from '../../utils/api';
 
@@ -29,6 +30,56 @@ const MediaReports = () => {
     // Copy feedback states
     const [copiedId, setCopiedId] = useState(null);
     const [modalCopied, setModalCopied] = useState(false);
+
+    // Custom Video Player States & Refs
+    const videoRef = useRef(null);
+    const [isPlaying, setIsPlaying] = useState(true);
+    const [isMuted, setIsMuted] = useState(false);
+    const [videoProgress, setVideoProgress] = useState(0);
+
+    const togglePlay = (e) => {
+        if (e) e.stopPropagation();
+        if (!videoRef.current) return;
+        if (isPlaying) {
+            videoRef.current.pause();
+            setIsPlaying(false);
+        } else {
+            videoRef.current.play().catch(err => console.log("Play interrupted:", err));
+            setIsPlaying(true);
+        }
+    };
+
+    const toggleMute = (e) => {
+        if (e) e.stopPropagation();
+        if (!videoRef.current) return;
+        const newMuted = !isMuted;
+        videoRef.current.muted = newMuted;
+        setIsMuted(newMuted);
+    };
+
+    const handleTimeUpdate = () => {
+        if (!videoRef.current) return;
+        const progress = (videoRef.current.currentTime / videoRef.current.duration) * 100;
+        setVideoProgress(progress || 0);
+    };
+
+    const handleProgressClick = (e) => {
+        if (e) e.stopPropagation();
+        if (!videoRef.current) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const width = rect.width;
+        const newPercentage = clickX / width;
+        videoRef.current.currentTime = newPercentage * videoRef.current.duration;
+        setVideoProgress(newPercentage * 100);
+    };
+
+    // Reset video player states when selectedMedia changes
+    useEffect(() => {
+        setIsPlaying(true);
+        setIsMuted(false);
+        setVideoProgress(0);
+    }, [selectedMedia]);
 
     // Fetch Recent 20 Instagram Media
     const fetchMedia = useCallback(async () => {
@@ -70,7 +121,8 @@ const MediaReports = () => {
 
             try {
                 setMediaMetricsLoading(true);
-                const response = await api.get(`/api/insta-metric-per-media?influencer_id=${influencerId}&media_id=${selectedMedia.id}`);
+                const mediaType = selectedMedia.media_type === 'VIDEO' ? 'REELS' : 'POST';
+                const response = await api.get(`/api/insta-metric-per-media?influencer_id=${influencerId}&media_id=${selectedMedia.id}&media_type=${mediaType}`);
                 setSelectedMediaMetrics(response.data);
             } catch (err) {
                 console.error("Failed to fetch specific media metrics:", err);
@@ -281,134 +333,227 @@ const MediaReports = () => {
                     onClick={() => setSelectedMedia(null)}
                 >
                     <div 
-                        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] md:max-h-[85vh] animate-scaleUp"
+                        className="bg-[#121214] rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] md:max-h-[85vh] animate-scaleUp border border-[#27272a]/30"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {/* Close button - Absolute on mobile, placed inside layout */}
+                        {/* Close button - Absolute on mobile */}
                         <button 
                             onClick={() => setSelectedMedia(null)}
-                            className="absolute top-4 right-4 z-10 md:static md:hidden bg-black/50 text-white hover:bg-black/70 p-2 rounded-full backdrop-blur-sm transition-colors"
+                            className="absolute top-4 right-4 z-20 md:hidden bg-black/60 text-white hover:bg-black/80 p-2 rounded-full backdrop-blur-sm transition-colors"
                         >
                             <X size={20} />
                         </button>
 
-                        {/* Media Display Panel (Left) */}
-                        <div className="w-full md:w-1/2 bg-black flex items-center justify-center relative min-h-[300px] md:min-h-0">
-                            {selectedMedia.media_type === 'VIDEO' ? (
-                                <video 
-                                    src={selectedMedia.media_url} 
-                                    controls 
-                                    autoPlay 
-                                    className="w-full h-full max-h-[45vh] md:max-h-[85vh] object-contain"
-                                />
-                            ) : (
-                                <img 
-                                    src={selectedMedia.media_url} 
-                                    alt="Instagram post display" 
-                                    className="w-full h-full max-h-[45vh] md:max-h-[85vh] object-contain"
-                                />
-                            )}
+                        {/* Media Display Panel (Left) - Dark slate background */}
+                        <div className="w-full md:w-1/2 bg-[#1b2234] flex flex-col justify-center p-6 relative min-h-[380px] md:min-h-0 border-r border-[#27272a]/20">
+                            {/* Media Player Container */}
+                            <div className="relative flex-1 flex items-center justify-center rounded-xl overflow-hidden bg-black/40 aspect-[3/4] md:aspect-auto md:max-h-[75vh]">
+                                {selectedMedia.media_type === 'VIDEO' ? (
+                                    <video 
+                                        ref={videoRef}
+                                        src={selectedMedia.media_url} 
+                                        controls={false} 
+                                        autoPlay 
+                                        loop
+                                        onTimeUpdate={handleTimeUpdate}
+                                        onClick={togglePlay}
+                                        className="w-full h-full object-contain cursor-pointer"
+                                    />
+                                ) : (
+                                    <img 
+                                        src={selectedMedia.media_url} 
+                                        alt="Instagram post display" 
+                                        className="w-full h-full object-contain"
+                                    />
+                                )}
+
+                                {/* Custom Center Play/Pause Overlay Button */}
+                                {selectedMedia.media_type === 'VIDEO' && (
+                                    <button 
+                                        onClick={togglePlay}
+                                        className={`absolute inset-0 m-auto w-14 h-14 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center transition-all duration-300 transform backdrop-blur-[2px] z-10 ${isPlaying ? 'opacity-0 scale-75 pointer-events-none' : 'opacity-100 scale-100 shadow-lg'}`}
+                                    >
+                                        <Play size={24} className="fill-white translate-x-[2px]" />
+                                    </button>
+                                )}
+
+                                {/* Custom Floating Volume/Speaker Control */}
+                                {selectedMedia.media_type === 'VIDEO' && (
+                                    <button 
+                                        onClick={toggleMute}
+                                        className="absolute top-4 left-4 z-10 bg-black/50 hover:bg-black/75 text-white p-2 rounded-full backdrop-blur-sm transition-colors shadow-md border border-white/10"
+                                        title={isMuted ? "Unmute" : "Mute"}
+                                    >
+                                        {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                                    </button>
+                                )}
+
+                                {/* Overlay Caption on the video on the left bottom corner */}
+                                <div className="absolute bottom-0 left-0 right-0 p-5 pb-7 bg-gradient-to-t from-black/95 via-black/65 to-transparent flex flex-col justify-end text-left pointer-events-none select-none z-10">
+                                    <span className="text-[11px] uppercase tracking-widest text-[#94a3b8] font-extrabold block mb-1">Caption</span>
+                                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-wide leading-relaxed line-clamp-3 select-text pointer-events-auto max-h-[120px] overflow-y-auto scrollbar-none">
+                                        {selectedMedia.caption || <span className="italic text-gray-400">No caption.</span>}
+                                    </h2>
+                                    <div className="flex items-center gap-1.5 text-xs text-gray-300 font-medium mt-2.5">
+                                        <Calendar size={13} className="text-gray-300" />
+                                        <span>
+                                            {selectedMedia.timestamp ? new Date(selectedMedia.timestamp).toLocaleDateString('en-US', {
+                                                weekday: 'short',
+                                                month: 'long',
+                                                day: 'numeric',
+                                                year: 'numeric'
+                                            }) : 'N/A'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Custom Progress Bar at the very bottom of the media player container */}
+                                {selectedMedia.media_type === 'VIDEO' && (
+                                    <div 
+                                        className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/25 cursor-pointer overflow-hidden backdrop-blur-[1px] hover:h-2 transition-all duration-200 z-10"
+                                        onClick={handleProgressClick}
+                                    >
+                                        <div 
+                                            className="h-full bg-gradient-to-r from-pink-500 via-rose-500 to-orange-500 transition-all duration-75"
+                                            style={{ width: `${videoProgress}%` }}
+                                        />
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
-                        {/* Performance Details Panel (Right) */}
-                        <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col bg-white overflow-y-auto max-h-[45vh] md:max-h-[85vh]">
+                        {/* Performance Details Panel (Right) - Lighter Dark Charcoal background */}
+                        <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col bg-[#121214] text-white overflow-y-auto max-h-[55vh] md:max-h-[85vh] scrollbar-thin">
                             {/* Modal Header */}
-                            <div className="hidden md:flex items-center justify-between pb-4 border-b border-gray-100 mb-6 flex-shrink-0">
-                                <div className="flex items-center gap-2 text-pink-600">
-                                    <Instagram size={20} />
-                                    <h3 className="font-bebas tracking-wide text-xl text-deep-black">Post Metrics Analysis</h3>
+                            <div className="hidden md:flex items-center justify-between pb-4 border-b border-[#27272a]/40 mb-5 flex-shrink-0">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-gradient-to-tr from-pink-500 via-red-500 to-orange-500 rounded-xl flex items-center justify-center text-white shadow-md shadow-pink-500/10">
+                                        <Instagram size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-base text-white leading-tight">Post metrics</h3>
+                                        <span className="text-xs text-gray-400">Instagram Insights</span>
+                                    </div>
                                 </div>
-                                <button onClick={() => setSelectedMedia(null)} className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors">
+                                <button onClick={() => setSelectedMedia(null)} className="text-gray-400 hover:text-white p-1.5 rounded-full hover:bg-[#202024] transition-colors">
                                     <X size={20} />
                                 </button>
                             </div>
 
-                            {/* Caption & Info */}
-                            <div className="space-y-4 mb-6">
-                                <div>
-                                    <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Published On</span>
-                                    <p className="text-sm font-semibold text-gray-800">
-                                        {selectedMedia.timestamp ? new Date(selectedMedia.timestamp).toLocaleDateString('en-US', {
-                                            weekday: 'long',
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric'
-                                        }) : 'N/A'}
-                                    </p>
-                                </div>
-                                <div>
-                                    <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Caption</span>
-                                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap max-h-[120px] overflow-y-auto bg-gray-50 p-3 rounded-xl border border-gray-100 mt-1 scrollbar-thin">
-                                        {selectedMedia.caption || <span className="italic text-gray-400">No caption.</span>}
-                                    </p>
-                                </div>
-                            </div>
-
                             {/* Performance Grid */}
-                            <div className="space-y-5 border-t border-gray-100 pt-6">
-                                <h4 className="text-xs uppercase tracking-wider font-bold text-gray-400">Instagram Insights</h4>
-                                
+                            <div className="space-y-5">
                                 {mediaMetricsLoading ? (
-                                    <div className="flex flex-col items-center justify-center py-6 text-gray-400">
+                                    <div className="flex flex-col items-center justify-center py-12 text-gray-400">
                                         <Loader2 className="w-6 h-6 animate-spin text-pink-500 mb-2" />
                                         <p className="text-xs">Fetching real-time metrics...</p>
                                     </div>
                                 ) : selectedMediaMetrics ? (
-                                    <div className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-3.5">
-                                            {/* Reach */}
-                                            <div className="bg-orange-50/60 p-4 rounded-xl border border-orange-100/50 flex flex-col justify-between">
-                                                <span className="text-xs text-gray-500 font-medium">Reach</span>
-                                                <span className="text-xl font-bold text-orange-600 mt-1">{selectedMediaMetrics.reach?.toLocaleString() || '--'}</span>
+                                    <div className="space-y-6">
+                                        {/* Reach & Views Section */}
+                                        <div className="space-y-3">
+                                            <h4 className="text-[10px] uppercase tracking-wider font-bold text-gray-500">Reach & Views</h4>
+                                            <div className="grid grid-cols-2 gap-3.5">
+                                                {/* Reach */}
+                                                <div className="bg-[#1e1e22] border border-[#2e2e34]/30 rounded-xl p-4 flex flex-col justify-between hover:border-[#2e2e34]/60 transition-all duration-300 group">
+                                                    <BarChart2 className="w-5 h-5 text-orange-500 mb-2 group-hover:scale-105 transition-transform" />
+                                                    <span className="text-xs text-gray-400 font-medium">Reach</span>
+                                                    <span className="text-xl font-bold text-orange-500 mt-1">{selectedMediaMetrics.reach?.toLocaleString() || '--'}</span>
+                                                </div>
+                                                {/* Impressions/Views */}
+                                                <div className="bg-[#1e1e22] border border-[#2e2e34]/30 rounded-xl p-4 flex flex-col justify-between hover:border-[#2e2e34]/60 transition-all duration-300 group">
+                                                    <Eye className="w-5 h-5 text-blue-500 mb-2 group-hover:scale-105 transition-transform" />
+                                                    <span className="text-xs text-gray-400 font-medium">Views / Impressions</span>
+                                                    <span className="text-xl font-bold text-blue-500 mt-1">{selectedMediaMetrics.views?.toLocaleString() || '--'}</span>
+                                                </div>
                                             </div>
-                                            {/* Impressions/Views */}
-                                            <div className="bg-blue-50/60 p-4 rounded-xl border border-blue-100/50 flex flex-col justify-between">
-                                                <span className="text-xs text-gray-500 font-medium">Views / Impressions</span>
-                                                <span className="text-xl font-bold text-blue-600 mt-1">{selectedMediaMetrics.views?.toLocaleString() || '--'}</span>
-                                            </div>
-                                            {/* Interactions */}
-                                            <div className="bg-pink-50/60 p-4 rounded-xl border border-pink-100/50 flex flex-col justify-between">
-                                                <span className="text-xs text-gray-500 font-medium">Interactions</span>
-                                                <span className="text-xl font-bold text-pink-600 mt-1">{selectedMediaMetrics.total_interactions?.toLocaleString() || '--'}</span>
-                                            </div>
-                                            {/* Shares */}
-                                            <div className="bg-green-50/60 p-4 rounded-xl border border-green-100/50 flex flex-col justify-between">
-                                                <span className="text-xs text-gray-500 font-medium">Shares</span>
-                                                <span className="text-xl font-bold text-green-600 mt-1">{selectedMediaMetrics.shares?.toLocaleString() || '--'}</span>
+                                        </div>
+
+                                        {/* Engagement Section */}
+                                        <div className="space-y-3">
+                                            <h4 className="text-[10px] uppercase tracking-wider font-bold text-gray-500">Engagement</h4>
+                                            <div className="grid grid-cols-2 gap-3.5">
+                                                {/* Interactions */}
+                                                <div className="bg-[#1e1e22] border border-[#2e2e34]/30 rounded-xl p-4 flex flex-col justify-between hover:border-[#2e2e34]/60 transition-all duration-300 group">
+                                                    <Heart className="w-5 h-5 text-pink-500 mb-2 group-hover:scale-105 transition-transform" />
+                                                    <span className="text-xs text-gray-400 font-medium">Interactions</span>
+                                                    <span className="text-xl font-bold text-pink-500 mt-1">{selectedMediaMetrics.total_interactions?.toLocaleString() || '--'}</span>
+                                                </div>
+                                                {/* Shares */}
+                                                <div className="bg-[#1e1e22] border border-[#2e2e34]/30 rounded-xl p-4 flex flex-col justify-between hover:border-[#2e2e34]/60 transition-all duration-300 group">
+                                                    <Share2 className="w-5 h-5 text-green-500 mb-2 group-hover:scale-105 transition-transform" />
+                                                    <span className="text-xs text-gray-400 font-medium">Shares</span>
+                                                    <span className="text-xl font-bold text-green-500 mt-1">{selectedMediaMetrics.shares?.toLocaleString() || '0'}</span>
+                                                </div>
+                                                {/* Saved */}
+                                                {selectedMediaMetrics.saved !== undefined && (
+                                                    <div className="bg-[#1e1e22] border border-[#2e2e34]/30 rounded-xl p-4 flex flex-col justify-between hover:border-[#2e2e34]/60 transition-all duration-300 group">
+                                                        <Bookmark className="w-5 h-5 text-purple-500 mb-2 group-hover:scale-105 transition-transform" />
+                                                        <span className="text-xs text-gray-400 font-medium">Saved</span>
+                                                        <span className="text-xl font-bold text-purple-500 mt-1">{selectedMediaMetrics.saved?.toLocaleString() ?? '0'}</span>
+                                                    </div>
+                                                )}
+                                                {/* Reels Skip Rate */}
+                                                {selectedMediaMetrics.reels_skip_rate !== undefined && (
+                                                    <div className="bg-[#1e1e22] border border-[#2e2e34]/30 rounded-xl p-4 flex flex-col justify-between hover:border-[#2e2e34]/60 transition-all duration-300 group">
+                                                        <SkipForward className="w-5 h-5 text-rose-500 mb-2 group-hover:scale-105 transition-transform" />
+                                                        <span className="text-xs text-gray-400 font-medium">Skip rate</span>
+                                                        <span className="text-xl font-bold text-rose-500 mt-1">
+                                                            {selectedMediaMetrics.reels_skip_rate !== null ? `${selectedMediaMetrics.reels_skip_rate}%` : '--'}
+                                                        </span>
+                                                        {selectedMediaMetrics.reels_skip_rate !== null && (
+                                                            <div className="w-full h-1 bg-gray-700/60 rounded-full mt-2 overflow-hidden">
+                                                                <div 
+                                                                    className="h-full bg-rose-500 rounded-full"
+                                                                    style={{ width: `${Math.min(selectedMediaMetrics.reels_skip_rate, 100)}%` }}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {/* Avg Watch Time */}
+                                                {selectedMediaMetrics.ig_reels_avg_watch_time !== undefined && (
+                                                    <div className="bg-[#1e1e22] border border-[#2e2e34]/30 rounded-xl p-4 flex flex-col justify-between hover:border-[#2e2e34]/60 transition-all duration-300 group">
+                                                        <Clock className="w-5 h-5 text-indigo-500 mb-2 group-hover:scale-105 transition-transform" />
+                                                        <span className="text-xs text-gray-400 font-medium">Avg Watch Time</span>
+                                                        <span className="text-xl font-bold text-indigo-500 mt-1">
+                                                            {selectedMediaMetrics.ig_reels_avg_watch_time !== null ? `${(selectedMediaMetrics.ig_reels_avg_watch_time / 1000).toFixed(2)}s` : '--'}
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
                                         {/* Engagement Rate Card */}
                                         {selectedMediaMetrics.reach > 0 && (
-                                            <div className="bg-gradient-to-br from-pink-500/5 to-orange-500/5 border border-pink-500/10 rounded-2xl p-4 mt-2">
+                                            <div className="bg-[#1e1e22]/50 border border-[#2e2e34]/30 rounded-xl p-4 mt-3">
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <span className="text-xs font-semibold text-pink-600 flex items-center gap-1.5">
+                                                    <span className="text-xs font-semibold text-pink-500 flex items-center gap-1.5">
                                                         <TrendingUp size={14} />
                                                         Engagement Rate
                                                     </span>
-                                                    <span className="text-lg font-bebas tracking-wider text-pink-600">
+                                                    <span className="text-lg font-bold text-pink-500">
                                                         {((selectedMediaMetrics.total_interactions / selectedMediaMetrics.reach) * 100).toFixed(2)}%
                                                     </span>
                                                 </div>
-                                                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                                                <div className="w-full h-2 bg-[#2d2d34] rounded-full overflow-hidden">
                                                     <div 
                                                         className="h-full bg-gradient-to-r from-pink-500 to-orange-500 rounded-full"
                                                         style={{ width: `${Math.min(((selectedMediaMetrics.total_interactions / selectedMediaMetrics.reach) * 100) * 5, 100)}%` }} // Scaled visual representation
                                                     />
                                                 </div>
-                                                <p className="text-[10px] text-gray-400 mt-1.5">Interactions / Reach * 100</p>
+                                                <p className="text-[9px] text-gray-500 mt-1.5">Calculated: Interactions / Reach * 100</p>
                                             </div>
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="bg-gray-50 p-4 rounded-xl text-center text-xs text-gray-500 border border-gray-100">
+                                    <div className="bg-[#1e1e22] p-4 rounded-xl text-center text-xs text-gray-400 border border-[#2e2e34]/30">
                                         Insights metrics are currently unavailable for this post. Make sure your business profile is synchronized.
                                     </div>
                                 )}
                             </div>
 
                             {/* Share Report & Actions (Footer) */}
-                            <div className="mt-8 pt-6 border-t border-gray-100 space-y-3 flex-shrink-0">
+                            <div className="mt-8 pt-6 border-t border-[#27272a]/40 space-y-3 flex-shrink-0">
                                 <button
                                     onClick={() => handleCopyLink(null, selectedMedia.id, true)}
                                     className="w-full py-3 px-4 bg-gradient-to-r from-pink-500 to-orange-500 hover:opacity-95 text-white font-semibold rounded-xl transition-all shadow-md shadow-pink-500/10 active:scale-[0.98] flex items-center justify-center gap-2 text-sm"
@@ -429,7 +574,7 @@ const MediaReports = () => {
                                     href={getShareUrl(selectedMedia.id)} 
                                     target="_blank" 
                                     rel="noreferrer"
-                                    className="w-full py-2.5 px-4 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-gray-700 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
+                                    className="w-full py-2.5 px-4 bg-[#1e1e22] border border-[#2e2e34]/60 hover:bg-[#25252b] text-gray-200 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
                                 >
                                     <ExternalLink size={15} />
                                     Open Public Report Page

@@ -12,6 +12,7 @@ import api from '../../utils/api';
 const AddEventModal = ({ isOpen, onClose, onSuccess }) => {
     const [isClosing, setIsClosing] = useState(false);
     const [scheduleType, setScheduleType] = useState('shoot'); // 'shoot' or 'upload'
+    const [collaborationType, setCollaborationType] = useState('brand'); // 'brand' or 'own'
     const [submitting, setSubmitting] = useState(false);
     const [formData, setFormData] = useState({
         brandName: '',
@@ -79,7 +80,7 @@ const AddEventModal = ({ isOpen, onClose, onSuccess }) => {
                     shoot_time: formData.time ? utcTime : null,
                     location: formData.location || null,
                     name: formData.campaign || null,
-                    brand_name: formData.brandName || null,
+                    brand_name: collaborationType === 'brand' ? (formData.brandName || null) : 'Own Content',
                     notes: formData.notes || null,
                 });
             } else {
@@ -88,13 +89,14 @@ const AddEventModal = ({ isOpen, onClose, onSuccess }) => {
                     upload_time: formData.time ? utcTime : null,
                     name: formData.campaign || null,
                     platform: formData.platform || null,
-                    brand_name: formData.brandName || null,
+                    brand_name: collaborationType === 'brand' ? (formData.brandName || null) : 'Own Content',
                     notes: formData.notes || null,
                 });
             }
 
             if (onSuccess) onSuccess(`${scheduleType === 'shoot' ? 'Shoot' : 'Upload'} scheduled successfully!`);
             handleClose();
+            setCollaborationType('brand');
             setFormData({
                 brandName: '',
                 campaign: '',
@@ -160,38 +162,77 @@ const AddEventModal = ({ isOpen, onClose, onSuccess }) => {
                         </button>
                     </div>
 
+                    {/* Collaboration Type Toggle Switch */}
+                    <div className="flex items-center gap-3 mb-6 bg-gray-50/50 p-2.5 rounded-xl border border-gray-200/50 w-fit select-none">
+                        <span className={`text-xs font-semibold transition-colors ${collaborationType === 'brand' ? 'text-primary-orange' : 'text-gray-400'}`}>
+                            Brand Collaboration
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => setCollaborationType(collaborationType === 'brand' ? 'own' : 'brand')}
+                            className={`w-9 h-5 flex items-center rounded-full p-0.5 cursor-pointer transition-colors duration-300 focus:outline-none ${collaborationType === 'own' ? 'bg-gray-700' : 'bg-primary-orange'}`}
+                            aria-label="Toggle Collaboration Type"
+                        >
+                            <div
+                                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${collaborationType === 'own' ? 'translate-x-4' : 'translate-x-0'}`}
+                            />
+                        </button>
+                        <span className={`text-xs font-semibold transition-colors ${collaborationType === 'own' ? 'text-gray-800' : 'text-gray-400'}`}>
+                            Your Own Content
+                        </span>
+                    </div>
+
                     {/* Form */}
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="md:col-span-1">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Brand Name *
-                                </label>
-                                <input
-                                    type="text"
-                                    name="brandName"
-                                    value={formData.brandName}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent"
-                                    placeholder="Enter brand name"
-                                />
-                            </div>
+                            {collaborationType === 'brand' ? (
+                                <>
+                                    <div className="md:col-span-1">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Brand Name *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="brandName"
+                                            value={formData.brandName}
+                                            onChange={handleInputChange}
+                                            required={collaborationType === 'brand'}
+                                            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent"
+                                            placeholder="Enter brand name"
+                                        />
+                                    </div>
 
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Campaign Name *
-                                </label>
-                                <input
-                                    type="text"
-                                    name="campaign"
-                                    value={formData.campaign}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent"
-                                    placeholder="Enter campaign name"
-                                />
-                            </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Campaign Name *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="campaign"
+                                            value={formData.campaign}
+                                            onChange={handleInputChange}
+                                            required
+                                            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent"
+                                            placeholder="Enter campaign name"
+                                        />
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="md:col-span-3">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Content Title *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="campaign"
+                                        value={formData.campaign}
+                                        onChange={handleInputChange}
+                                        required
+                                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent"
+                                        placeholder="Enter content title or description"
+                                    />
+                                </div>
+                            )}
 
                             <div>
                                 <DateInput
