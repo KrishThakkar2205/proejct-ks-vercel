@@ -353,176 +353,173 @@ const PublicPortfolio = () => {
     const totalReviews = portfolio.total_reviews || reviews.length;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-orange-50">
+        <div className="min-h-screen bg-[#fafafc] relative overflow-hidden pb-16">
+            {/* Ambient Background Decorative Blobs */}
+            <div className="absolute top-[-10%] left-[-10%] w-[50%] aspect-square rounded-full bg-gradient-to-br from-orange-300/10 to-pink-300/10 blur-[120px] pointer-events-none" />
+            <div className="absolute top-[35%] right-[-10%] w-[45%] aspect-square rounded-full bg-gradient-to-br from-pink-300/10 to-purple-300/10 blur-[120px] pointer-events-none" />
+            <div className="absolute bottom-[10%] left-[-5%] w-[40%] aspect-square rounded-full bg-gradient-to-br from-blue-300/5 to-orange-300/5 blur-[100px] pointer-events-none" />
+
             {/* Hero Section */}
-            <div className="relative text-white py-16 px-6 overflow-hidden">
-                {/* Blurred background image */}
-                {profilePicture ? (
-                    <div
-                        className="absolute inset-0 scale-110"
-                        style={{
-                            backgroundImage: `url(${API_BASE_URL}/${profilePicture})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            filter: 'blur(20px) brightness(0.6)',
-                        }}
-                    />
-                ) : (
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary-orange to-orange-600" />
-                )}
-                {/* Semi-transparent overlay for readability */}
-                <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-primary-orange/40" />
-                <div className="max-w-6xl mx-auto relative z-10">
-                    <div className="flex flex-col md:flex-row items-center gap-8">
-                        {/* Profile Image */}
-                        <div 
-                            className={`w-32 h-32 bg-white rounded-full flex items-center justify-center text-primary-orange text-5xl font-bold shadow-2xl overflow-hidden transition-all duration-300 ${profilePicture ? 'cursor-pointer hover:scale-105 hover:shadow-orange-500/20 active:scale-95' : ''}`}
-                            onClick={() => profilePicture && setIsProfilePicLightboxOpen(true)}
-                        >
-                            {profilePicture ? (
-                                <img src={`${API_BASE_URL}/${profilePicture}`} alt={name} className="w-full h-full object-cover" />
-                            ) : (
-                                name.charAt(0)
-                            )}
+            <div className="max-w-6xl mx-auto px-6 pt-8 relative z-10">
+                <div className="relative rounded-3xl overflow-hidden border border-white/20 shadow-xl bg-gradient-to-r from-deep-black via-gray-900 to-deep-black text-white p-8 md:p-12">
+                    {/* Background image overlay */}
+                    {profilePicture ? (
+                        <div
+                            className="absolute inset-0 scale-105 opacity-25 pointer-events-none"
+                            style={{
+                                backgroundImage: `url(${API_BASE_URL}/${profilePicture})`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                filter: 'blur(30px)',
+                            }}
+                        />
+                    ) : (
+                        <div className="absolute inset-0 bg-gradient-to-tr from-primary-orange/20 to-pink-500/20 opacity-30 pointer-events-none" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-deep-black via-transparent to-transparent opacity-85" />
+
+                    <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 md:gap-12">
+                        {/* Profile Image with animated gradient ring */}
+                        <div className="relative group shrink-0">
+                            <div className="absolute -inset-1 bg-gradient-to-r from-primary-orange via-pink-500 to-purple-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-500"></div>
+                            <div 
+                                className={`relative w-36 h-36 bg-gray-950 rounded-full flex items-center justify-center text-primary-orange text-5xl font-bold shadow-2xl overflow-hidden cursor-pointer hover:scale-[1.03] active:scale-95 transition-all duration-300`}
+                                onClick={() => profilePicture && setIsProfilePicLightboxOpen(true)}
+                            >
+                                {profilePicture ? (
+                                    <img src={`${API_BASE_URL}/${profilePicture}`} alt={name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                ) : (
+                                    name.charAt(0)
+                                )}
+                            </div>
                         </div>
 
-                        {/* Profile Info */}
-                        <div className="flex-1 text-center md:text-left">
-                            <h1 className="text-4xl md:text-5xl font-bebas tracking-wide mb-2">{name}</h1>
-                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-4">
-                                {location && (
-                                    <div className="flex items-center gap-2">
-                                        <MapPin size={18} />
-                                        <span className="text-orange-100">{location}</span>
-                                    </div>
-                                )}
-                                <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                        {/* Profile Details */}
+                        <div className="flex-1 text-center md:text-left flex flex-col justify-between h-full space-y-4">
+                            <div>
+                                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-2">
                                     {categoryList.map((cat, idx) => (
-                                        <Badge key={idx} className="bg-white/20 text-white border-white/30">
+                                        <Badge key={idx} className="bg-white/10 text-white border-white/20 uppercase tracking-widest text-[9px] font-bold px-2.5 py-0.5">
                                             {cat}
                                         </Badge>
                                     ))}
                                 </div>
+                                <h1 className="text-4xl md:text-6xl font-bebas tracking-wide text-white mb-2 leading-none">{name}</h1>
+                                
+                                {location && (
+                                    <div className="flex items-center justify-center md:justify-start gap-1.5 text-gray-300 text-sm mb-3">
+                                        <MapPin size={15} className="text-primary-orange" />
+                                        <span>{location}</span>
+                                    </div>
+                                )}
+                                
+                                {bio && <p className="text-gray-300 text-sm md:text-base max-w-2xl font-light leading-relaxed">{bio}</p>}
                             </div>
-                            {bio && <p className="text-lg text-orange-100 max-w-2xl">{bio}</p>}
+
+                            {/* Direct Connect in Hero */}
+                            <div className="pt-2 flex justify-center md:justify-start">
+                                <Button
+                                    variant="primary"
+                                    onClick={openCollaborationModal}
+                                    className="px-6 py-2.5 bg-gradient-to-r from-primary-orange to-pink-500 hover:from-orange-500 hover:to-pink-600 border-none text-white font-semibold rounded-xl shadow-lg shadow-orange-500/20 active:scale-[0.98] transition-all flex items-center gap-2 group text-xs sm:text-sm"
+                                >
+                                    <span>Let's Collaborate</span>
+                                    <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                    </svg>
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Main Content */}
-            <div className="max-w-6xl mx-auto px-6 py-12 space-y-12">
+            <div className="max-w-6xl mx-auto px-6 py-12 space-y-12 relative z-10">
 
-                {/* Social Media Reach */}
-                <div>
-                    <h2 className="text-3xl font-bebas tracking-wide text-deep-black mb-6">Social Media Reach</h2>
-                    <div className="grid grid-cols-1 gap-6">
-                        {/* Instagram Card */}
-                        <Card className="p-6 border border-pink-200 bg-gradient-to-br from-pink-50 to-orange-50">
-                            <div className="flex items-center gap-3 mb-5">
-                                <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-orange-500 rounded-lg flex items-center justify-center">
-                                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+                {/* Social Performance & Highlights */}
+                <div className="space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div>
+                            <h2 className="text-3xl font-bebas tracking-wide text-deep-black">Social Reach & Highlights</h2>
+                            <p className="text-xs text-gray-500 mt-0.5">Key Instagram account stats for the last 30 days</p>
+                        </div>
+                        {instaMetrics && (
+                            <Badge variant="outline" className="bg-pink-50/50 text-pink-600 border-pink-100/60 flex items-center gap-1.5 px-3 py-1 font-semibold text-xs self-start sm:self-auto">
+                                <span className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-pulse"></span>
+                                @{instaMetrics.username}
+                            </Badge>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+                        {/* Followers Card */}
+                        <Card className="p-4 sm:p-5 bg-white border border-gray-100 hover:border-orange-200 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 group rounded-2xl">
+                            <div className="flex items-center justify-between mb-4">
+                                <span className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider">Followers</span>
+                                <div className="w-8 h-8 rounded-lg bg-orange-50 text-primary-orange flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                                     </svg>
                                 </div>
-                                <div>
-                                    <h3 className="font-bebas tracking-wide text-deep-black">
-                                        Instagram {instaMetrics && <span className="text-gray-500 font-sans font-normal text-sm ml-2">@{instaMetrics.username}</span>}
-                                    </h3>
-                                    <p className="text-xs text-gray-500">Last 30 days (Excl. today)</p>
-                                </div>
                             </div>
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-gray-600">Followers</span>
-                                    {metricsLoading ? <Loader2 size={16} className="animate-spin text-gray-400" /> : (
-                                        <span className="font-semibold text-deep-black">
-                                            {instaMetrics ? instaMetrics.followers_count.toLocaleString() : '--'}
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-gray-600">Engagement Rate</span>
-                                    {metricsLoading ? <Loader2 size={16} className="animate-spin text-gray-400" /> : (
-                                        <span className="font-semibold text-pink-500">
-                                            {instaMetrics && instaMetrics.reach > 0
-                                                ? ((instaMetrics.total_interactions / instaMetrics.reach) * 100).toFixed(2) + '%'
-                                                : '--'}
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-gray-600">Total Interactions</span>
-                                    {metricsLoading ? <Loader2 size={16} className="animate-spin text-gray-400" /> : (
-                                        <span className="font-semibold text-deep-black">
-                                            {instaMetrics ? instaMetrics.total_interactions.toLocaleString() : '--'}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
+                            <h3 className="text-2xl sm:text-3xl font-bold font-bebas text-deep-black leading-none">
+                                {metricsLoading ? <Loader2 size={20} className="animate-spin text-gray-400" /> : (instaMetrics ? instaMetrics.followers_count.toLocaleString() : '--')}
+                            </h3>
+                            <p className="text-[9px] sm:text-[10px] text-gray-400 mt-2 font-medium">Total active audience size</p>
                         </Card>
-                    </div>
-                </div>
 
-                {/* Performance Highlights */}
-                <div>
-                    <div className="mb-6">
-                        <h2 className="text-3xl font-bebas tracking-wide text-deep-black">Performance Highlights</h2>
-                        <p className="text-sm text-gray-500 mt-1">Last 30 days (excluding today)</p>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {/* Total Reach */}
-                        <Card className="p-5 text-center bg-orange-50">
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-                                <svg className="w-7 h-7 text-primary-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-                                </svg>
+                        {/* Total Reach Card */}
+                        <Card className="p-4 sm:p-5 bg-white border border-gray-100 hover:border-pink-200 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 group rounded-2xl">
+                            <div className="flex items-center justify-between mb-4">
+                                <span className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider">Total Reach</span>
+                                <div className="w-8 h-8 rounded-lg bg-pink-50 text-pink-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                </div>
                             </div>
-                            <p className="text-2xl font-bebas tracking-wide text-deep-black">
-                                {metricsLoading ? <Loader2 size={24} className="animate-spin text-gray-400 mx-auto" /> : (instaMetrics ? instaMetrics.reach.toLocaleString() : '--')}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">Total Reach</p>
+                            <h3 className="text-2xl sm:text-3xl font-bold font-bebas text-deep-black leading-none">
+                                {metricsLoading ? <Loader2 size={20} className="animate-spin text-gray-400" /> : (instaMetrics ? instaMetrics.reach.toLocaleString() : '--')}
+                            </h3>
+                            <p className="text-[9px] sm:text-[10px] text-gray-400 mt-2 font-medium">Unique accounts reached</p>
                         </Card>
-                        {/* Avg Engagement */}
-                        <Card className="p-5 text-center bg-pink-50">
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-                                <svg className="w-7 h-7 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
-                                </svg>
+
+                        {/* Avg Engagement Rate */}
+                        <Card className="p-4 sm:p-5 bg-white border border-gray-100 hover:border-purple-200 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 group rounded-2xl">
+                            <div className="flex items-center justify-between mb-4">
+                                <span className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider">Engagement</span>
+                                <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                    </svg>
+                                </div>
                             </div>
-                            <p className="text-2xl font-bebas tracking-wide text-deep-black">
-                                {metricsLoading ? <Loader2 size={24} className="animate-spin text-gray-400 mx-auto" /> : (
+                            <h3 className="text-2xl sm:text-3xl font-bold font-bebas text-deep-black leading-none">
+                                {metricsLoading ? <Loader2 size={20} className="animate-spin text-gray-400" /> : (
                                     instaMetrics && instaMetrics.reach > 0
                                         ? ((instaMetrics.total_interactions / instaMetrics.reach) * 100).toFixed(2) + '%'
                                         : '--'
                                 )}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">Avg Engagement</p>
+                            </h3>
+                            <p className="text-[9px] sm:text-[10px] text-gray-400 mt-2 font-medium">Interactions/Reach ratio</p>
                         </Card>
-                        {/* Accounts Engaged */}
-                        <Card className="p-5 text-center bg-green-50">
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-                                <svg className="w-7 h-7 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-                                </svg>
+
+                        {/* Total Views */}
+                        <Card className="p-4 sm:p-5 bg-white border border-gray-100 hover:border-blue-200 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 group rounded-2xl">
+                            <div className="flex items-center justify-between mb-4">
+                                <span className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider">Total Views</span>
+                                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
                             </div>
-                            <p className="text-2xl font-bebas tracking-wide text-deep-black">
-                                {metricsLoading ? <Loader2 size={24} className="animate-spin text-gray-400 mx-auto" /> : (instaMetrics ? instaMetrics.accounts_engaged.toLocaleString() : '--')}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">Accounts Engaged</p>
-                        </Card>
-                        {/* Views */}
-                        <Card className="p-5 text-center bg-blue-50">
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-                                <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                            </div>
-                            <p className="text-2xl font-bebas tracking-wide text-deep-black">
-                                {metricsLoading ? <Loader2 size={24} className="animate-spin text-gray-400 mx-auto" /> : (instaMetrics ? instaMetrics.views.toLocaleString() : '--')}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">Total Views</p>
+                            <h3 className="text-2xl sm:text-3xl font-bold font-bebas text-deep-black leading-none">
+                                {metricsLoading ? <Loader2 size={20} className="animate-spin text-gray-400" /> : (instaMetrics ? instaMetrics.views.toLocaleString() : '--')}
+                            </h3>
+                            <p className="text-[9px] sm:text-[10px] text-gray-400 mt-2 font-medium">Video content plays</p>
                         </Card>
                     </div>
                 </div>
@@ -531,34 +528,45 @@ const PublicPortfolio = () => {
                 {instaMetrics?.engaged_audience_demographics_city && instaMetrics.engaged_audience_demographics_city.length > 0 && (
                     <div>
                         <h2 className="text-3xl font-bebas tracking-wide text-deep-black mb-6">Audience Demographics</h2>
-                        <Card className="p-6 border border-orange-100 bg-gradient-to-br from-white to-orange-50/30">
-                            <div className="flex items-center gap-2 mb-6">
-                                <div className="w-10 h-10 bg-gradient-to-br from-primary-orange to-orange-600 rounded-lg flex items-center justify-center text-white shadow-md">
+                        <Card className="p-6 md:p-8 border border-gray-100 bg-white shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 bg-gradient-to-tr from-primary-orange to-pink-500 rounded-xl flex items-center justify-center text-white shadow-md shadow-orange-500/10">
                                     <MapPin size={20} />
                                 </div>
                                 <div>
-                                    <h3 className="font-bebas tracking-wide text-deep-black text-xl">Top Engaged Cities</h3>
-                                    <p className="text-xs text-gray-500">Distribution of engaged audience by city</p>
+                                    <h3 className="font-bebas tracking-wide text-deep-black text-xl leading-tight">Top Engaged Cities</h3>
+                                    <p className="text-xs text-gray-500">Distribution of engaged audience by city location</p>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
-                                {instaMetrics.engaged_audience_demographics_city.map((item, idx) => (
-                                    <div key={idx} className="space-y-2">
-                                        <div className="flex justify-between items-center text-sm">
-                                            <span className="font-semibold text-gray-700 flex items-center gap-1.5">
-                                                <span className="inline-block w-2 h-2 rounded-full bg-primary-orange"></span>
-                                                {item.city}
-                                            </span>
-                                            <span className="font-bold text-primary-orange">{item.percentage}%</span>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-5">
+                                {instaMetrics.engaged_audience_demographics_city.map((item, idx) => {
+                                    const gradients = [
+                                        'from-orange-500 to-amber-500',
+                                        'from-pink-500 to-rose-500',
+                                        'from-purple-500 to-indigo-500',
+                                        'from-blue-500 to-cyan-500',
+                                        'from-teal-500 to-emerald-500'
+                                    ];
+                                    const gradClass = gradients[idx % gradients.length];
+                                    
+                                    return (
+                                        <div key={idx} className="space-y-1.5">
+                                            <div className="flex justify-between items-center text-xs">
+                                                <span className="font-semibold text-gray-700 flex items-center gap-1.5">
+                                                    <span className={`inline-block w-2.5 h-2.5 rounded-full bg-gradient-to-r ${gradClass}`}></span>
+                                                    {item.city}
+                                                </span>
+                                                <span className="font-bold text-gray-800">{item.percentage}%</span>
+                                            </div>
+                                            <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+                                                <div
+                                                    className={`h-full bg-gradient-to-r ${gradClass} rounded-full transition-all duration-1000 ease-out`}
+                                                    style={{ width: `${item.percentage}%` }}
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner">
-                                            <div
-                                                className="h-full bg-gradient-to-r from-primary-orange to-orange-500 rounded-full transition-all duration-1000 ease-out"
-                                                style={{ width: `${item.percentage}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </Card>
                     </div>
@@ -567,16 +575,16 @@ const PublicPortfolio = () => {
                 {/* Recent Content Performance */}
                 <div>
                     <h2 className="text-3xl font-bebas tracking-wide text-deep-black mb-6">Recent Content Performance</h2>
-                    <Card className="p-6">
-                        <div className="flex items-center gap-2 mb-4">
+                    <Card className="p-6 border border-gray-100 bg-white rounded-2xl shadow-sm">
+                        <div className="flex items-center gap-2 mb-6">
                             <svg className="w-5 h-5 text-pink-500" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
                             </svg>
-                            <h3 className="font-bebas tracking-wide text-deep-black">Instagram Posts</h3>
+                            <h3 className="font-bebas tracking-wide text-deep-black text-lg">Instagram Posts</h3>
                         </div>
                         {mediaLoading ? (
-                            <div className="flex justify-center p-6">
-                                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                            <div className="flex justify-center p-12">
+                                <Loader2 className="w-8 h-8 animate-spin text-primary-orange" />
                             </div>
                         ) : instaMedia.length > 0 ? (
                             <>
@@ -584,49 +592,55 @@ const PublicPortfolio = () => {
                                     {instaMedia.slice(0, visibleCount).map((media) => (
                                         <div
                                             key={media.id}
-                                            className="group relative aspect-[3/4] bg-gray-900 rounded-xl overflow-hidden border border-gray-100 hover:border-pink-300 hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 cursor-pointer select-none"
+                                            className="group relative aspect-[3/4] bg-gray-950 rounded-2xl overflow-hidden border border-gray-100 hover:border-orange-300 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer select-none"
                                             onClick={() => setSelectedMedia(media)}
                                         >
                                             {media.thumbnail_url || media.media_url ? (
                                                 <img
                                                     src={media.thumbnail_url || media.media_url}
                                                     alt="Instagram content"
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 group-hover:brightness-90 group-hover:blur-[1px]"
                                                     loading="lazy"
                                                 />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center">
-                                                    <Instagram className="w-12 h-12 text-pink-200" />
+                                                    <Instagram className="w-10 h-10 text-pink-200" />
                                                 </div>
                                             )}
 
-                                            {/* Media Type Overlays */}
+                                            {/* Hover Center Indicator */}
+                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
+                                                <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-lg transform scale-90 group-hover:scale-100 transition-all duration-300">
+                                                    <Eye size={20} className="text-white" />
+                                                </div>
+                                            </div>
+
+                                            {/* Media Type Overlay */}
                                             {media.media_type === 'VIDEO' && (
-                                                <div className="absolute top-3 right-3 bg-black/50 text-white p-1.5 rounded-full backdrop-blur-sm shadow-md z-10">
-                                                    <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
+                                                <div className="absolute top-3 right-3 bg-black/60 text-white p-1.5 rounded-full backdrop-blur-sm shadow-md z-10">
+                                                    <svg className="w-3.5 h-3.5 fill-white" viewBox="0 0 24 24">
                                                         <path d="M8 5v14l11-7z" />
                                                     </svg>
                                                 </div>
                                             )}
 
-                                            {/* Dark Gradient Overlay for text readability */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent transition-opacity duration-300 group-hover:via-black/50" />
+                                            {/* Overlay for text readability - desktop hover only */}
+                                            <div className="hidden sm:block absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                                            {/* Caption & Details Overlay in Right Bottom Corner */}
-                                            <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 flex flex-col items-end text-right text-white space-y-1 sm:space-y-1.5 z-10">
-                                                <p className="text-xs sm:text-sm font-semibold text-white/95 line-clamp-2 leading-snug drop-shadow-md max-w-[90%]">
+                                            {/* Caption & Details glass block - desktop hover only */}
+                                            <div className="hidden sm:flex absolute bottom-3 left-3 right-3 p-3 bg-black/45 backdrop-blur-md rounded-xl border border-white/10 text-white flex-col items-start gap-1 z-10 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 text-left">
+                                                <p className="text-xs font-semibold text-white/95 line-clamp-2 leading-snug drop-shadow-md w-full">
                                                     {media.caption || <span className="text-gray-300/80 italic">No caption</span>}
                                                 </p>
-                                                <div className="flex flex-col items-end gap-1.5 text-[10px] sm:text-xs text-white/80">
-                                                    <span className="flex items-center gap-1 font-medium bg-black/30 px-1.5 py-0.5 rounded-md backdrop-blur-[2px]">
-                                                        <Calendar size={11} className="text-white/70" />
-                                                        {media.timestamp ? new Date(media.timestamp).toLocaleDateString('en-US', {
-                                                            month: 'short',
-                                                            day: 'numeric',
-                                                            year: 'numeric'
-                                                        }) : 'N/A'}
-                                                    </span>
-                                                    <span className="font-bold text-pink-400 bg-pink-950/70 px-1.5 py-0.5 rounded-md backdrop-blur-[2px] border border-pink-500/20 text-[9px] uppercase tracking-wider">
+                                                <div className="flex items-center gap-1.5 text-[9px] text-white/70">
+                                                    <Calendar size={10} className="text-white/60" />
+                                                    <span>{media.timestamp ? new Date(media.timestamp).toLocaleDateString('en-US', {
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                        year: 'numeric'
+                                                    }) : 'N/A'}</span>
+                                                    <span className="text-white/30">•</span>
+                                                    <span className="font-bold text-pink-400 tracking-wider uppercase text-[8px]">
                                                         {media.media_type || 'POST'}
                                                     </span>
                                                 </div>
@@ -636,77 +650,81 @@ const PublicPortfolio = () => {
                                 </div>
                                 
                                 {visibleCount < instaMedia.length && (
-                                    <div className="flex justify-center mt-6">
+                                    <div className="flex justify-center mt-8">
                                         <Button
                                             variant="outline"
-                                            onClick={() => setVisibleCount(prev => prev + 5)}
-                                            className="px-8 py-2 border border-gray-200 hover:border-pink-300 hover:text-pink-600 transition-colors duration-300 font-semibold"
+                                            onClick={() => setVisibleCount(prev => prev + 6)}
+                                            className="px-8 py-2.5 border border-gray-200 hover:border-orange-300 hover:text-primary-orange transition-all duration-300 font-semibold text-xs uppercase tracking-wider bg-white rounded-xl shadow-sm hover:shadow"
                                         >
-                                            Load More
+                                            Load More Content
                                         </Button>
                                     </div>
                                 )}
                             </>
                         ) : (
-                            <div className="flex items-center gap-4 p-4 bg-pink-50 rounded-xl">
-                                <div className="w-12 h-12 bg-gradient-to-br from-pink-200 to-orange-200 rounded-lg flex items-center justify-center flex-shrink-0 text-pink-500">
+                            <div className="flex items-center gap-4 p-6 bg-pink-50/50 rounded-xl border border-pink-100/55 text-left">
+                                <div className="w-12 h-12 bg-gradient-to-br from-pink-200 to-orange-200 rounded-lg flex items-center justify-center flex-shrink-0 text-pink-500 shadow-sm">
                                     <Instagram size={24} />
                                 </div>
                                 <div>
                                     <p className="text-sm font-semibold text-gray-700">No media found</p>
-                                    <p className="text-xs text-gray-500">Come back later for new content</p>
+                                    <p className="text-xs text-gray-500">Instagram portfolio posts are currently empty.</p>
                                 </div>
                             </div>
                         )}
                     </Card>
                 </div>
 
+                {/* Reviews Section */}
                 {reviews.length > 0 && (
-                    <div>
-                        <h2 className="text-3xl font-bebas tracking-wide text-deep-black mb-6">Client Reviews</h2>
+                    <div className="space-y-6">
+                        <h2 className="text-3xl font-bebas tracking-wide text-deep-black">Client Reviews</h2>
 
                         {/* Reviews Stats */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                            <Card className="p-6 bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-primary-orange">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-600 mb-2">Average Rating</p>
-                                        <div className="flex items-center gap-3">
-                                            <h3 className="text-5xl font-bebas tracking-wide text-deep-black">
-                                                {averageRating.toFixed(1)}
-                                            </h3>
-                                            <StarRating rating={averageRating} size="lg" />
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <Card className="p-6 bg-gradient-to-br from-orange-500/5 via-pink-500/5 to-transparent border border-orange-100 hover:shadow-md transition-shadow rounded-2xl flex flex-col justify-between">
+                                <div>
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Average Rating</p>
+                                    <div className="flex items-center gap-3">
+                                        <h3 className="text-5xl font-bebas tracking-wide text-deep-black">
+                                            {averageRating.toFixed(1)}
+                                        </h3>
+                                        <div className="space-y-1">
+                                            <StarRating rating={averageRating} size="sm" />
+                                            <p className="text-[10px] text-gray-500">Based on {totalReviews} reviews</p>
                                         </div>
-                                        <p className="text-xs text-gray-600 mt-2">Based on {totalReviews} reviews</p>
                                     </div>
-                                    <div className="w-20 h-20 bg-gradient-to-br from-primary-orange to-orange-600 rounded-full flex items-center justify-center shadow-lg">
-                                        <Star className="text-white" size={40} fill="currentColor" />
+                                </div>
+                                <div className="mt-4 pt-4 border-t border-gray-150 flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-primary-orange">
+                                        <Star size={16} fill="currentColor" />
                                     </div>
+                                    <span className="text-xs font-semibold text-gray-600">Top-rated collaboration partner</span>
                                 </div>
                             </Card>
 
-                            <Card className="p-6">
-                                <h3 className="text-lg font-bebas tracking-wide text-deep-black mb-4">
+                            <Card className="p-6 md:col-span-2 border border-gray-100 bg-white rounded-2xl shadow-sm">
+                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">
                                     Rating Distribution
                                 </h3>
-                                <div className="space-y-3">
+                                <div className="space-y-2.5">
                                     {[5, 4, 3, 2, 1].map((stars) => {
                                         const count = reviews.filter(r => r.rating === stars).length;
                                         const percentage = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
 
                                         return (
                                             <div key={stars} className="flex items-center gap-3">
-                                                <div className="flex items-center gap-1 w-16">
-                                                    <span className="text-sm font-medium text-gray-700">{stars}</span>
-                                                    <Star className="text-primary-orange" size={14} fill="currentColor" />
+                                                <div className="flex items-center gap-1.5 w-14">
+                                                    <span className="text-xs font-bold text-gray-700">{stars}</span>
+                                                    <Star className="text-primary-orange" size={13} fill="currentColor" />
                                                 </div>
-                                                <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
+                                                <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner">
                                                     <div
-                                                        className="h-full bg-primary-orange rounded-full transition-all duration-300"
+                                                        className="h-full bg-gradient-to-r from-primary-orange to-orange-500 rounded-full transition-all duration-300"
                                                         style={{ width: `${percentage}%` }}
                                                     />
                                                 </div>
-                                                <span className="text-sm text-gray-600 w-12 text-right">{count}</span>
+                                                <span className="text-xs text-gray-500 w-8 text-right font-medium">{count}</span>
                                             </div>
                                         );
                                     })}
@@ -714,30 +732,34 @@ const PublicPortfolio = () => {
                             </Card>
                         </div>
 
-                        {/* Recent Reviews */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Recent Reviews List */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {reviews
                                 .sort((a, b) => new Date(b.created_at || b.submitted_at || 0) - new Date(a.created_at || a.submitted_at || 0))
                                 .map((review, idx) => (
-                                    <Card key={review.id || idx} className="p-6 hover:shadow-lg transition-shadow">
-                                        <div className="flex items-start justify-between mb-3">
-                                            <div className="flex-1">
-                                                <h4 className="font-semibold text-deep-black mb-1">
-                                                    {review.reviewer_name || 'Anonymous'}
-                                                </h4>
-                                                <StarRating rating={review.rating || 0} size="sm" showNumber />
+                                    <Card key={review.id || idx} className="p-6 border border-gray-100 bg-white hover:shadow-md transition-shadow rounded-2xl flex flex-col justify-between text-left relative overflow-hidden">
+                                        {/* Decorative quote mark */}
+                                        <span className="absolute top-2 right-4 text-7xl font-serif text-gray-100 pointer-events-none select-none">“</span>
+                                        <div className="relative z-10">
+                                            <div className="flex items-start justify-between gap-4 mb-3">
+                                                <div>
+                                                    <h4 className="font-bold text-deep-black text-sm mb-0.5">
+                                                        {review.reviewer_name || 'Anonymous'}
+                                                    </h4>
+                                                    <StarRating rating={review.rating || 0} size="xs" showNumber />
+                                                </div>
+                                                <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-medium bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100">
+                                                    <Calendar size={11} />
+                                                    {new Date(review.created_at || review.submitted_at).toLocaleDateString('en-US', {
+                                                        month: 'short',
+                                                        year: 'numeric'
+                                                    })}
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-1 text-xs text-gray-500">
-                                                <Calendar size={14} />
-                                                {new Date(review.created_at || review.submitted_at).toLocaleDateString('en-US', {
-                                                    month: 'short',
-                                                    year: 'numeric'
-                                                })}
-                                            </div>
+                                            <p className="text-gray-600 text-xs sm:text-sm leading-relaxed italic pr-4">
+                                                "{review.review || ''}"
+                                            </p>
                                         </div>
-                                        <p className="text-gray-700 text-sm leading-relaxed line-clamp-3">
-                                            {review.review || ''}
-                                        </p>
                                     </Card>
                                 ))}
                         </div>
@@ -748,36 +770,48 @@ const PublicPortfolio = () => {
                 {reviews.length === 0 && (
                     <div>
                         <h2 className="text-3xl font-bebas tracking-wide text-deep-black mb-6">Client Reviews</h2>
-                        <Card className="p-12 text-center">
-                            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Star className="text-gray-400" size={40} />
+                        <Card className="p-12 text-center border border-gray-100 bg-white rounded-2xl shadow-sm">
+                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100 text-gray-300">
+                                <Star size={32} />
                             </div>
-                            <h3 className="text-xl font-bebas tracking-wide text-gray-700 mb-2">No Reviews Yet</h3>
-                            <p className="text-gray-500 text-sm">Reviews will appear here once clients submit feedback.</p>
+                            <h3 className="text-lg font-bold text-gray-700 mb-1">No Reviews Yet</h3>
+                            <p className="text-gray-400 text-xs sm:text-sm max-w-sm mx-auto">Reviews will appear here once clients submit feedback for completed campaigns.</p>
                         </Card>
                     </div>
                 )}
 
                 {/* CTA Section */}
-                <Card className="p-8 bg-gradient-to-r from-primary-orange to-orange-600 text-white text-center">
-                    <h2 className="text-3xl font-bebas tracking-wide mb-3">Interested in Collaborating?</h2>
-                    <p className="text-orange-100 mb-6 max-w-2xl mx-auto">
-                        I'm always open to exciting brand partnerships and creative collaborations. Let's create something amazing together!
-                    </p>
-                    <button
-                        onClick={openCollaborationModal}
-                        className="inline-block bg-white text-primary-orange px-8 py-3 rounded-lg font-semibold hover:bg-orange-50 transition-colors"
-                    >
-                        Get in Touch
-                    </button>
+                <Card className="p-8 md:p-12 bg-gradient-to-r from-deep-black via-gray-900 to-deep-black text-white text-center rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-primary-orange/10 rounded-full blur-[80px] pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 w-[200px] h-[200px] bg-pink-500/5 rounded-full blur-[60px] pointer-events-none" />
+                    
+                    <div className="relative z-10 space-y-4">
+                        <h2 className="text-3xl md:text-5xl font-bebas tracking-wide leading-none">Interested in Collaborating?</h2>
+                        <p className="text-gray-300 text-xs sm:text-sm max-w-2xl mx-auto leading-relaxed font-light">
+                            I'm always open to exciting brand partnerships, content creations, and creative collaborations. Let's build a spectacular campaign together!
+                        </p>
+                        <div className="pt-2">
+                            <button
+                                onClick={openCollaborationModal}
+                                className="inline-flex bg-gradient-to-r from-primary-orange to-pink-500 text-white px-8 py-3.5 rounded-xl font-bold hover:shadow-lg hover:shadow-orange-500/20 active:scale-[0.98] transition-all text-xs sm:text-sm uppercase tracking-wider"
+                            >
+                                Get in Touch Now
+                            </button>
+                        </div>
+                    </div>
                 </Card>
             </div>
 
             {/* Footer */}
-            <div className="bg-deep-black text-white py-8 text-center">
-                <p className="text-sm text-gray-400">
-                    Powered by <span className="font-bebas text-primary-orange">INFLURUNNER</span>
-                </p>
+            <div className="bg-deep-black text-white py-10 border-t border-white/5 relative z-10">
+                <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <p className="text-xs text-gray-500">
+                        © {new Date().getFullYear()} {name}. All rights reserved.
+                    </p>
+                    <p className="text-xs text-gray-500">
+                        Powered by <span className="font-bebas text-primary-orange text-sm tracking-widest ml-1">INFLURUNNER</span>
+                    </p>
+                </div>
             </div>
             {/* Media Detail Modal */}
             {
