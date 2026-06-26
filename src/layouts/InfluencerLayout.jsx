@@ -19,9 +19,7 @@ const InfluencerLayout = () => {
         { icon: <User size={20} />, label: 'Profile', path: '/influencer/profile' },
         { icon: <Instagram size={20} />, label: 'Instagram Reports', path: '/influencer/media-reports' },
         { icon: <Calendar size={20} />, label: 'Calendar', path: '/influencer/calendar' },
-        { icon: <ClipboardList size={20} />, label: 'Schedule', path: '/influencer/schedule' },
-        { icon: <CheckCircle size={20} />, label: 'Completed Shoots', path: '/influencer/completed-shoots' },
-        { icon: <AlertTriangle size={20} />, label: 'Delayed', path: '/influencer/delayed' },
+        { icon: <ClipboardList size={20} />, label: 'Work Tracker', path: '/influencer/schedule' },
         { icon: <Star size={20} />, label: 'Reviews', path: '/influencer/reviews' },
         { icon: <Bell size={20} />, label: 'Notifications', path: '/influencer/notifications' },
     ];

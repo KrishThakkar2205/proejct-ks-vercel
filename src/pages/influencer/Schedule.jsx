@@ -7,124 +7,252 @@ import RescheduleModal from '../../components/dashboard/RescheduleModal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import SuccessAlert from '../../components/ui/SuccessAlert';
 import ErrorAlert from '../../components/ui/ErrorAlert';
-import { Calendar, Clock, MapPin, Search, Upload, Video, X, Trash2, Loader2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, MapPin, Search, Upload, Video, X, Trash2, Loader2, CheckCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 import api from '../../utils/api';
 import { utcToIST, utcToISTDate } from '../../utils/dateUtils';
 
 const Schedule = () => {
-    const [activeTab, setActiveTab] = useState('shoots');
+    // Filter & Search states
+    const [statusFilter, setStatusFilter] = useState('all'); // all, today, upcoming, delayed, completed
+    const [typeFilter, setTypeFilter] = useState('all'); // all, shoots, uploads
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedShoot, setSelectedShoot] = useState(null);
+    const [dateFilter, setDateFilter] = useState('');
+
+    // Modal & Alert states
+    const [selectedItem, setSelectedItem] = useState(null);
     const [isModalClosing, setIsModalClosing] = useState(false);
     const [rescheduleModal, setRescheduleModal] = useState({ isOpen: false, event: null, eventType: null });
     const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, itemId: null, itemType: null });
     const [successAlert, setSuccessAlert] = useState({ isOpen: false, message: '' });
     const [errorAlert, setErrorAlert] = useState({ isOpen: false, message: '' });
 
-    // API data
-    const [shoots, setShoots] = useState([]);
-    const [uploads, setUploads] = useState([]);
+    // API raw data
+    const [completedShoots, setCompletedShoots] = useState([]);
+    const [completedUploads, setCompletedUploads] = useState([]);
+    const [activeShoots, setActiveShoots] = useState([]);
+    const [activeUploads, setActiveUploads] = useState([]);
+    
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Get today's date string
+    // Get today's local date string YYYY-MM-DD
     const getTodayStr = () => {
         const today = new Date();
         return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     };
-
     const todayStr = getTodayStr();
 
-    // IST display helpers (imported from dateUtils)
+    // Time translation helpers
     const utcToLocalDisplay = (d, t) => utcToIST(d, t);
     const utcDateToLocal = utcToISTDate;
 
-    // Fetch today's shoots and uploads
+    // Fetch all shoots & uploads in parallel
     const fetchData = useCallback(async (silent = false) => {
         try {
             if (!silent) setLoading(true);
             setError(null);
 
-            const [shootsRes, uploadsRes] = await Promise.all([
-                api.get('/api/shoots', { params: { start_date: todayStr, end_date: todayStr } }),
-                api.get('/api/uploads', { params: { start_date: todayStr, end_date: todayStr } }),
+            const [compShootsRes, compUploadsRes, actShootsRes, actUploadsRes] = await Promise.all([
+                api.get('/api/shoots', { params: { completed: true } }),
+                api.get('/api/uploads', { params: { completed: true } }),
+                api.get('/api/shoots', { params: { completed: false } }),
+                api.get('/api/uploads', { params: { completed: false } }),
             ]);
 
-            setShoots(Array.isArray(shootsRes.data) ? shootsRes.data : []);
-            setUploads(Array.isArray(uploadsRes.data) ? uploadsRes.data : []);
+            setCompletedShoots(Array.isArray(compShootsRes.data) ? compShootsRes.data : []);
+            setCompletedUploads(Array.isArray(compUploadsRes.data) ? compUploadsRes.data : []);
+            setActiveShoots(Array.isArray(actShootsRes.data) ? actShootsRes.data : []);
+            setActiveUploads(Array.isArray(actUploadsRes.data) ? actUploadsRes.data : []);
         } catch (err) {
             if (!silent) {
                 const msg =
                     err.response?.data?.detail?.[0]?.msg ||
                     err.response?.data?.detail ||
-                    'Failed to load schedule data.';
+                    'Failed to load tracking data. Please try again.';
                 setError(msg);
             }
         } finally {
             if (!silent) setLoading(false);
         }
-    }, [todayStr]);
+    }, []);
 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
 
-    // Map API data to component format
-    const bookings = shoots.map(s => ({
-        id: s.id,
-        brandName: s.brand_name || '',
-        campaign: s.name || '',
-        shootDate: utcDateToLocal(s.shoot_date, s.shoot_time),
-        shootTime: utcToLocalDisplay(s.shoot_date, s.shoot_time),
-        location: s.location || '',
-        status: s.completed ? 'completed' : 'confirmed',
-        notes: s.notes || '',
-        completed: s.completed
-    }));
+    // Map and normalize to unified task model
+    const normalizeTasks = () => {
+        const list = [];
 
-    const uploadSchedule = uploads.map(u => ({
-        id: u.id,
-        brandName: u.brand_name || '',
-        campaign: u.name || '',
-        uploadDate: utcDateToLocal(u.upload_date, u.upload_time),
-        uploadTime: utcToLocalDisplay(u.upload_date, u.upload_time),
-        platform: u.platform || '',
-        contentType: 'Video',
-        status: u.completed ? 'uploaded' : 'confirmed',
-        notes: u.notes || '',
-        completed: u.completed
-    }));
+        // Completed Shoots
+        completedShoots.forEach(s => {
+            list.push({
+                id: s.id,
+                compositeId: `shoot-${s.id}`,
+                type: 'shoot',
+                completed: true,
+                date: s.shoot_date,
+                time: utcToLocalDisplay(s.shoot_date, s.shoot_time),
+                brandName: s.brand_name || 'Untitled Brand',
+                campaign: s.name || s.campaign || '',
+                locationOrPlatform: s.location || '',
+                notes: s.notes || '',
+                rating: s.rating || null,
+                reviewGenerated: s.review_generated || false,
+                reviewId: s.review_id || '',
+                completedAt: s.completed_at || null,
+                statusLabel: 'Completed'
+            });
+        });
 
-    // Get today's active shoots (not completed)
-    const todaysShoot = bookings.filter(b => !b.completed);
-    const todaysUploads = uploadSchedule.filter(u => !u.completed);
+        // Completed Uploads
+        completedUploads.forEach(u => {
+            list.push({
+                id: u.id,
+                compositeId: `upload-${u.id}`,
+                type: 'upload',
+                completed: true,
+                date: u.upload_date,
+                time: utcToLocalDisplay(u.upload_date, u.upload_time),
+                brandName: u.brand_name || 'Untitled Brand',
+                campaign: u.name || u.campaign || '',
+                locationOrPlatform: u.platform || '',
+                notes: u.notes || '',
+                rating: null,
+                completedAt: u.completed_at || null,
+                statusLabel: 'Completed'
+            });
+        });
 
-    // Mark as completed handlers (call PUT API)
-    const handleMarkShootComplete = async (shootId) => {
+        // Active Shoots (Today, Upcoming, or Delayed)
+        activeShoots.forEach(s => {
+            const dateVal = s.shoot_date;
+            let statusLabel = 'Upcoming';
+            if (dateVal < todayStr) statusLabel = 'Delayed';
+            else if (dateVal === todayStr) statusLabel = 'Today';
+
+            list.push({
+                id: s.id,
+                compositeId: `shoot-${s.id}`,
+                type: 'shoot',
+                completed: false,
+                date: dateVal,
+                time: utcToLocalDisplay(s.shoot_date, s.shoot_time),
+                brandName: s.brand_name || 'Untitled Brand',
+                campaign: s.name || s.campaign || '',
+                locationOrPlatform: s.location || '',
+                notes: s.notes || '',
+                statusLabel
+            });
+        });
+
+        // Active Uploads
+        activeUploads.forEach(u => {
+            const dateVal = u.upload_date;
+            let statusLabel = 'Upcoming';
+            if (dateVal < todayStr) statusLabel = 'Delayed';
+            else if (dateVal === todayStr) statusLabel = 'Today';
+
+            list.push({
+                id: u.id,
+                compositeId: `upload-${u.id}`,
+                type: 'upload',
+                completed: false,
+                date: dateVal,
+                time: utcToLocalDisplay(u.upload_date, u.upload_time),
+                brandName: u.brand_name || 'Untitled Brand',
+                campaign: u.name || u.campaign || '',
+                locationOrPlatform: u.platform || '',
+                notes: u.notes || '',
+                statusLabel
+            });
+        });
+
+        return list;
+    };
+
+    const allTasks = normalizeTasks();
+
+    // Helper counts for Stats Overview (based on normal tasks before text filters)
+    const countStats = {
+        active: allTasks.filter(t => !t.completed && (t.statusLabel === 'Today' || t.statusLabel === 'Upcoming')).length,
+        delayed: allTasks.filter(t => !t.completed && t.statusLabel === 'Delayed').length,
+        completed: allTasks.filter(t => t.completed).length,
+    };
+
+    // Filter Logic
+    const getFilteredTasks = () => {
+        let list = allTasks;
+
+        // 1. Status Filter
+        if (statusFilter === 'today') {
+            list = list.filter(t => !t.completed && t.statusLabel === 'Today');
+        } else if (statusFilter === 'upcoming') {
+            list = list.filter(t => !t.completed && t.statusLabel === 'Upcoming');
+        } else if (statusFilter === 'delayed') {
+            list = list.filter(t => !t.completed && t.statusLabel === 'Delayed');
+        } else if (statusFilter === 'completed') {
+            list = list.filter(t => t.completed);
+        }
+
+        // 2. Type Filter
+        if (typeFilter !== 'all') {
+            list = list.filter(t => t.type === typeFilter.slice(0, -1)); // convert shoots -> shoot, uploads -> upload
+        }
+
+        // 3. Date Picker Filter
+        if (dateFilter) {
+            list = list.filter(t => t.date === dateFilter);
+        }
+
+        // 4. Search Query Filter
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            list = list.filter(t =>
+                t.brandName.toLowerCase().includes(query) ||
+                t.campaign.toLowerCase().includes(query) ||
+                t.locationOrPlatform.toLowerCase().includes(query) ||
+                t.notes.toLowerCase().includes(query)
+            );
+        }
+
+        // Sort by Date, then Time
+        return list.sort((a, b) => {
+            const dateCompare = a.date.localeCompare(b.date);
+            if (dateCompare !== 0) return dateCompare;
+            return a.time.localeCompare(b.time);
+        });
+    };
+
+    const filteredTasks = getFilteredTasks();
+
+    // Mark complete handler
+    const handleMarkComplete = async (itemId, itemType) => {
         try {
-            await api.put(`/api/shoots/${shootId}`, { completed: true });
-            setSuccessAlert({ isOpen: true, message: 'Shoot marked as completed!' });
+            if (itemType === 'shoot') {
+                await api.put(`/api/shoots/${itemId}`, { completed: true });
+            } else {
+                await api.put(`/api/uploads/${itemId}`, { completed: true });
+            }
+            setSuccessAlert({ isOpen: true, message: 'Task marked as completed successfully!' });
             setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
             fetchData(true);
         } catch (err) {
-            setErrorAlert({ isOpen: true, message: err.response?.data?.detail || 'Failed to mark shoot as completed.' });
+            setErrorAlert({ isOpen: true, message: err.response?.data?.detail || 'Failed to update task state.' });
         }
     };
 
-    const handleMarkUploadComplete = async (uploadId) => {
-        try {
-            await api.put(`/api/uploads/${uploadId}`, { completed: true });
-            setSuccessAlert({ isOpen: true, message: 'Upload marked as completed!' });
-            setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
-            fetchData(true);
-        } catch (err) {
-            setErrorAlert({ isOpen: true, message: err.response?.data?.detail || 'Failed to mark upload as completed.' });
-        }
-    };
-
-    // Reschedule handlers
-    const handleReschedule = (event, type) => {
-        setRescheduleModal({ isOpen: true, event, eventType: type });
+    // Reschedule triggers
+    const triggerReschedule = (task) => {
+        // RescheduleModal requires normalized event format
+        const mockEvent = {
+            id: task.id,
+            brandName: task.brandName,
+            campaign: task.campaign,
+            date: task.date,
+            time: task.time,
+        };
+        setRescheduleModal({ isOpen: true, event: mockEvent, eventType: task.type });
     };
 
     const handleCloseRescheduleModal = () => {
@@ -151,7 +279,7 @@ const Schedule = () => {
                 });
             }
 
-            setSuccessAlert({ isOpen: true, message: 'Event rescheduled successfully!' });
+            setSuccessAlert({ isOpen: true, message: 'Task rescheduled successfully!' });
             setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
             fetchData(true);
         } catch (err) {
@@ -160,9 +288,9 @@ const Schedule = () => {
         handleCloseRescheduleModal();
     };
 
-    // Delete handlers
-    const handleDelete = (itemId, type) => {
-        setDeleteConfirm({ isOpen: true, itemId, itemType: type });
+    // Delete triggers
+    const triggerDelete = (itemId, itemType) => {
+        setDeleteConfirm({ isOpen: true, itemId, itemType });
     };
 
     const handleConfirmDelete = async () => {
@@ -178,102 +306,89 @@ const Schedule = () => {
                 await api.delete(`/api/uploads/${deleteConfirm.itemId}`);
             }
 
-            setSuccessAlert({ isOpen: true, message: 'Event deleted successfully!' });
+            setSuccessAlert({ isOpen: true, message: 'Task deleted successfully!' });
             setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
             fetchData(true);
         } catch (err) {
-            setErrorAlert({ isOpen: true, message: err.response?.data?.detail || 'Failed to delete event.' });
+            setErrorAlert({ isOpen: true, message: err.response?.data?.detail || 'Failed to delete task.' });
         }
         setDeleteConfirm({ isOpen: false, itemId: null, itemType: null });
     };
 
-    const handleCancelDelete = () => {
-        setDeleteConfirm({ isOpen: false, itemId: null, itemType: null });
+    // Modal triggers
+    const openDetailsModal = (task) => {
+        setSelectedItem(task);
     };
 
-    // Modal handlers
-    const openShootModal = (shoot) => {
-        setSelectedShoot(shoot);
-    };
-
-    const closeShootModal = () => {
+    const closeDetailsModal = () => {
         setIsModalClosing(true);
         setTimeout(() => {
-            setSelectedShoot(null);
+            setSelectedItem(null);
             setIsModalClosing(false);
         }, 300);
     };
 
-    // Filter functions
-    const filterShoots = () => {
-        let filtered = todaysShoot;
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            filtered = filtered.filter(booking =>
-                booking.brandName?.toLowerCase().includes(query) ||
-                booking.campaign?.toLowerCase().includes(query) ||
-                booking.location?.toLowerCase().includes(query) ||
-                booking.status?.toLowerCase().includes(query) ||
-                booking.shootTime?.toLowerCase().includes(query) ||
-                booking.notes?.toLowerCase().includes(query)
-            );
-        }
-        return filtered.sort((a, b) => a.shootTime.localeCompare(b.shootTime));
-    };
-
-    const filterUploads = () => {
-        let filtered = todaysUploads;
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            filtered = filtered.filter(upload =>
-                upload.brandName?.toLowerCase().includes(query) ||
-                upload.campaign?.toLowerCase().includes(query) ||
-                upload.platform?.toLowerCase().includes(query) ||
-                upload.contentType?.toLowerCase().includes(query) ||
-                upload.status?.toLowerCase().includes(query) ||
-                upload.uploadTime?.toLowerCase().includes(query) ||
-                upload.notes?.toLowerCase().includes(query)
-            );
-        }
-        return filtered.sort((a, b) => a.uploadTime.localeCompare(b.uploadTime));
-    };
-
-    const filteredShoot = filterShoots();
-    const filteredUploads = filterUploads();
-
-    const getStatusVariant = (status) => {
-        switch (status) {
-            case 'confirmed': return 'success';
-            case 'pending': return 'warning';
-            case 'completed': return 'info';
-            case 'uploaded': return 'success';
-            case 'cancelled': return 'error';
-            default: return 'default';
+    const getStatusStyle = (statusLabel) => {
+        switch (statusLabel) {
+            case 'Completed':
+                return {
+                    border: 'border-l-green-500',
+                    badge: 'success',
+                    bg: 'bg-green-50/50 hover:bg-green-50',
+                };
+            case 'Delayed':
+                return {
+                    border: 'border-l-red-500 animate-pulse',
+                    badge: 'error',
+                    bg: 'bg-red-50/40 hover:bg-red-50/60',
+                };
+            case 'Today':
+                return {
+                    border: 'border-l-primary-orange',
+                    badge: 'warning',
+                    bg: 'bg-orange-50/40 hover:bg-orange-50/60',
+                };
+            default: // Upcoming
+                return {
+                    border: 'border-l-blue-400',
+                    badge: 'info',
+                    bg: 'bg-white hover:bg-gray-50/50',
+                };
         }
     };
 
-    const getPlatformIcon = (platform) => {
-        return <Upload size={16} />;
+    const formatDateNice = (dateStr) => {
+        if (!dateStr) return '';
+        try {
+            const dateObj = new Date(dateStr);
+            if (isNaN(dateObj.getTime())) return dateStr;
+            return dateObj.toLocaleDateString('en-US', {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        } catch {
+            return dateStr;
+        }
     };
 
-    // Loading state
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="text-center">
                     <Loader2 size={40} className="animate-spin text-primary-orange mx-auto mb-4" />
-                    <p className="text-gray-600">Loading schedule...</p>
+                    <p className="text-gray-600">Loading Work Tracker data...</p>
                 </div>
             </div>
         );
     }
 
-    // Error state
     if (error) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
                 <Card className="p-8 text-center max-w-md">
-                    <p className="text-red-600 font-medium mb-2">Error</p>
+                    <p className="text-red-600 font-medium mb-2">Error Loading Data</p>
                     <p className="text-gray-600 text-sm mb-4">{typeof error === 'string' ? error : 'Something went wrong.'}</p>
                     <Button onClick={() => fetchData()}>Try Again</Button>
                 </Card>
@@ -282,361 +397,429 @@ const Schedule = () => {
     }
 
     return (
-        <div className="space-y-8">
-            {/* Header - Mobile Only */}
-            <div className="md:hidden">
-                <h1 className="text-3xl font-bebas tracking-wide text-deep-black">Schedule</h1>
-                <p className="text-gray-600 text-sm mt-1">Today's shoots and uploads</p>
+        <div className="space-y-8 pb-12">
+            {/* Header Title Block */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl sm:text-4xl font-bebas tracking-wide text-deep-black">Work Tracker</h1>
+                    <p className="text-gray-500 text-sm mt-0.5">Consolidated view of your scheduled shoots and content uploads</p>
+                </div>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fetchData(false)}
+                    className="flex items-center gap-1.5 self-start sm:self-auto"
+                >
+                    <RefreshCw size={14} />
+                    Refresh
+                </Button>
             </div>
 
-            {/* Today's Summary Card */}
-            {(todaysShoot.length > 0 || todaysUploads.length > 0) && (
-                <Card className="p-6 bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-primary-orange">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                            <h2 className="text-xl font-bebas tracking-wide font-bold text-deep-black">Today's Schedule</h2>
-                        </div>
-                        <Badge variant="error" className="animate-pulse">Live</Badge>
+            {/* Metrics Overview Stack */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <Card className="p-5 border-l-4 border-l-blue-400 bg-white shadow-sm flex items-center justify-between">
+                    <div>
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Active Today & Upcoming</p>
+                        <h3 className="text-3xl font-bold font-bebas text-deep-black mt-1">{countStats.active}</h3>
+                        <p className="text-xs text-gray-400 mt-1">Confirmed schedule slots</p>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="bg-white p-4 rounded-lg border-l-4 border-primary-orange">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Video size={20} className="text-primary-orange" />
-                                <h3 className="font-semibold text-deep-black">Shoots</h3>
-                            </div>
-                            <p className="text-3xl font-bold text-primary-orange">{todaysShoot.length}</p>
-                            <p className="text-sm text-gray-600 mt-1">scheduled today</p>
-                        </div>
-                        <div className="bg-white p-4 rounded-lg border-l-4 border-gray-700">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Upload size={20} className="text-gray-700" />
-                                <h3 className="font-semibold text-deep-black">Uploads</h3>
-                            </div>
-                            <p className="text-3xl font-bold text-gray-700">{todaysUploads.length}</p>
-                            <p className="text-sm text-gray-600 mt-1">to upload today</p>
-                        </div>
+                    <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500 flex-shrink-0">
+                        <Video size={24} />
                     </div>
                 </Card>
-            )}
 
-            {/* Tabs */}
-            <div className="flex flex-wrap gap-2">
-                {['shoots', 'uploads'].map((tab) => (
-                    <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === tab
-                            ? 'bg-primary-orange text-white shadow-md'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
-                    >
-                        {tab === 'shoots' ? `Shoot Schedule (${todaysShoot.length})` : `Upload Schedule (${todaysUploads.length})`}
-                    </button>
-                ))}
+                <Card className={`p-5 border-l-4 bg-white shadow-sm flex items-center justify-between transition-colors ${countStats.delayed > 0 ? 'border-l-red-500 bg-red-50/20' : 'border-l-gray-300'}`}>
+                    <div>
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Delayed / Overdue</p>
+                        <h3 className={`text-3xl font-bold font-bebas mt-1 ${countStats.delayed > 0 ? 'text-red-600' : 'text-deep-black'}`}>{countStats.delayed}</h3>
+                        <p className="text-xs text-gray-400 mt-1">{countStats.delayed > 0 ? 'Action required immediately' : 'Everything on track'}</p>
+                    </div>
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${countStats.delayed > 0 ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-400'}`}>
+                        <AlertTriangle size={24} />
+                    </div>
+                </Card>
+
+                <Card className="p-5 border-l-4 border-l-green-500 bg-white shadow-sm flex items-center justify-between">
+                    <div>
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Completed History</p>
+                        <h3 className="text-3xl font-bold font-bebas text-green-600 mt-1">{countStats.completed}</h3>
+                        <p className="text-xs text-gray-400 mt-1">Tasks fully processed</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center text-green-600 flex-shrink-0">
+                        <CheckCircle size={24} />
+                    </div>
+                </Card>
             </div>
 
-            {/* Search */}
-            <Card className="p-4">
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                    <input
-                        type="text"
-                        placeholder={`Search ${activeTab === 'shoots' ? 'shoots' : 'uploads'}...`}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent"
-                    />
+            {/* Filter Deck */}
+            <Card className="p-5 bg-white border border-gray-100 shadow-sm space-y-4">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    {/* Status Tabs */}
+                    <div className="flex flex-wrap gap-1.5 p-1 bg-gray-50 rounded-xl self-start">
+                        {[
+                            { id: 'all', label: 'All Statuses' },
+                            { id: 'today', label: 'Today' },
+                            { id: 'upcoming', label: 'Upcoming' },
+                            { id: 'delayed', label: `Delayed${countStats.delayed > 0 ? ` (${countStats.delayed})` : ''}` },
+                            { id: 'completed', label: 'Completed' }
+                        ].map((stat) => (
+                            <button
+                                key={stat.id}
+                                onClick={() => setStatusFilter(stat.id)}
+                                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${statusFilter === stat.id
+                                    ? 'bg-white text-primary-orange shadow-sm font-bold'
+                                    : 'text-gray-500 hover:text-gray-800 hover:bg-white/40'
+                                    }`}
+                            >
+                                {stat.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Type Filters */}
+                    <div className="flex items-center gap-1.5 self-start">
+                        {[
+                            { id: 'all', label: 'All Types' },
+                            { id: 'shoots', label: 'Shoots' },
+                            { id: 'uploads', label: 'Uploads' }
+                        ].map((tp) => (
+                            <button
+                                key={tp.id}
+                                onClick={() => setTypeFilter(tp.id)}
+                                className={`px-3 py-1.5 border rounded-lg text-xs font-semibold transition-all ${typeFilter === tp.id
+                                    ? 'bg-deep-black text-white border-deep-black shadow-sm'
+                                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                    }`}
+                            >
+                                {tp.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                    {/* Search query input */}
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                        <input
+                            type="text"
+                            placeholder="Search by brand, campaign, location, or platform..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent bg-gray-50/50 focus:bg-white transition-colors"
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+                            >
+                                Clear
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Calendar Filter */}
+                    <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                            <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                            <input
+                                type="date"
+                                value={dateFilter}
+                                onChange={(e) => setDateFilter(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent bg-gray-50/50 focus:bg-white text-gray-600"
+                            />
+                        </div>
+                        {dateFilter && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setDateFilter('')}
+                                className="whitespace-nowrap h-[38px] text-xs font-semibold"
+                            >
+                                Clear Date
+                            </Button>
+                        )}
+                    </div>
                 </div>
             </Card>
 
-            {/* Shoot Schedule */}
-            {activeTab === 'shoots' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {filteredShoot.length > 0 ? (
-                        filteredShoot.map((booking) => (
-                            <Card key={booking.id} className="p-6 hover:border-orange-300 transition-colors border-l-4 border-l-primary-orange">
-                                <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4 gap-2">
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex-shrink-0" />
-                                        <div>
-                                            <h3 className="font-semibold text-deep-black">{booking.brandName || 'Untitled'}</h3>
-                                            <p className="text-sm text-gray-600 mt-1">{booking.campaign}</p>
+            {/* List Results */}
+            <div className="space-y-4">
+                {filteredTasks.length > 0 ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {filteredTasks.map((task) => {
+                            const styles = getStatusStyle(task.statusLabel);
+
+                            return (
+                                <Card
+                                    key={task.compositeId}
+                                    className={`p-6 border-l-4 transition-all duration-200 shadow-sm hover:shadow-md flex flex-col justify-between ${styles.border} ${styles.bg}`}
+                                >
+                                    <div>
+                                        {/* Card Header Row */}
+                                        <div className="flex items-start justify-between mb-3 gap-2">
+                                            <div className="flex items-start gap-3">
+                                                <div className={`w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center ${task.type === 'shoot' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}>
+                                                    {task.type === 'shoot' ? <Video size={20} /> : <Upload size={20} />}
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-bold text-deep-black text-base uppercase tracking-wide leading-tight">{task.brandName}</h3>
+                                                    <p className="text-sm text-gray-500 mt-0.5 font-medium">{task.campaign}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col items-end gap-1.5">
+                                                <Badge variant={styles.badge} className="uppercase text-[10px] font-bold">
+                                                    {task.statusLabel}
+                                                </Badge>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${task.type === 'shoot' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}`}>
+                                                    {task.type === 'shoot' ? 'Shoot' : 'Upload'}
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <Badge variant={getStatusVariant(booking.status)} className="self-start sm:self-auto">
-                                        {booking.status}
-                                    </Badge>
-                                </div>
 
-                                <div className="space-y-2 mb-4">
-                                    {booking.shootTime && (
-                                        <div className="flex items-center gap-2 text-sm font-semibold text-primary-orange">
-                                            <Clock size={16} />
-                                            {booking.shootTime}
+                                        {/* Item Specific Info */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm mt-4 border-t border-gray-100 pt-3 text-gray-600">
+                                            <div className="flex items-center gap-2">
+                                                <CalendarIcon size={15} className="text-gray-400" />
+                                                <span>{formatDateNice(task.date)}</span>
+                                            </div>
+                                            {task.time && (
+                                                <div className="flex items-center gap-2">
+                                                    <Clock size={15} className="text-gray-400" />
+                                                    <span>{task.time}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex items-center gap-2 sm:col-span-2">
+                                                {task.type === 'shoot' ? (
+                                                    <MapPin size={15} className="text-gray-400 flex-shrink-0" />
+                                                ) : (
+                                                    <Upload size={15} className="text-gray-400 flex-shrink-0" />
+                                                )}
+                                                <span className="truncate">
+                                                    {task.type === 'shoot' ? 'Location: ' : 'Platform: '}
+                                                    <strong className="text-deep-black font-semibold">{task.locationOrPlatform}</strong>
+                                                </span>
+                                            </div>
                                         </div>
-                                    )}
-                                    {booking.location && (
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                                            <MapPin size={16} className="text-gray-400" />
-                                            {booking.location}
-                                        </div>
-                                    )}
-                                </div>
 
-                                {booking.notes && (
-                                    <div className="p-3 bg-orange-50 rounded-lg mb-4 border border-orange-200">
-                                        <p className="text-xs text-primary-orange font-semibold mb-1">Important Notes:</p>
-                                        <p className="text-sm text-gray-700">{booking.notes}</p>
+                                        {/* Notes Callout */}
+                                        {task.notes && (
+                                            <div className="p-3 bg-white/70 border border-gray-100 rounded-lg mt-4 text-xs text-gray-600">
+                                                <p className="font-semibold text-deep-black mb-1 uppercase tracking-wider text-[9px]">Important Notes:</p>
+                                                <p className="italic line-clamp-2">{task.notes}</p>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
 
-                                <div className="flex flex-col gap-2 mt-4">
-                                    {/* First row: Reschedule and Delete side by side */}
-                                    <div className="flex gap-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="flex-1"
-                                            onClick={() => handleReschedule(booking, 'shoot')}
-                                        >
-                                            Reschedule
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="text-red-600 hover:bg-red-50 hover:border-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            onClick={() => handleDelete(booking.id, 'shoot')}
-                                        >
-                                            <Trash2 size={16} />
-                                        </Button>
+                                    {/* Action Footers */}
+                                    <div className="flex gap-2 mt-6 pt-4 border-t border-gray-100/60">
+                                        {!task.completed ? (
+                                            <>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="flex-1 text-xs font-semibold"
+                                                    onClick={() => triggerReschedule(task)}
+                                                >
+                                                    Reschedule
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="text-red-500 hover:bg-red-50 hover:border-red-500 border-gray-200 px-3.5"
+                                                    onClick={() => triggerDelete(task.id, task.type)}
+                                                >
+                                                    <Trash2 size={14} />
+                                                </Button>
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    className="text-xs font-semibold px-3"
+                                                    onClick={() => openDetailsModal(task)}
+                                                >
+                                                    View Details
+                                                </Button>
+                                                <Button
+                                                    variant="primary"
+                                                    size="sm"
+                                                    className="flex-1 text-xs font-semibold whitespace-nowrap"
+                                                    onClick={() => handleMarkComplete(task.id, task.type)}
+                                                >
+                                                    Mark Done
+                                                </Button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                {task.type === 'shoot' && task.reviewGenerated && (
+                                                    <Badge variant="success" className="mr-auto self-center text-xs">
+                                                        Review Link Active
+                                                    </Badge>
+                                                )}
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    className="w-full text-xs font-semibold"
+                                                    onClick={() => openDetailsModal(task)}
+                                                >
+                                                    View Details
+                                                </Button>
+                                            </>
+                                        )}
                                     </div>
-                                    {/* Second row: View Details and Mark as Completed */}
-                                    <div className="flex gap-2">
-                                        <Button
-                                            variant="secondary"
-                                            size="sm"
-                                            className="flex-1"
-                                            onClick={() => openShootModal(booking)}
-                                        >
-                                            View Details
-                                        </Button>
-                                        <Button
-                                            variant="primary"
-                                            size="sm"
-                                            className="flex-1"
-                                            onClick={() => handleMarkShootComplete(booking.id)}
-                                        >
-                                            Mark as Completed
-                                        </Button>
-                                    </div>
-                                </div>
-                            </Card>
-                        ))
-                    ) : (
-                        <Card className="col-span-full p-12 text-center">
-                            <div className="text-gray-400 mb-2">
-                                <Video size={48} className="mx-auto" />
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-700 mb-1">No shoots scheduled</h3>
-                            <p className="text-sm text-gray-500">
-                                {searchQuery ? 'Try adjusting your search' : 'No shoots scheduled for today'}
-                            </p>
-                        </Card>
-                    )}
-                </div>
-            )}
+                                </Card>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <Card className="p-16 text-center border border-gray-150 bg-white">
+                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100">
+                            <Search size={32} className="text-gray-300" />
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-700 mb-1">No tracker events found</h3>
+                        <p className="text-sm text-gray-400 max-w-sm mx-auto">
+                            {searchQuery || dateFilter
+                                ? 'No shoots or uploads match your current search query or date constraints.'
+                                : 'There are no items recorded in this category.'}
+                        </p>
+                        {(searchQuery || dateFilter || statusFilter !== 'all' || typeFilter !== 'all') && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    setSearchQuery('');
+                                    setDateFilter('');
+                                    setStatusFilter('all');
+                                    setTypeFilter('all');
+                                }}
+                                className="mt-4"
+                            >
+                                Reset Filters
+                            </Button>
+                        )}
+                    </Card>
+                )}
+            </div>
 
-            {/* Upload Schedule */}
-            {activeTab === 'uploads' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {filteredUploads.length > 0 ? (
-                        filteredUploads.map((upload) => (
-                            <Card key={upload.id} className="p-6 hover:border-gray-400 transition-colors border-l-4 border-l-gray-700">
-                                <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4 gap-2">
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center">
-                                            {getPlatformIcon(upload.platform)}
-                                        </div>
-                                        <div>
-                                            <h3 className="font-semibold text-deep-black">{upload.brandName || 'Untitled'}</h3>
-                                            <p className="text-sm text-gray-600 mt-1">{upload.campaign}</p>
-                                        </div>
-                                    </div>
-                                    <Badge variant={getStatusVariant(upload.status)} className="self-start sm:self-auto">
-                                        {upload.status}
-                                    </Badge>
-                                </div>
-
-                                <div className="space-y-2 mb-4">
-                                    {upload.uploadTime && (
-                                        <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                                            <Clock size={16} />
-                                            {upload.uploadTime}
-                                        </div>
-                                    )}
-                                    {upload.platform && (
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                                            <Upload size={16} className="text-gray-400" />
-                                            {upload.platform}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {upload.notes && (
-                                    <div className="p-3 bg-gray-50 rounded-lg mb-4 border border-gray-200">
-                                        <p className="text-xs text-gray-700 font-semibold mb-1">Upload Notes:</p>
-                                        <p className="text-sm text-gray-700">{upload.notes}</p>
-                                    </div>
-                                )}
-
-                                <div className="flex flex-col gap-2 mt-4">
-                                    {/* First row: Reschedule and Delete side by side */}
-                                    <div className="flex gap-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="flex-1"
-                                            onClick={() => handleReschedule(upload, 'upload')}
-                                        >
-                                            Reschedule
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="text-red-600 hover:bg-red-50 hover:border-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            onClick={() => handleDelete(upload.id, 'upload')}
-                                        >
-                                            <Trash2 size={16} />
-                                        </Button>
-                                    </div>
-                                    {/* Second row: Mark as Completed */}
-                                    <Button
-                                        variant="primary"
-                                        size="sm"
-                                        className="w-full"
-                                        onClick={() => handleMarkUploadComplete(upload.id)}
-                                    >
-                                        Mark as Completed
-                                    </Button>
-                                </div>
-                            </Card>
-                        ))
-                    ) : (
-                        <Card className="col-span-full p-12 text-center">
-                            <div className="text-gray-400 mb-2">
-                                <Upload size={48} className="mx-auto" />
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-700 mb-1">No uploads scheduled</h3>
-                            <p className="text-sm text-gray-500">
-                                {searchQuery ? 'Try adjusting your search' : 'No uploads scheduled for today'}
-                            </p>
-                        </Card>
-                    )}
-                </div>
-            )}
-
-            {/* Shoot Details Modal */}
-            {selectedShoot && createPortal(
+            {/* Task Details Modal (Overlay Portal) */}
+            {selectedItem && createPortal(
                 <div
-                    className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4 ${isModalClosing ? 'animate-backdrop-exit' : 'animate-fadeIn'}`}
+                    className={`fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4 ${isModalClosing ? 'animate-backdrop-exit' : 'animate-fadeIn'}`}
                     style={{ backdropFilter: 'blur(4px)' }}
-                    onClick={closeShootModal}
+                    onClick={closeDetailsModal}
                 >
                     <Card
-                        className={`w-[95%] md:w-full max-w-2xl max-h-[85vh] overflow-y-auto ${isModalClosing ? 'animate-popup-exit' : 'animate-scaleIn'}`}
+                        className={`w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl ${isModalClosing ? 'animate-popup-exit' : 'animate-scaleIn'}`}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="p-6">
                             {/* Modal Header */}
-                            <div className="flex items-start justify-between mb-6">
+                            <div className="flex items-start justify-between pb-4 border-b border-gray-100 mb-6">
                                 <div className="flex items-start gap-4">
-                                    <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0" />
+                                    <div className={`w-14 h-14 rounded-xl flex-shrink-0 flex items-center justify-center ${selectedItem.type === 'shoot' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}>
+                                        {selectedItem.type === 'shoot' ? <Video size={28} /> : <Upload size={28} />}
+                                    </div>
                                     <div>
-                                        <h2 className="text-2xl font-bebas tracking-wide text-deep-black mb-1">
-                                            {selectedShoot.brandName || 'Untitled'}
+                                        <h2 className="text-2xl font-bold font-bebas text-deep-black tracking-wide leading-tight">
+                                            {selectedItem.brandName}
                                         </h2>
-                                        <p className="text-gray-600">{selectedShoot.campaign}</p>
-                                        <Badge variant={getStatusVariant(selectedShoot.status)} className="mt-2">
-                                            {selectedShoot.status}
-                                        </Badge>
+                                        <p className="text-gray-500 text-sm font-medium">{selectedItem.campaign}</p>
+                                        <div className="flex gap-2 mt-2">
+                                            <Badge variant={getStatusStyle(selectedItem.statusLabel).badge} className="uppercase text-[9px] font-bold">
+                                                {selectedItem.statusLabel}
+                                            </Badge>
+                                            <Badge variant="secondary" className="uppercase text-[9px] font-bold">
+                                                {selectedItem.type === 'shoot' ? 'Shoot' : 'Upload'}
+                                            </Badge>
+                                        </div>
                                     </div>
                                 </div>
                                 <button
-                                    onClick={closeShootModal}
-                                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                                    onClick={closeDetailsModal}
+                                    className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
                                 >
-                                    <X size={24} />
+                                    <X size={22} />
                                 </button>
                             </div>
 
-                            {/* Shoot Details */}
+                            {/* Details Matrix */}
                             <div className="space-y-6">
-                                {/* Date & Time Section */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="p-4 bg-orange-50 rounded-lg border-l-4 border-primary-orange">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Calendar size={18} className="text-primary-orange" />
-                                            <p className="text-xs font-semibold text-primary-orange uppercase">Shoot Date</p>
-                                        </div>
-                                        <p className="text-lg font-semibold text-deep-black">
-                                            {new Date(selectedShoot.shootDate).toLocaleDateString('en-US', {
-                                                weekday: 'long',
-                                                year: 'numeric',
-                                                month: 'long',
-                                                day: 'numeric'
-                                            })}
+                                    <div className="p-4 bg-orange-50/60 rounded-xl border border-orange-100">
+                                        <p className="text-[10px] font-bold text-primary-orange uppercase tracking-wider mb-1">Scheduled Date</p>
+                                        <p className="text-base font-semibold text-deep-black">
+                                            {formatDateNice(selectedItem.date)}
                                         </p>
                                     </div>
-                                    {selectedShoot.shootTime && (
-                                        <div className="p-4 bg-orange-50 rounded-lg border-l-4 border-primary-orange">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <Clock size={18} className="text-primary-orange" />
-                                                <p className="text-xs font-semibold text-primary-orange uppercase">Shoot Time</p>
-                                            </div>
-                                            <p className="text-lg font-semibold text-deep-black">{selectedShoot.shootTime}</p>
-                                        </div>
-                                    )}
+                                    <div className="p-4 bg-orange-50/60 rounded-xl border border-orange-100">
+                                        <p className="text-[10px] font-bold text-primary-orange uppercase tracking-wider mb-1">Scheduled Time</p>
+                                        <p className="text-base font-semibold text-deep-black">
+                                            {selectedItem.time || 'Not specified'}
+                                        </p>
+                                    </div>
                                 </div>
 
-                                {/* Location */}
-                                {selectedShoot.location && (
-                                    <div className="p-4 bg-gray-50 rounded-lg">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <MapPin size={18} className="text-gray-600" />
-                                            <p className="text-xs font-semibold text-gray-600 uppercase">Location</p>
-                                        </div>
-                                        <p className="text-base text-deep-black font-medium">{selectedShoot.location}</p>
+                                {/* Location or Platform Info */}
+                                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                                        {selectedItem.type === 'shoot' ? 'Location Address' : 'Platform Destination'}
+                                    </p>
+                                    <p className="text-base font-semibold text-deep-black">
+                                        {selectedItem.locationOrPlatform || 'Not specified'}
+                                    </p>
+                                </div>
+
+                                {/* Completed Time Info */}
+                                {selectedItem.completed && selectedItem.completedAt && (
+                                    <div className="p-4 bg-green-50/60 rounded-xl border border-green-100">
+                                        <p className="text-[10px] font-bold text-green-600 uppercase tracking-wider mb-1">Completion Record</p>
+                                        <p className="text-sm text-deep-black font-semibold">
+                                            Completed at: {new Date(selectedItem.completedAt).toLocaleString()}
+                                        </p>
                                     </div>
                                 )}
 
-                                {/* Notes */}
-                                {selectedShoot.notes && (
-                                    <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
-                                        <p className="text-xs text-primary-orange font-semibold mb-2 uppercase">Important Notes</p>
-                                        <p className="text-sm text-gray-700 leading-relaxed">{selectedShoot.notes}</p>
+                                {/* Notes Block */}
+                                {selectedItem.notes && (
+                                    <div className="p-4 bg-orange-50/30 border border-orange-200/80 rounded-xl">
+                                        <p className="text-[10px] font-bold text-primary-orange uppercase tracking-wider mb-1.5">Actionable Instructions</p>
+                                        <p className="text-sm text-gray-700 leading-relaxed font-sans">{selectedItem.notes}</p>
                                     </div>
                                 )}
 
-                                {/* Action Buttons */}
-                                <div className="flex gap-3 pt-4 border-t border-gray-200">
-                                    <Button
-                                        variant="primary"
-                                        className="flex-1"
-                                        onClick={() => {
-                                            handleMarkShootComplete(selectedShoot.id);
-                                            closeShootModal();
-                                        }}
-                                    >
-                                        Mark as Completed
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        className="flex-1"
-                                        onClick={closeShootModal}
-                                    >
-                                        Close
-                                    </Button>
+                                {/* Modal Actions */}
+                                <div className="flex gap-3 pt-6 border-t border-gray-100 mt-6">
+                                    {!selectedItem.completed ? (
+                                        <>
+                                            <Button
+                                                variant="outline"
+                                                className="flex-1 font-semibold text-sm"
+                                                onClick={() => {
+                                                    triggerReschedule(selectedItem);
+                                                    closeDetailsModal();
+                                                }}
+                                            >
+                                                Reschedule Slot
+                                            </Button>
+                                            <Button
+                                                variant="primary"
+                                                className="flex-1 font-semibold text-sm"
+                                                onClick={() => {
+                                                    handleMarkComplete(selectedItem.id, selectedItem.type);
+                                                    closeDetailsModal();
+                                                }}
+                                            >
+                                                Mark as Completed
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        <Button
+                                            variant="outline"
+                                            className="w-full font-semibold text-sm"
+                                            onClick={closeDetailsModal}
+                                        >
+                                            Close Details
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -645,7 +828,7 @@ const Schedule = () => {
                 document.body
             )}
 
-            {/* Reschedule Modal */}
+            {/* Reschedule Modal Overlay Portal */}
             {createPortal(
                 <RescheduleModal
                     isOpen={rescheduleModal.isOpen}
@@ -660,21 +843,23 @@ const Schedule = () => {
             <ConfirmDialog
                 isOpen={deleteConfirm.isOpen}
                 title="Delete Item"
-                message="Are you sure you want to delete this item? This action cannot be undone."
+                message="Are you sure you want to delete this event? This action cannot be undone."
                 confirmText="Delete"
                 cancelText="Cancel"
                 variant="danger"
                 onConfirm={handleConfirmDelete}
-                onCancel={handleCancelDelete}
+                onCancel={() => setDeleteConfirm({ isOpen: false, itemId: null, itemType: null })}
+                onClose={() => setDeleteConfirm({ isOpen: false, itemId: null, itemType: null })}
             />
 
+            {/* Success Notification Alert */}
             <SuccessAlert
                 isOpen={successAlert.isOpen}
                 message={successAlert.message}
                 onClose={() => setSuccessAlert({ isOpen: false, message: '' })}
             />
 
-            {/* Error Alert */}
+            {/* Error Notification Alert */}
             <ErrorAlert
                 isOpen={errorAlert.isOpen}
                 message={errorAlert.message}

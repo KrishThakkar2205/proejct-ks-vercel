@@ -20,8 +20,6 @@ import InfluencerDashboard from './pages/influencer/InfluencerDashboard';
 import InfluencerProfilePage from './pages/influencer/InfluencerProfile';
 import ShootingCalendar from './pages/influencer/ShootingCalendar';
 import Schedule from './pages/influencer/Schedule';
-import CompletedShoots from './pages/influencer/CompletedShoots';
-import DelayedPage from './pages/influencer/DelayedPage';
 import InfluencerMessages from './pages/influencer/InfluencerMessages';
 import InfluencerReviews from './pages/influencer/InfluencerReviews';
 import NotificationsPage from './pages/influencer/NotificationsPage';
@@ -85,8 +83,8 @@ function AppRoutes() {
                         <Route path="profile" element={<InfluencerProfilePage />} />
                         <Route path="calendar" element={<ShootingCalendar />} />
                         <Route path="schedule" element={<Schedule />} />
-                        <Route path="completed-shoots" element={<CompletedShoots />} />
-                        <Route path="delayed" element={<DelayedPage />} />
+                        <Route path="completed-shoots" element={<Navigate to="/influencer/schedule" replace />} />
+                        <Route path="delayed" element={<Navigate to="/influencer/schedule" replace />} />
                         <Route path="messages" element={<InfluencerMessages />} />
                         {/* Media Reports Route */}
                         <Route path="media-reports" element={<MediaReports />} />
