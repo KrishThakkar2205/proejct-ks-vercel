@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/portfolio/:influencerId",
+      "destination": "/api/portfolio"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
