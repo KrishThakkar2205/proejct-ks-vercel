@@ -16,7 +16,6 @@ const InfluencerLayout = () => {
 
     const navItems = [
         { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/influencer' },
-        { icon: <User size={20} />, label: 'Profile', path: '/influencer/profile' },
         { icon: <Instagram size={20} />, label: 'Instagram Reports', path: '/influencer/media-reports' },
         { icon: <Calendar size={20} />, label: 'Calendar', path: '/influencer/calendar' },
         { icon: <ClipboardList size={20} />, label: 'Work Tracker', path: '/influencer/schedule' },
@@ -142,8 +141,8 @@ const InfluencerLayout = () => {
                             <Bell size={20} />
                             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white animate-pulse"></span>
                         </Link>
-                        <Link to="/influencer/profile" className="md:pointer-events-none">
-                            <div className="flex items-center gap-3 pl-4 border-l border-gray-100 cursor-pointer md:cursor-default">
+                        <Link to="/influencer/profile">
+                            <div className="flex items-center gap-3 pl-4 border-l border-gray-100 cursor-pointer hover:opacity-80 transition-opacity">
                                 <div className="text-right hidden sm:block">
                                     <div className="text-sm font-medium text-deep-black">{currentUser?.name || 'Influencer'}</div>
                                     <div className="text-xs text-gray-500">Influencer Account</div>
