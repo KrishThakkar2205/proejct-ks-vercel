@@ -207,56 +207,86 @@ const InfluencerDashboard = () => {
         });
     };
 
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return 'Good morning';
+        if (hour < 17) return 'Good afternoon';
+        return 'Good evening';
+    };
+
     return (
-        <div className="space-y-8">
-            {/* Header - Mobile Only */}
-            <div className="md:hidden">
-                <h1 className="text-3xl font-bebas tracking-wide text-deep-black">Dashboard</h1>
-                <p className="text-gray-600 text-sm mt-1">Overview of your influencer activities and performance</p>
-            </div>
-
-            {/* Share Portfolio & Quick Actions Row */}
-            <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
-                {/* Share Portfolio Button */}
-                <button
-                    onClick={handleCopyPortfolioLink}
-                    className="p-2 sm:p-3 bg-gradient-to-r from-primary-orange to-orange-600 border border-orange-700 rounded-lg flex flex-col items-center justify-center gap-1 sm:gap-2 hover:opacity-90 transition-opacity"
-                >
-                    <div className="flex-shrink-0">
-                        {copied ? <Check size={16} className="text-white sm:w-5 sm:h-5" /> : <Share2 size={16} className="text-white sm:w-5 sm:h-5" />}
+        <div className="space-y-8 animate-fadeIn">
+            {/* Top Greeting & Portfolio Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+                {/* Greeting Card */}
+                <Card className="lg:col-span-2 bg-gradient-to-r from-orange-500/10 via-orange-500/5 to-transparent border-l-4 border-l-primary-orange py-3 px-4 sm:p-6 flex flex-col justify-between">
+                    <div>
+                        <span className="text-[10px] sm:text-xs font-semibold text-primary-orange uppercase tracking-wider hidden sm:block">Welcome Back</span>
+                        <h1 className="text-base xs:text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bebas tracking-wide text-deep-black sm:mt-1 block break-words line-clamp-2">
+                            {getGreeting()}, {authUser?.name || 'Influencer'}! 🚀
+                        </h1>
+                        <p className="text-sm text-gray-600 mt-2 max-w-xl hidden lg:block">
+                            Here's your schedule and performance summary for today. Let's make today count!
+                        </p>
                     </div>
-                    <h4 className="font-semibold text-[10px] sm:text-sm md:text-base text-white text-center leading-tight">
-                        {copied ? 'Copied!' : 'Share'}
-                    </h4>
-                </button>
+                    {/* Display current date nicely - hidden on mobile for strap layout */}
+                    <div className="mt-4 pt-4 border-t border-gray-100 items-center justify-between text-xs text-gray-500 hidden lg:flex">
+                        <span>Console Active</span>
+                        <span className="font-medium text-gray-600">
+                            {new Date().toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            })}
+                        </span>
+                    </div>
+                </Card>
 
-                {/* Quick Actions */}
-                {quickActions.map((action, index) => (
-                    action.path ? (
-                        <Link key={index} to={action.path}>
-                            <Card className={`p-2 sm:p-3 h-full flex flex-col items-center justify-center gap-1 sm:gap-2 hover:border-primary-orange transition-all cursor-pointer group ${action.color}`}>
-                                <div className="flex-shrink-0">
-                                    {React.cloneElement(action.icon, { size: 16, className: 'sm:w-5 sm:h-5' })}
-                                </div>
-                                <h4 className="font-semibold text-[10px] sm:text-sm md:text-base text-center leading-tight">{action.label}</h4>
-                            </Card>
-                        </Link>
-                    ) : (
-                        <button key={index} onClick={action.onClick} className="w-full">
-                            <Card className={`p-2 sm:p-3 h-full flex flex-col items-center justify-center gap-1 sm:gap-2 hover:border-primary-orange transition-all cursor-pointer group ${action.color}`}>
-                                <div className="flex-shrink-0">
-                                    {React.cloneElement(action.icon, { size: 16, className: 'sm:w-5 sm:h-5' })}
-                                </div>
-                                <h4 className="font-semibold text-[10px] sm:text-sm md:text-base text-center leading-tight">{action.label}</h4>
-                            </Card>
-                        </button>
-                    )
-                ))}
-            </div>
-
-            {/* Platform Metrics - Full Width */}
-            <div className="animate-fadeIn">
-                <PlatformMetrics />
+                {/* Dedicated Portfolio Card */}
+                <Card className="flex flex-col justify-between p-6 border-2 border-orange-100 bg-orange-50/20 hover:border-orange-200 transition-all">
+                    <div>
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-bebas tracking-wide text-deep-black">Your Public Portfolio</h3>
+                            <Share2 className="text-primary-orange w-5 h-5" />
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1">
+                            Share this link with brands to get booked for collaborations.
+                        </p>
+                    </div>
+                    
+                    <div className="mt-4 space-y-2">
+                        {/* URL Mockup */}
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={portfolioUrl}
+                                readOnly
+                                className="flex-1 min-w-0 px-3 py-2 text-xs border border-orange-100 rounded-lg bg-white focus:outline-none text-gray-500 truncate"
+                            />
+                            <button
+                                onClick={handleCopyPortfolioLink}
+                                className={`px-4 py-2 text-xs font-semibold text-white rounded-lg flex items-center gap-1.5 transition-all shadow-sm ${
+                                    copied 
+                                        ? 'bg-success-green shadow-green-100' 
+                                        : 'bg-primary-orange hover:bg-opacity-90 shadow-orange-100 active:scale-95'
+                                }`}
+                            >
+                                {copied ? (
+                                    <>
+                                        <Check size={14} />
+                                        <span>Copied</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Share2 size={14} />
+                                        <span>Copy</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </Card>
             </div>
 
             {/* Loading State */}
@@ -278,125 +308,207 @@ const InfluencerDashboard = () => {
                     </button>
                 </div>
             ) : (
-                <>
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        {stats.map((stat, index) => (
-                            <Card key={index} className="flex items-center justify-between p-5">
-                                <div className="min-w-0">
-                                    <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1 truncate">{stat.label}</p>
-                                    <h3 className="text-2xl sm:text-3xl font-bebas tracking-wide text-deep-black">{stat.value}</h3>
-                                </div>
-                                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-md flex-shrink-0 ${stat.color}`}>
-                                    {stat.icon}
-                                </div>
-                            </Card>
-                        ))}
+                <div className="space-y-8">
+                    {/* Quick Operations Controls Panel (Mobile/Tablet - hidden on xl) */}
+                    <div className="xl:hidden">
+                        <Card className="p-5">
+                            <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase tracking-wider">Quick Operations</h3>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                {quickActions.map((action, index) => (
+                                    action.path ? (
+                                        <Link key={index} to={action.path} className="block">
+                                            <div className={`p-3 rounded-xl border border-gray-100 flex flex-col items-center justify-center gap-1.5 hover:border-primary-orange hover:shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer text-center h-20 ${action.color}`}>
+                                                <div className="flex-shrink-0">
+                                                    {React.cloneElement(action.icon, { size: 18 })}
+                                                </div>
+                                                <h4 className="font-semibold text-xs leading-snug">{action.label}</h4>
+                                            </div>
+                                        </Link>
+                                    ) : (
+                                        <button key={index} onClick={action.onClick} className="w-full text-left">
+                                            <div className={`p-3 rounded-xl border border-gray-100 flex flex-col items-center justify-center gap-1.5 hover:border-primary-orange hover:shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer text-center h-20 ${action.color}`}>
+                                                <div className="flex-shrink-0">
+                                                    {React.cloneElement(action.icon, { size: 18 })}
+                                                </div>
+                                                <h4 className="font-semibold text-xs leading-snug">{action.label}</h4>
+                                            </div>
+                                        </button>
+                                    )
+                                ))}
+                            </div>
+                        </Card>
                     </div>
 
-                    {/* Main Content Grid */}
-                    <div className="space-y-6">
-                        {/* Top Row: Today's Schedule and Delayed Shoots */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <DailySchedule
-                                shoots={todayShoots}
-                                uploads={todayUploads}
-                                onMarkComplete={handleRefreshAfterComplete}
-                            />
-                            <DelayedShootsToday
-                                delayedShoots={delayedShoots}
-                                delayedUploads={delayedUploads}
-                                onMarkComplete={handleRefreshAfterComplete}
-                            />
+                    {/* Asymmetric Content Grid */}
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
+                        
+                        {/* Main Workstation Column (Left/Center - 2 Columns) */}
+                        <div className="xl:col-span-2 space-y-8">
+                            {/* Platform Metrics (Instagram) */}
+                            <div className="hover:shadow-md transition-all duration-300 rounded-xl overflow-hidden">
+                                <PlatformMetrics />
+                            </div>
+
+                            {/* Today's Agenda: Schedule & Completed Shoots side-by-side */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <DailySchedule
+                                    shoots={todayShoots}
+                                    uploads={todayUploads}
+                                    onMarkComplete={handleRefreshAfterComplete}
+                                />
+                                <CompletedShootsToday
+                                    completedShoots={completedShoots}
+                                    completedUploads={completedUploads}
+                                />
+                            </div>
                         </div>
 
-                        {/* Bottom Row: Completed Today and Recent Reviews */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <CompletedShootsToday
-                                completedShoots={completedShoots}
-                                completedUploads={completedUploads}
-                            />
-
-                            {/* Recent Reviews Card */}
-                            <Card className="p-6 flex flex-col">
-                                <div className="flex items-center justify-between mb-6 flex-shrink-0">
-                                    <div>
-                                        <h2 className="text-xl font-bebas tracking-wide text-deep-black">Recent Reviews</h2>
-                                        <p className="text-sm text-gray-600 mt-1">Client feedback</p>
-                                    </div>
-                                    <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center">
-                                        <Star className="w-6 h-6 text-purple-600" />
-                                    </div>
-                                </div>
-
-                                <div className="flex-1 flex flex-col min-h-[250px] overflow-y-auto pr-1">
-                                    {recentReviews.length === 0 ? (
-                                        <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
-                                            <Star size={48} className="mb-4 text-gray-300" strokeWidth={1.5} />
-                                            <p className="text-gray-600 font-medium text-lg">No reviews yet</p>
-                                            <p className="text-sm mt-1">Check back later!</p>
+                        {/* Sidebar Overview Column (Right - 1 Column) */}
+                        <div className="space-y-6">
+                            
+                            {/* Performance Metrics Stats Card */}
+                            <Card className="p-5">
+                                <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase tracking-wider">Performance Metrics</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-1 gap-4">
+                                    {stats.map((stat, index) => (
+                                        <div 
+                                            key={index} 
+                                            className="flex items-center justify-between p-3.5 bg-gray-50 border border-gray-100 rounded-xl hover:border-orange-200 transition-all hover:bg-white"
+                                        >
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-semibold text-gray-500 truncate">{stat.label}</p>
+                                                <h4 className="text-2xl font-bebas tracking-wide text-deep-black mt-1">{stat.value}</h4>
+                                            </div>
+                                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0 ${stat.color}`}>
+                                                {React.cloneElement(stat.icon, { size: 16 })}
+                                            </div>
                                         </div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            {recentReviews.map((review) => (
-                                                <div key={review.id || review._id} className="p-3 bg-gray-50 border border-gray-100 rounded-lg hover:bg-gray-100 transition-colors">
-                                                    <div className="flex gap-3">
-                                                        {/* Avatar */}
-                                                        <div className="w-10 h-10 bg-primary-orange rounded-full flex items-center justify-center flex-shrink-0">
-                                                            <span className="text-white font-semibold text-sm">
-                                                                {review.reviewer_name
-                                                                    ? review.reviewer_name.charAt(0).toUpperCase()
-                                                                    : review.brand_name
-                                                                        ? review.brand_name.charAt(0).toUpperCase()
-                                                                        : 'C'}
+                                    ))}
+                                </div>
+                            </Card>
+
+                            {/* Quick Operations Controls Panel (Desktop only - hidden on < xl) */}
+                            <div className="hidden xl:block">
+                                <Card className="p-5">
+                                    <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase tracking-wider">Quick Operations</h3>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {quickActions.map((action, index) => (
+                                            action.path ? (
+                                                <Link key={index} to={action.path} className="block">
+                                                    <div className={`p-3 rounded-xl border border-gray-100 flex flex-col items-center justify-center gap-1.5 hover:border-primary-orange hover:shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer text-center h-24 ${action.color}`}>
+                                                        <div className="flex-shrink-0">
+                                                            {React.cloneElement(action.icon, { size: 18 })}
+                                                        </div>
+                                                        <h4 className="font-semibold text-xs leading-snug">{action.label}</h4>
+                                                    </div>
+                                                </Link>
+                                            ) : (
+                                                <button key={index} onClick={action.onClick} className="w-full text-left">
+                                                    <div className={`p-3 rounded-xl border border-gray-100 flex flex-col items-center justify-center gap-1.5 hover:border-primary-orange hover:shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer text-center h-24 ${action.color}`}>
+                                                        <div className="flex-shrink-0">
+                                                            {React.cloneElement(action.icon, { size: 18 })}
+                                                        </div>
+                                                        <h4 className="font-semibold text-xs leading-snug">{action.label}</h4>
+                                                    </div>
+                                                </button>
+                                            )
+                                        ))}
+                                    </div>
+                                </Card>
+                            </div>
+
+                        {/* Delayed Tasks (High priority alert) - Only rendered when delayed tasks exist */}
+                        {(delayedShoots.length > 0 || delayedUploads.length > 0) && (
+                            <div className="hover:shadow-md transition-all duration-300 rounded-xl overflow-hidden border-2 border-red-100">
+                                <DelayedShootsToday
+                                    delayedShoots={delayedShoots}
+                                    delayedUploads={delayedUploads}
+                                    onMarkComplete={handleRefreshAfterComplete}
+                                />
+                            </div>
+                        )}
+
+                        {/* Recent Reviews Card */}
+                        <Card className="p-6 flex flex-col">
+                            <div className="flex items-center justify-between mb-6 flex-shrink-0">
+                                <div>
+                                    <h2 className="text-xl font-bebas tracking-wide text-deep-black">Recent Reviews</h2>
+                                    <p className="text-sm text-gray-600 mt-1">Client feedback</p>
+                                </div>
+                                <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center">
+                                    <Star className="w-6 h-6 text-purple-600" />
+                                </div>
+                            </div>
+
+                            <div className="flex-1 flex flex-col min-h-[250px] overflow-y-auto pr-1">
+                                {recentReviews.length === 0 ? (
+                                    <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+                                        <Star size={48} className="mb-4 text-gray-300" strokeWidth={1.5} />
+                                        <p className="text-gray-600 font-medium text-lg">No reviews yet</p>
+                                        <p className="text-sm mt-1">Check back later!</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {recentReviews.map((review) => (
+                                            <div key={review.id || review._id} className="p-3 bg-gray-50 border border-gray-100 rounded-lg hover:bg-gray-100 transition-colors">
+                                                <div className="flex gap-3">
+                                                    {/* Avatar */}
+                                                    <div className="w-10 h-10 bg-primary-orange rounded-full flex items-center justify-center flex-shrink-0">
+                                                        <span className="text-white font-semibold text-sm">
+                                                            {review.reviewer_name
+                                                                ? review.reviewer_name.charAt(0).toUpperCase()
+                                                                : review.brand_name
+                                                                    ? review.brand_name.charAt(0).toUpperCase()
+                                                                    : 'C'}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Content */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-start justify-between mb-1">
+                                                            <h3 className="font-semibold text-deep-black text-sm truncate">
+                                                                {review.reviewer_name || review.brand_name || 'Anonymous Client'}
+                                                            </h3>
+                                                            <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
+                                                                {review.created_at
+                                                                    ? new Date(review.created_at).toLocaleDateString()
+                                                                    : '—'}
                                                             </span>
                                                         </div>
 
-                                                        {/* Content */}
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-start justify-between mb-1">
-                                                                <h3 className="font-semibold text-deep-black text-sm truncate">
-                                                                    {review.reviewer_name || review.brand_name || 'Anonymous Client'}
-                                                                </h3>
-                                                                <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
-                                                                    {review.created_at
-                                                                        ? new Date(review.created_at).toLocaleDateString()
-                                                                        : '—'}
-                                                                </span>
-                                                            </div>
-
-                                                            {/* Star Rating */}
-                                                            <div className="flex items-center gap-0.5 mb-1.5">
-                                                                {[...Array(5)].map((_, i) => (
-                                                                    <Star
-                                                                        key={i}
-                                                                        size={13}
-                                                                        className={i < (review.rating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}
-                                                                    />
-                                                                ))}
-                                                            </div>
-
-                                                            {/* Review Text */}
-                                                            <p className="text-sm text-gray-600 line-clamp-2">
-                                                                {review.review_text || review.review || review.comment || '—'}
-                                                            </p>
+                                                        {/* Star Rating */}
+                                                        <div className="flex items-center gap-0.5 mb-1.5">
+                                                            {[...Array(5)].map((_, i) => (
+                                                                <Star
+                                                                    key={i}
+                                                                    size={13}
+                                                                    className={i < (review.rating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}
+                                                                />
+                                                            ))}
                                                         </div>
+
+                                                        {/* Review Text */}
+                                                        <p className="text-sm text-gray-600 line-clamp-2">
+                                                            {review.review_text || review.review || review.comment || '—'}
+                                                        </p>
                                                     </div>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
 
-                                <Link to="/influencer/reviews" className="block mt-4 flex-shrink-0">
-                                    <Button variant="outline" size="sm" className="w-full">
-                                        View All Reviews
-                                    </Button>
-                                </Link>
-                            </Card>
-                        </div>
+                            <Link to="/influencer/reviews" className="block mt-4 flex-shrink-0">
+                                <Button variant="outline" size="sm" className="w-full">
+                                    View All Reviews
+                                </Button>
+                            </Link>
+                        </Card>
+
                     </div>
-                </>
+                </div>
+            </div>
             )}
 
             {/* Add Event Modal */}

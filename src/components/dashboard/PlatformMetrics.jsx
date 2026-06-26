@@ -146,6 +146,89 @@ const PlatformMetrics = () => {
                             <span className="text-xs text-gray-600 mt-1 inline-block">Total</span>
                         </div>
                     </div>
+
+                    {/* Audience Demographics by City */}
+                    {instaData?.engaged_audience_demographics_city && instaData.engaged_audience_demographics_city.length > 0 && (
+                        <div className="mt-6 pt-6 border-t border-gray-100 animate-fadeIn">
+                            <div className="flex items-center justify-between mb-4">
+                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Audience Top Cities</h4>
+                                <span className="text-xs text-gray-500">Engaged Audience</span>
+                            </div>
+                            {/* Desktop View: Grid of 5 Cards */}
+                            <div className="hidden lg:grid grid-cols-5 gap-3">
+                                {instaData.engaged_audience_demographics_city.map((item, index) => (
+                                    <div 
+                                        key={index} 
+                                        className={`border rounded-xl p-4 flex flex-col justify-between hover:shadow-sm hover:border-pink-300 transition-all text-center relative overflow-hidden group ${
+                                            index === 0 
+                                                ? 'border-pink-200 bg-gradient-to-br from-pink-50/20 to-white' 
+                                                : 'border-gray-200 bg-white'
+                                        }`}
+                                    >
+                                        {/* Rank Number watermark */}
+                                        <div className="text-[10px] font-bold text-gray-300 group-hover:text-pink-300 transition-colors text-left mb-1">
+                                            #{index + 1}
+                                        </div>
+                                        {/* City Name details */}
+                                        <div className="flex-1 flex flex-col justify-center min-h-[44px]">
+                                            <div className="text-sm font-semibold text-deep-black truncate">
+                                                {item.city.split(',')[0]}
+                                            </div>
+                                            <div className="text-[10px] text-gray-400 truncate mt-0.5">
+                                                {item.city.split(',')[1] || ''}
+                                            </div>
+                                        </div>
+                                        {/* Percentage badge */}
+                                        <div className={`text-base font-bebas tracking-wide font-bold rounded-lg py-1.5 mt-3 ${
+                                            index === 0 
+                                                ? 'bg-pink-100/60 text-pink-600' 
+                                                : 'bg-gray-50 text-pink-600 border border-gray-100'
+                                        }`}>
+                                            {item.percentage}%
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Mobile/Tablet View: Vertical Ranked List Items */}
+                            <div className="lg:hidden space-y-2">
+                                {instaData.engaged_audience_demographics_city.map((item, index) => (
+                                    <div 
+                                        key={index} 
+                                        className={`flex items-center justify-between p-3 border rounded-xl hover:border-pink-200 transition-colors ${
+                                            index === 0 
+                                                ? 'border-pink-100 bg-pink-50/10' 
+                                                : 'border-gray-100 bg-gray-50/50'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            {/* Rank Circle */}
+                                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                                index === 0 ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-500'
+                                            }`}>
+                                                {index + 1}
+                                            </span>
+                                            {/* City text details */}
+                                            <div className="min-w-0">
+                                                <span className="text-sm font-semibold text-deep-black block truncate">
+                                                    {item.city.split(',')[0]}
+                                                </span>
+                                                <span className="text-[10px] text-gray-400 block truncate">
+                                                    {item.city.split(',')[1] || ''}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        {/* Percentage Badge */}
+                                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                                            index === 0 ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-600'
+                                        }`}>
+                                            {item.percentage}%
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </>
             )}
         </Card>
