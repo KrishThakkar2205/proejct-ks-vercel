@@ -90,7 +90,7 @@ const CompletedShootsToday = ({ completedShoots: apiShoots = [], completedUpload
     };
 
     return (
-        <Card className="p-6 flex flex-col">
+        <Card id="completed-shoots-section" className="p-6 flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between mb-5 flex-shrink-0">
                 <div>

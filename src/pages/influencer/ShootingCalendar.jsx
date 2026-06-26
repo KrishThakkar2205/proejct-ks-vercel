@@ -11,7 +11,7 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import SuccessAlert from '../../components/ui/SuccessAlert';
 import ErrorAlert from '../../components/ui/ErrorAlert';
 import AddEventModal from '../../components/dashboard/AddEventModal';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Upload, Video, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Upload, Video, Trash2, AlertTriangle, Loader2, Sparkles } from 'lucide-react';
 import api from '../../utils/api';
 import { utcToIST, utcToISTDate } from '../../utils/dateUtils';
 
@@ -291,11 +291,25 @@ const ShootingCalendar = () => {
     }
 
     return (
-        <div className="space-y-8">
-            {/* Header - Mobile Only */}
-            <div className="md:hidden">
-                <h1 className="text-3xl font-bebas tracking-wide text-deep-black">Calendar</h1>
-                <p className="text-gray-600 text-sm mt-1">Manage your schedule</p>
+        <div className="space-y-8 max-w-7xl mx-auto">
+            {/* Page Header */}
+            <div className="relative overflow-hidden bg-gradient-to-r from-deep-black to-gray-800 rounded-3xl p-6 md:p-8 text-white shadow-xl">
+                {/* Background patterns */}
+                <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-60 h-60 bg-purple-500/10 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
+                
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="space-y-2">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-semibold tracking-wide text-primary-orange border border-white/10 uppercase">
+                            <Sparkles size={12} className="animate-pulse" />
+                            <span>Planning Hub</span>
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-bebas tracking-wide mt-1">Booking Calendar</h1>
+                        <p className="text-gray-300 text-sm max-w-2xl font-light">
+                            Manage your collaboration dates, confirmed shoots, and upload deadlines seamlessly in one visual schedule.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -7,7 +7,7 @@ import RescheduleModal from '../../components/dashboard/RescheduleModal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import SuccessAlert from '../../components/ui/SuccessAlert';
 import ErrorAlert from '../../components/ui/ErrorAlert';
-import { Calendar as CalendarIcon, Clock, MapPin, Search, Upload, Video, X, Trash2, Loader2, CheckCircle, AlertTriangle, RefreshCw, Info } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, MapPin, Search, Upload, Video, X, Trash2, Loader2, CheckCircle, AlertTriangle, RefreshCw, Info, Sparkles } from 'lucide-react';
 import api from '../../utils/api';
 import { utcToIST, utcToISTDate } from '../../utils/dateUtils';
 
@@ -398,21 +398,33 @@ const Schedule = () => {
 
     return (
         <div className="space-y-8 pb-12">
-            {/* Header Title Block */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl sm:text-4xl font-bebas tracking-wide text-deep-black">Work Tracker</h1>
-                    <p className="text-gray-500 text-sm mt-0.5">Consolidated view of your scheduled shoots and content uploads</p>
+            {/* Page Header */}
+            <div className="relative overflow-hidden bg-gradient-to-r from-deep-black to-gray-800 rounded-3xl p-6 md:p-8 text-white shadow-xl">
+                {/* Background patterns */}
+                <div className="absolute top-0 right-0 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-60 h-60 bg-teal-500/10 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
+                
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="space-y-2">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-semibold tracking-wide text-primary-orange border border-white/10 uppercase">
+                            <Sparkles size={12} className="animate-pulse" />
+                            <span>Operations Console</span>
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-bebas tracking-wide mt-1">Work Tracker</h1>
+                        <p className="text-gray-300 text-sm max-w-2xl font-light">
+                            Consolidated view of your scheduled shoots and content uploads with real-time status tracking.
+                        </p>
+                    </div>
+                    <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => fetchData(false)}
+                        className="bg-white/10 hover:bg-white/20 text-white border-white/10 font-semibold rounded-xl px-5 py-2.5 backdrop-blur-sm self-start md:self-center hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5"
+                    >
+                        <RefreshCw size={14} />
+                        <span>Refresh</span>
+                    </Button>
                 </div>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fetchData(false)}
-                    className="flex items-center gap-1.5 self-start sm:self-auto"
-                >
-                    <RefreshCw size={14} />
-                    Refresh
-                </Button>
             </div>
 
             {/* Metrics Overview Stack */}

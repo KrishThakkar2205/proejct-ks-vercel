@@ -8,7 +8,7 @@ import {
     Instagram, Eye, Heart, MessageCircle, Share2, Copy, Check, 
     ExternalLink, Loader2, X, ChevronLeft, ChevronRight, BarChart2,
     Calendar, TrendingUp, AlertCircle, Bookmark, Percent, Clock, SkipForward,
-    Play, Pause, Volume2, VolumeX
+    Play, Pause, Volume2, VolumeX, Sparkles
 } from 'lucide-react';
 import api, { API_BASE_URL } from '../../utils/api';
 
@@ -170,24 +170,34 @@ const MediaReports = () => {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bebas tracking-wide text-deep-black">Instagram Reports</h1>
-                    <p className="text-gray-600 text-sm mt-1">
-                        View performance analytics of your recent 20 posts and generate shareable metric reports for brands.
-                    </p>
+            {/* Page Header */}
+            <div className="relative overflow-hidden bg-gradient-to-r from-deep-black to-gray-800 rounded-3xl p-6 md:p-8 text-white shadow-xl">
+                {/* Background patterns */}
+                <div className="absolute top-0 right-0 w-80 h-80 bg-pink-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-60 h-60 bg-orange-500/10 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
+                
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="space-y-2">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-semibold tracking-wide text-primary-orange border border-white/10 uppercase">
+                            <Sparkles size={12} className="animate-pulse" />
+                            <span>Social Analytics</span>
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-bebas tracking-wide mt-1">Instagram Reports</h1>
+                        <p className="text-gray-300 text-sm max-w-2xl font-light">
+                            View performance analytics of your recent 20 posts and generate shareable metric reports for brands.
+                        </p>
+                    </div>
+                    {!needsConnection && !loading && (
+                        <Button 
+                            variant="primary" 
+                            size="sm" 
+                            onClick={fetchMedia}
+                            className="bg-white/10 hover:bg-white/20 text-white border-white/10 font-semibold rounded-xl px-5 py-2.5 backdrop-blur-sm self-start md:self-center hover:scale-[1.02] active:scale-[0.98] transition-all"
+                        >
+                            Refresh Feed
+                        </Button>
+                    )}
                 </div>
-                {!needsConnection && !loading && (
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={fetchMedia}
-                        className="self-start sm:self-center"
-                    >
-                        Refresh Feed
-                    </Button>
-                )}
             </div>
 
             {/* Main Content Area */}

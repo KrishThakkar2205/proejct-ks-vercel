@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, MessageSquare, Star, Info, Clock, CheckCircle2, Search, Filter, Trash2, MoreVertical, Loader2, Calendar, X } from 'lucide-react';
+import { Bell, MessageSquare, Star, Info, Clock, CheckCircle2, Search, Filter, Trash2, MoreVertical, Loader2, Calendar, X, Sparkles } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
@@ -93,12 +93,29 @@ const NotificationsPage = () => {
 
     return (
         <div className="space-y-4 md:space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-4xl font-bebas tracking-wide text-deep-black leading-tight">Collaboration Requests</h1>
-                    <p className="text-gray-500 text-[11px] md:text-sm mt-1">Manage your brand partnerships and campaign updates</p>
-                </div>
+            {/* Page Header */}
+            <div className="relative overflow-hidden bg-gradient-to-r from-deep-black to-gray-800 rounded-3xl p-6 md:p-8 text-white shadow-xl">
+                {/* Background patterns */}
+                <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-60 h-60 bg-pink-500/10 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
                 
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="space-y-2">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-semibold tracking-wide text-primary-orange border border-white/10 uppercase">
+                            <Sparkles size={12} className="animate-pulse" />
+                            <span>Inbox Notifications</span>
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-bebas tracking-wide mt-1">Collaboration Requests</h1>
+                        <p className="text-gray-300 text-sm max-w-2xl font-light">
+                            Manage your incoming brand partnerships, campaign updates, and inbox proposals.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Filter Toolbar */}
+            <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-4 flex items-center justify-between">
+                <span className="text-sm font-semibold text-gray-500">Filter Requests</span>
                 {/* Date Filter Input */}
                 <div className="relative w-full sm:w-48 h-9 shrink-0">
                     <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
@@ -106,7 +123,7 @@ const NotificationsPage = () => {
                         type="date"
                         value={dateFilter}
                         onChange={(e) => setDateFilter(e.target.value)}
-                        className="w-full pl-8 pr-8 py-2 border border-gray-250 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent bg-gray-50/50 focus:bg-white text-gray-600 h-full"
+                        className="w-full pl-8 pr-8 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-4 focus:ring-primary-orange/10 focus:border-primary-orange bg-gray-50/50 focus:bg-white text-gray-600 h-full transition-all"
                     />
                     {dateFilter && (
                         <button

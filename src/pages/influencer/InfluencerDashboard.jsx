@@ -7,9 +7,10 @@ import PlatformMetrics from '../../components/dashboard/PlatformMetrics';
 import DailySchedule from '../../components/dashboard/DailySchedule';
 import CompletedShootsToday from '../../components/dashboard/CompletedShootsToday';
 import DelayedShootsToday from '../../components/dashboard/DelayedShootsToday';
-import { Calendar, CheckCircle, Star, Clock, TrendingUp, Share2, Check, Loader2, AlertCircle, MessageCircle } from 'lucide-react';
+import { Calendar, CheckCircle, Star, Clock, TrendingUp, Share2, Check, Loader2, AlertCircle, MessageCircle, Sparkles } from 'lucide-react';
 import api from '../../utils/api';
 import AddEventModal from '../../components/dashboard/AddEventModal';
+import CreateReviewModal from '../../components/dashboard/CreateReviewModal';
 import SuccessAlert from '../../components/ui/SuccessAlert';
 
 const InfluencerDashboard = () => {
@@ -36,6 +37,7 @@ const InfluencerDashboard = () => {
 
     // Add Event Modal
     const [showAddModal, setShowAddModal] = useState(false);
+    const [showReviewModal, setShowReviewModal] = useState(false);
     const [successAlert, setSuccessAlert] = useState({ isOpen: false, message: '' });
 
     // WhatsApp notification permission modal (shown once after signup)
@@ -191,7 +193,12 @@ const InfluencerDashboard = () => {
             icon: <Calendar size={20} />,
             color: 'bg-purple-50 text-purple-600 hover:bg-purple-100'
         },
-        { label: 'Edit Profile', path: '/influencer/profile', icon: <TrendingUp size={20} />, color: 'bg-green-50 text-green-600 hover:bg-green-100' },
+        {
+            label: 'Create Review Link',
+            onClick: () => setShowReviewModal(true),
+            icon: <Share2 size={20} />,
+            color: 'bg-green-50 text-green-600 hover:bg-green-100'
+        },
     ];
 
     // Portfolio link — /portfolio/{influencer_id}
@@ -219,20 +226,27 @@ const InfluencerDashboard = () => {
             {/* Top Greeting & Portfolio Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
                 {/* Greeting Card */}
-                <Card className="lg:col-span-2 bg-gradient-to-r from-orange-500/10 via-orange-500/5 to-transparent border-l-4 border-l-primary-orange py-3 px-4 sm:p-6 flex flex-col justify-between">
-                    <div>
-                        <span className="text-[10px] sm:text-xs font-semibold text-primary-orange uppercase tracking-wider hidden sm:block">Welcome Back</span>
-                        <h1 className="text-base xs:text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bebas tracking-wide text-deep-black sm:mt-1 block break-words line-clamp-2">
+                <div className="lg:col-span-2 relative overflow-hidden bg-gradient-to-r from-deep-black to-gray-800 rounded-3xl p-6 text-white shadow-xl flex flex-col justify-between">
+                    {/* Background patterns */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-primary-orange/10 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl -ml-12 -mb-12 pointer-events-none" />
+                    
+                    <div className="relative z-10 space-y-2">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-semibold tracking-wide text-primary-orange border border-white/10 uppercase">
+                            <Sparkles size={12} className="animate-pulse" />
+                            <span>Welcome Back</span>
+                        </div>
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bebas tracking-wide mt-1 block break-words leading-none">
                             {getGreeting()}, {authUser?.name || 'Influencer'}! 🚀
                         </h1>
-                        <p className="text-sm text-gray-600 mt-2 max-w-xl hidden lg:block">
+                        <p className="text-gray-300 text-sm max-w-xl font-light mt-1.5 hidden sm:block">
                             Here's your schedule and performance summary for today. Let's make today count!
                         </p>
                     </div>
-                    {/* Display current date nicely - hidden on mobile for strap layout */}
-                    <div className="mt-4 pt-4 border-t border-gray-100 items-center justify-between text-xs text-gray-500 hidden lg:flex">
+                    {/* Display current date nicely - hidden on mobile for layout compatibility */}
+                    <div className="relative z-10 mt-4 pt-4 border-t border-white/10 items-center justify-between text-xs text-gray-400 hidden sm:flex">
                         <span>Console Active</span>
-                        <span className="font-medium text-gray-600">
+                        <span className="font-medium text-white/90 bg-white/5 backdrop-blur-sm px-2.5 py-1 rounded-md border border-white/5">
                             {new Date().toLocaleDateString('en-US', {
                                 weekday: 'long',
                                 year: 'numeric',
@@ -241,7 +255,7 @@ const InfluencerDashboard = () => {
                             })}
                         </span>
                     </div>
-                </Card>
+                </div>
 
                 {/* Dedicated Portfolio Card */}
                 <Card className="flex flex-col justify-between p-6 border-2 border-orange-100 bg-orange-50/20 hover:border-orange-200 transition-all">
@@ -399,7 +413,7 @@ const InfluencerDashboard = () => {
                                                         <div className="flex-shrink-0">
                                                             {React.cloneElement(action.icon, { size: 18 })}
                                                         </div>
-                                                        <h4 className="font-semibold text-xs leading-snug">{action.label}</h4>
+                                                        <h4 className="font-semibold font-sans text-xs leading-snug">{action.label}</h4>
                                                     </div>
                                                 </Link>
                                             ) : (
@@ -408,7 +422,7 @@ const InfluencerDashboard = () => {
                                                         <div className="flex-shrink-0">
                                                             {React.cloneElement(action.icon, { size: 18 })}
                                                         </div>
-                                                        <h4 className="font-semibold text-xs leading-snug">{action.label}</h4>
+                                                        <h4 className="font-semibold font-sans text-xs leading-snug">{action.label}</h4>
                                                     </div>
                                                 </button>
                                             )
@@ -466,7 +480,7 @@ const InfluencerDashboard = () => {
                                                     {/* Content */}
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-start justify-between mb-1">
-                                                            <h3 className="font-semibold text-deep-black text-sm truncate">
+                                                            <h3 className="font-semibold font-sans text-deep-black text-sm truncate">
                                                                 {review.reviewer_name || review.brand_name || 'Anonymous Client'}
                                                             </h3>
                                                             <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
@@ -519,6 +533,16 @@ const InfluencerDashboard = () => {
                     setSuccessAlert({ isOpen: true, message: msg });
                     setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
                     fetchDashboardData(true); // Soft reload
+                }}
+            />
+
+            {/* Create Review Modal */}
+            <CreateReviewModal
+                isOpen={showReviewModal}
+                onClose={() => setShowReviewModal(false)}
+                onSuccess={(msg) => {
+                    setSuccessAlert({ isOpen: true, message: msg });
+                    setTimeout(() => setSuccessAlert({ isOpen: false, message: '' }), 3000);
                 }}
             />
 
