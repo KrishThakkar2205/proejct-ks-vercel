@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
-import { CheckCircle, Clock, Link as LinkIcon, Check, Loader2, AlertCircle, Upload, Video, Star } from 'lucide-react';
+import { CheckCircle, Clock, Star, Link as LinkIcon, Check, Loader2, AlertCircle } from 'lucide-react';
 import api from '../../utils/api';
 
 const CompletedShootsToday = ({ completedShoots: apiShoots = [], completedUploads: apiUploads = [] }) => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link2, Copy, CheckCircle, Calendar, MapPin, Clock, Search, Loader2, ExternalLink } from 'lucide-react';
+import { CheckCircle, Calendar, MapPin, Clock, Search, Loader2, ExternalLink } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
@@ -13,8 +13,6 @@ const CompletedShoots = () => {
     const [activeTab, setActiveTab] = useState('shoots');
     const [searchQuery, setSearchQuery] = useState('');
     const [dateFilter, setDateFilter] = useState('');
-    const [copiedLink, setCopiedLink] = useState(null);
-    const [generatingFor, setGeneratingFor] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [errorAlert, setErrorAlert] = useState({ isOpen: false, message: '' });
@@ -80,34 +78,7 @@ const CompletedShoots = () => {
 
 
 
-    // Generate review link via API
-    const handleGenerateLink = async (shootId) => {
-        setGeneratingFor(shootId);
-        try {
-            const response = await api.post(`/api/reviews/generate/${shootId}`);
-            const reviewLink = response.data?.review_link;
 
-            if (reviewLink) {
-                copyToClipboard(reviewLink, shootId);
-            }
-
-            // Refresh data to get the updated review_generated flag
-            fetchData(true);
-        } catch (err) {
-            setErrorAlert({ isOpen: true, message: err.response?.data?.detail || 'Failed to generate review link.' });
-        } finally {
-            setGeneratingFor(null);
-        }
-    };
-
-    const copyToClipboard = (link, id) => {
-        navigator.clipboard.writeText(link).then(() => {
-            setCopiedLink(id);
-            setTimeout(() => setCopiedLink(null), 2000);
-        }).catch(err => {
-            console.error('Failed to copy:', err);
-        });
-    };
 
     // Filter functions
     const filterShoots = () => {
@@ -308,52 +279,6 @@ const CompletedShoots = () => {
                                             </div>
                                         )}
                                     </div>
-
-                                    {/* Review Link Section */}
-                                    {shoot.reviewGenerated ? (
-                                        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                                            <div className="flex items-center justify-center gap-2 mb-3">
-                                                <CheckCircle size={18} className="text-green-600" />
-                                                <span className="text-sm font-semibold text-green-700">Review Generated</span>
-                                            </div>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="w-full"
-                                                onClick={() => copyToClipboard(`${window.location.origin}/review/${shoot.reviewId}`, shoot.id)}
-                                            >
-                                                <Copy size={16} className="mr-2" />
-                                                {copiedLink === shoot.id ? 'Copied!' : 'Copy Link'}
-                                            </Button>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            <div className="bg-orange-50 p-4 rounded-lg border border-orange-200 text-center">
-                                                <p className="text-sm text-gray-700 mb-3">
-                                                    Generate a review link to share with your client
-                                                </p>
-                                                <Button
-                                                    variant="primary"
-                                                    size="sm"
-                                                    className="w-full"
-                                                    onClick={() => handleGenerateLink(shoot.id)}
-                                                    disabled={generatingFor === shoot.id}
-                                                >
-                                                    {generatingFor === shoot.id ? (
-                                                        <>
-                                                            <Loader2 size={16} className="animate-spin mr-2" />
-                                                            Generating...
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Link2 size={16} className="mr-2" />
-                                                            Generate Review Link
-                                                        </>
-                                                    )}
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    )}
                                 </Card>
                             );
                         })}
