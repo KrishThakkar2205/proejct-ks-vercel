@@ -5,7 +5,7 @@ import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import StarRating from '../../components/ui/StarRating';
-import { MapPin, Star, Loader2, Calendar, X, Eye, Heart, MessageCircle, ChevronLeft, ChevronRight, Instagram } from 'lucide-react';
+import { MapPin, Star, Loader2, Calendar, X, Eye, Heart, MessageCircle, ChevronLeft, ChevronRight, Instagram, Play, Volume2, VolumeX } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '../../utils/api';
 import Lightbox from '../../components/ui/Lightbox';
@@ -39,6 +39,56 @@ const PublicPortfolio = () => {
     });
     const [slideDirection, setSlideDirection] = useState(''); // 'slide-left', 'slide-right', or ''
     const modalTimeoutRef = useRef(null);
+
+    // Custom Video Player States & Refs
+    const videoRef = useRef(null);
+    const [isPlaying, setIsPlaying] = useState(true);
+    const [isMuted, setIsMuted] = useState(false);
+    const [videoProgress, setVideoProgress] = useState(0);
+
+    const togglePlay = (e) => {
+        if (e) e.stopPropagation();
+        if (!videoRef.current) return;
+        if (isPlaying) {
+            videoRef.current.pause();
+            setIsPlaying(false);
+        } else {
+            videoRef.current.play().catch(err => console.log("Play interrupted:", err));
+            setIsPlaying(true);
+        }
+    };
+
+    const toggleMute = (e) => {
+        if (e) e.stopPropagation();
+        if (!videoRef.current) return;
+        const newMuted = !isMuted;
+        videoRef.current.muted = newMuted;
+        setIsMuted(newMuted);
+    };
+
+    const handleTimeUpdate = () => {
+        if (!videoRef.current) return;
+        const progress = (videoRef.current.currentTime / videoRef.current.duration) * 100;
+        setVideoProgress(progress || 0);
+    };
+
+    const handleProgressClick = (e) => {
+        if (e) e.stopPropagation();
+        if (!videoRef.current) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const width = rect.width;
+        const newPercentage = clickX / width;
+        videoRef.current.currentTime = newPercentage * videoRef.current.duration;
+        setVideoProgress(newPercentage * 100);
+    };
+
+    // Reset video player states when selectedMedia changes
+    useEffect(() => {
+        setIsPlaying(true);
+        setIsMuted(false);
+        setVideoProgress(0);
+    }, [selectedMedia]);
 
     // Swipe and Navigation state
     const [touchStart, setTouchStart] = useState(null);
@@ -103,6 +153,13 @@ const PublicPortfolio = () => {
     }, [selectedMedia]);
 
     const closeModal = useCallback(() => {
+        if (videoRef.current) {
+            try {
+                videoRef.current.pause();
+            } catch (err) {
+                console.error("Error pausing video on modal close:", err);
+            }
+        }
         setModalVisible(false);
         modalTimeoutRef.current = setTimeout(() => {
             setSelectedMedia(null);
@@ -241,7 +298,8 @@ const PublicPortfolio = () => {
 
             try {
                 setMediaMetricsLoading(true);
-                const response = await axios.get(`${API_BASE_URL}/api/insta-metric-per-media?influencer_id=${influencerId}&media_id=${selectedMedia.id}`);
+                const mediaType = selectedMedia?.media_type === 'VIDEO' ? 'REELS' : 'POST';
+                const response = await axios.get(`${API_BASE_URL}/api/insta-metric-per-media?influencer_id=${influencerId}&media_id=${selectedMedia.id}&media_type=${mediaType}`);
                 setSelectedMediaMetrics(response.data);
             } catch (err) {
                 console.error("Failed to fetch specific media metrics:", err);
@@ -756,12 +814,12 @@ const PublicPortfolio = () => {
                                     onTouchEnd={onTouchEnd}
                                 >
                                     {/* Media Preview */}
-                                    <div className="w-full md:w-auto bg-black md:bg-transparent flex items-start md:items-center justify-center relative md:max-h-[85vh] group/media shrink-0">
+                                    <div className="w-full md:w-[500px] lg:w-[600px] bg-black flex items-center justify-center relative aspect-square md:aspect-auto md:max-h-[85vh] group/media shrink-0 overflow-hidden">
                                         {/* Navigation Buttons (Large Screen) */}
                                         {currentIndex > 0 && (
                                             <button
                                                 onClick={handlePrevMedia}
-                                                className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/20 hover:bg-white/40 rounded-full items-center justify-center text-white transition-all backdrop-blur-sm"
+                                                className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white/20 hover:bg-white/40 rounded-full items-center justify-center text-white transition-all backdrop-blur-sm"
                                                 aria-label="Previous Media"
                                             >
                                                 <ChevronLeft size={24} />
@@ -770,7 +828,7 @@ const PublicPortfolio = () => {
                                         {currentIndex > -1 && currentIndex < instaMedia.length - 1 && (
                                             <button
                                                 onClick={handleNextMedia}
-                                                className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/20 hover:bg-white/40 rounded-full items-center justify-center text-white transition-all backdrop-blur-sm"
+                                                className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white/20 hover:bg-white/40 rounded-full items-center justify-center text-white transition-all backdrop-blur-sm"
                                                 aria-label="Next Media"
                                             >
                                                 <ChevronRight size={24} />
@@ -787,19 +845,77 @@ const PublicPortfolio = () => {
                                             {selectedMedia?.media_type === 'VIDEO' ? (
                                                 <video
                                                     key={`video-${selectedMedia.id}`}
+                                                    ref={videoRef}
                                                     src={selectedMedia.media_url}
+                                                    controls={false}
                                                     autoPlay
-                                                    className="w-auto h-auto max-w-full max-h-[60vh] md:max-h-[80vh] md:max-w-full lg:max-w-full object-contain block mx-auto rounded-none md:rounded-bl-xl"
+                                                    loop
+                                                    onTimeUpdate={handleTimeUpdate}
+                                                    onClick={togglePlay}
+                                                    className="w-full h-full object-contain cursor-pointer"
                                                 />
                                             ) : (
                                                 <img
                                                     key={`img-${selectedMedia?.id || 'none'}`}
                                                     src={selectedMedia?.media_url}
                                                     alt="Instagram post"
-                                                    className="w-auto h-auto max-w-full max-h-[60vh] md:max-h-[80vh] md:max-w-full lg:max-w-full object-contain block mx-auto rounded-none md:rounded-bl-xl"
+                                                    className="w-full h-full object-contain"
                                                 />
                                             )}
                                         </div>
+
+                                        {/* Custom Center Play/Pause Overlay Button */}
+                                        {selectedMedia?.media_type === 'VIDEO' && (
+                                            <button 
+                                                onClick={togglePlay}
+                                                className={`absolute inset-0 m-auto w-14 h-14 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center transition-all duration-300 transform backdrop-blur-[2px] z-10 ${isPlaying ? 'opacity-0 scale-75 pointer-events-none' : 'opacity-100 scale-100 shadow-lg'}`}
+                                            >
+                                                <Play size={24} className="fill-white translate-x-[2px]" />
+                                            </button>
+                                        )}
+
+                                        {/* Custom Floating Volume/Speaker Control */}
+                                        {selectedMedia?.media_type === 'VIDEO' && (
+                                            <button 
+                                                onClick={toggleMute}
+                                                className="absolute top-4 left-4 z-10 bg-black/50 hover:bg-black/75 text-white p-2 rounded-full backdrop-blur-sm transition-colors shadow-md border border-white/10"
+                                                title={isMuted ? "Unmute" : "Mute"}
+                                            >
+                                                {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                                            </button>
+                                        )}
+
+                                        {/* Overlay Caption on the media on the left bottom corner */}
+                                        <div className="absolute bottom-0 left-0 right-0 p-5 pb-7 bg-gradient-to-t from-black/95 via-black/65 to-transparent flex flex-col justify-end text-left pointer-events-none select-none z-10">
+                                            <span className="text-[11px] uppercase tracking-widest text-[#94a3b8] font-extrabold block mb-1">Caption</span>
+                                            <h2 className="text-sm font-bold text-white tracking-wide leading-relaxed line-clamp-3 select-text pointer-events-auto max-h-[100px] overflow-y-auto scrollbar-none">
+                                                {selectedMedia?.caption || <span className="italic text-gray-400">No caption available for this post.</span>}
+                                            </h2>
+                                            <div className="flex items-center gap-1.5 text-xs text-gray-300 font-medium mt-2">
+                                                <Calendar size={13} className="text-gray-300" />
+                                                <span>
+                                                    {selectedMedia?.timestamp ? new Date(selectedMedia.timestamp).toLocaleDateString('en-US', {
+                                                        weekday: 'short',
+                                                        month: 'long',
+                                                        day: 'numeric',
+                                                        year: 'numeric'
+                                                    }) : 'N/A'}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Custom Progress Bar at the very bottom of the media player container */}
+                                        {selectedMedia?.media_type === 'VIDEO' && (
+                                            <div 
+                                                className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/25 cursor-pointer overflow-hidden backdrop-blur-[1px] hover:h-2 transition-all duration-200 z-10"
+                                                onClick={handleProgressClick}
+                                            >
+                                                <div 
+                                                    className="h-full bg-gradient-to-r from-pink-500 via-rose-500 to-orange-500 transition-all duration-75"
+                                                    style={{ width: `${videoProgress}%` }}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Content Panel */}
@@ -871,13 +987,6 @@ const PublicPortfolio = () => {
                                                 ) : (
                                                     <p className="text-xs text-gray-400">Metrics unavailable</p>
                                                 )}
-                                            </div>
-
-                                            <div className="mb-4">
-                                                <p className="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wider">Caption</p>
-                                                <div className="text-sm text-gray-800 whitespace-pre-wrap break-words">
-                                                    {selectedMedia?.caption || 'No caption available.'}
-                                                </div>
                                             </div>
                                         </div>
                                     </div>
