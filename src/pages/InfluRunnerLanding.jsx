@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 const C = {
   orange:   '#E8500A',
@@ -17,7 +16,7 @@ const DotSep = () => (
   <span style={{ color: 'rgba(255,255,255,0.45)', padding: '0 8px' }}>✦</span>
 );
 
-const NavBar = ({ onClaim }) => {
+const NavBar = () => {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -85,7 +84,6 @@ const NavBar = ({ onClaim }) => {
           cursor: 'pointer',
           transition: 'transform 0.2s, box-shadow 0.2s',
         }}
-        onClick={onClaim}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = 'translateY(-1px)';
           e.currentTarget.style.boxShadow = '0 4px 12px rgba(232, 80, 10, 0.3)';
@@ -140,12 +138,7 @@ const Ticker = () => {
   );
 };
 
-const Hero = ({ onClaim }) => {
-  const handleScrollToPortfolio = () => {
-    const el = document.getElementById('portfolio');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
-  };
-
+const Hero = () => {
   return (
     <section
       style={{
@@ -242,7 +235,6 @@ const Hero = ({ onClaim }) => {
             cursor: 'pointer',
             transition: 'transform 0.2s, box-shadow 0.2s',
           }}
-          onClick={onClaim}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-1px)';
             e.currentTarget.style.boxShadow = '0 8px 24px rgba(232, 80, 10, 0.35)';
@@ -267,7 +259,6 @@ const Hero = ({ onClaim }) => {
             padding: '14px 0',
             transition: 'color 0.2s',
           }}
-          onClick={handleScrollToPortfolio}
           onMouseEnter={(e) => {
             e.currentTarget.style.color = '#F5F0EB';
           }}
@@ -1045,7 +1036,7 @@ const Testimonials = () => {
   );
 };
 
-const FinalCTA = ({ onClaim }) => {
+const FinalCTA = () => {
   return (
     <section
       style={{
@@ -1112,7 +1103,6 @@ const FinalCTA = ({ onClaim }) => {
           cursor: 'pointer',
           transition: 'transform 0.2s, box-shadow 0.2s',
         }}
-        onClick={onClaim}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = 'translateY(-1px)';
           e.currentTarget.style.boxShadow = '0 8px 24px rgba(232, 80, 10, 0.35)';
@@ -1235,13 +1225,7 @@ body {
 }
 `;
 
-export default function LandingPage() {
-  const navigate = useNavigate();
-
-  const handleClaimProfile = () => {
-    navigate('/signup');
-  };
-
+export default function InfluRunnerLanding() {
   useEffect(() => {
     const link = document.createElement('link');
     link.href =
@@ -1263,9 +1247,9 @@ export default function LandingPage() {
       }}
     >
       <style>{globalStyles}</style>
-      <NavBar onClaim={handleClaimProfile} />
+      <NavBar />
       <Ticker />
-      <Hero onClaim={handleClaimProfile} />
+      <Hero />
       <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.06)' }} />
       <ProblemGrid />
       <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.06)' }} />
@@ -1273,7 +1257,7 @@ export default function LandingPage() {
       <StatsStrip />
       <PortfolioMockup />
       <Testimonials />
-      <FinalCTA onClaim={handleClaimProfile} />
+      <FinalCTA />
       <Footer />
     </div>
   );
