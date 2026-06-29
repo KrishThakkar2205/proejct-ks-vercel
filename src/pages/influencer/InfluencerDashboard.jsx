@@ -7,7 +7,7 @@ import PlatformMetrics from '../../components/dashboard/PlatformMetrics';
 import DailySchedule from '../../components/dashboard/DailySchedule';
 import CompletedShootsToday from '../../components/dashboard/CompletedShootsToday';
 import DelayedShootsToday from '../../components/dashboard/DelayedShootsToday';
-import { Calendar, CheckCircle, Star, Clock, TrendingUp, Share2, Check, Loader2, AlertCircle, MessageCircle, Sparkles } from 'lucide-react';
+import { Calendar, CheckCircle, Star, Clock, TrendingUp, Share2, Check, Loader2, AlertCircle, MessageCircle, Sparkles, Instagram, Linkedin, Link as LinkIcon, ExternalLink } from 'lucide-react';
 import api from '../../utils/api';
 import AddEventModal from '../../components/dashboard/AddEventModal';
 import CreateReviewModal from '../../components/dashboard/CreateReviewModal';
@@ -15,6 +15,7 @@ import SuccessAlert from '../../components/ui/SuccessAlert';
 
 const InfluencerDashboard = () => {
     const [copied, setCopied] = useState(false);
+    const [copiedPlatform, setCopiedPlatform] = useState(null);
 
     // Loading & Error State
     const [loading, setLoading] = useState(true);
@@ -214,6 +215,19 @@ const InfluencerDashboard = () => {
         });
     };
 
+    // UTM Tagged links (built silently in the background)
+    const instagramUtmUrl = `${portfolioUrl}?utm_source=instagram`;
+    const linkedinUtmUrl = `${portfolioUrl}?utm_source=linkedin`;
+    const whatsappUtmUrl = `${portfolioUrl}?utm_source=whatsapp`;
+    const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(`Check out my portfolio: ${whatsappUtmUrl}`)}`;
+
+    const handleCopyPlatformLink = (platform, link) => {
+        navigator.clipboard.writeText(link).then(() => {
+            setCopiedPlatform(platform);
+            setTimeout(() => setCopiedPlatform(null), 2000);
+        });
+    };
+
     const getGreeting = () => {
         const hour = new Date().getHours();
         if (hour < 12) return 'Good morning';
@@ -257,21 +271,29 @@ const InfluencerDashboard = () => {
                     </div>
                 </div>
 
-                {/* Dedicated Portfolio Card */}
-                <Card className="flex flex-col justify-between p-6 border-2 border-orange-100 bg-orange-50/20 hover:border-orange-200 transition-all">
-                    <div>
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-bebas tracking-wide text-deep-black">Your Public Portfolio</h3>
-                            <Share2 className="text-primary-orange w-5 h-5" />
+                {/* Dedicated Portfolio Card with Clean URL & Silent UTM Share Options */}
+                <Card 
+                    className="flex flex-col justify-between p-6 border-2 border-orange-100 bg-[#F5F0EB]/30 hover:border-[#E8500A]/50 transition-all duration-300"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                    <div className="flex-1 flex flex-col justify-between">
+                        <div>
+                            <div className="flex items-center justify-between">
+                                <h3 
+                                    className="text-lg tracking-wide text-[#0E0E0E] font-bold"
+                                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                                >
+                                    Your Portfolio Link
+                                </h3>
+                                <Share2 className="text-[#E8500A] w-5 h-5" />
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1 mb-4 leading-normal">
+                                Copy your direct link or select a platform below to automatically track where your visitors come from.
+                            </p>
                         </div>
-                        <p className="text-xs text-gray-600 mt-1">
-                            Share this link with brands to get booked for collaborations.
-                        </p>
-                    </div>
-                    
-                    <div className="mt-4 space-y-2">
-                        {/* URL Mockup */}
-                        <div className="flex gap-2">
+                        
+                        {/* Clean URL Input and Copy */}
+                        <div className="flex gap-2 mb-4">
                             <input
                                 type="text"
                                 value={portfolioUrl}
@@ -293,11 +315,61 @@ const InfluencerDashboard = () => {
                                     </>
                                 ) : (
                                     <>
-                                        <Share2 size={14} />
+                                        <LinkIcon size={14} />
                                         <span>Copy</span>
                                     </>
                                 )}
                             </button>
+                        </div>
+
+                        {/* Platform Tracking Section */}
+                        <div className="border-t border-orange-100/50 pt-4">
+                            <h4 className="text-xs font-bold text-[#0E0E0E] mb-3 uppercase tracking-wider text-gray-400">
+                                Share & Track Traffic
+                            </h4>
+                            
+                            {copiedPlatform && (
+                                <div className="text-[10px] text-green-600 bg-green-50 border border-green-200 rounded-lg py-1 px-2.5 mb-2.5 text-center font-medium animate-fadeIn">
+                                    {copiedPlatform === 'Instagram' ? '📸 Instagram UTM link copied to clipboard!' : '💼 LinkedIn UTM link copied to clipboard!'}
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-3 gap-2">
+                                {/* WhatsApp button */}
+                                <a
+                                    href={whatsappShareUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex flex-col items-center justify-center p-2.5 bg-white border border-orange-50 hover:border-green-500/30 rounded-xl transition-all duration-200 shadow-sm text-center group cursor-pointer"
+                                >
+                                    <div className="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center group-hover:scale-105 transition-transform duration-200">
+                                        <MessageCircle size={18} />
+                                    </div>
+                                    <span className="text-[10px] font-semibold text-gray-600 mt-1.5">WhatsApp</span>
+                                </a>
+
+                                {/* Instagram Copy Button */}
+                                <button
+                                    onClick={() => handleCopyPlatformLink('Instagram', instagramUtmUrl)}
+                                    className="flex flex-col items-center justify-center p-2.5 bg-white border border-orange-50 hover:border-[#E8500A]/30 rounded-xl transition-all duration-200 shadow-sm text-center group cursor-pointer"
+                                >
+                                    <div className="w-8 h-8 rounded-lg bg-red-50 text-[#E8500A] flex items-center justify-center group-hover:scale-105 transition-transform duration-200">
+                                        <Instagram size={18} />
+                                    </div>
+                                    <span className="text-[10px] font-semibold text-gray-600 mt-1.5">Instagram</span>
+                                </button>
+
+                                {/* LinkedIn Copy Button */}
+                                <button
+                                    onClick={() => handleCopyPlatformLink('LinkedIn', linkedinUtmUrl)}
+                                    className="flex flex-col items-center justify-center p-2.5 bg-white border border-orange-50 hover:border-blue-500/30 rounded-xl transition-all duration-200 shadow-sm text-center group cursor-pointer"
+                                >
+                                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center group-hover:scale-105 transition-transform duration-200">
+                                        <Linkedin size={18} />
+                                    </div>
+                                    <span className="text-[10px] font-semibold text-gray-600 mt-1.5">LinkedIn</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </Card>

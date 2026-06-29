@@ -39,6 +39,7 @@ const PublicPortfolio = () => {
     });
     const [slideDirection, setSlideDirection] = useState(''); // 'slide-left', 'slide-right', or ''
     const modalTimeoutRef = useRef(null);
+    const trackedIdRef = useRef(null);
 
     // Custom Video Player States & Refs
     const videoRef = useRef(null);
@@ -219,6 +220,45 @@ const PublicPortfolio = () => {
             setSubmittingCollaboration(false);
         }
     };
+
+    // Track portfolio view
+    useEffect(() => {
+        const trackView = async () => {
+            if (!influencerId || trackedIdRef.current === influencerId) return;
+            trackedIdRef.current = influencerId;
+            try {
+                // Collect signals safely
+                const rawString = `${window.screen.width}x${window.screen.height}|${navigator.language}|${navigator.userAgent}|${Intl.DateTimeFormat().resolvedOptions().timeZone}`;
+                let fingerprintHash = '';
+                try {
+                    fingerprintHash = btoa(unescape(encodeURIComponent(rawString))).substring(0, 32);
+                } catch (e) {
+                    fingerprintHash = 'fallback_' + influencerId.substring(0, 10);
+                }
+
+                const searchParams = new URLSearchParams(window.location.search);
+                const utmSource = searchParams.get('utm_source') || 'direct';
+                const referrer = document.referrer || 'direct';
+                const deviceType = /mobile/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
+
+                const payload = {
+                    portfolio_id: influencerId,
+                    fingerprint_hash: fingerprintHash,
+                    utm_source: utmSource,
+                    referrer: referrer,
+                    device_type: deviceType
+                };
+
+                // POST view tracking data silently
+                await axios.post(`${API_BASE_URL}/portfolio/trackView`, payload);
+            } catch (err) {
+                // Fail silently
+                console.warn('Tracking view failed silently', err);
+            }
+        };
+
+        trackView();
+    }, [influencerId]);
 
     // Fetch portfolio data (public endpoint, no auth)
     useEffect(() => {
