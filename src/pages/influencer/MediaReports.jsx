@@ -34,7 +34,7 @@ const MediaReports = () => {
     // Custom Video Player States & Refs
     const videoRef = useRef(null);
     const [isPlaying, setIsPlaying] = useState(true);
-    const [isMuted, setIsMuted] = useState(false);
+    const [isMuted, setIsMuted] = useState(true);
     const [videoProgress, setVideoProgress] = useState(0);
 
     const togglePlay = (e) => {
@@ -77,7 +77,7 @@ const MediaReports = () => {
     // Reset video player states when selectedMedia changes
     useEffect(() => {
         setIsPlaying(true);
-        setIsMuted(false);
+        setIsMuted(true);
         setVideoProgress(0);
     }, [selectedMedia]);
 
@@ -365,6 +365,8 @@ const MediaReports = () => {
                                         controls={false} 
                                         autoPlay 
                                         loop
+                                        muted={isMuted}
+                                        playsInline
                                         onTimeUpdate={handleTimeUpdate}
                                         onClick={togglePlay}
                                         className="w-full h-full object-contain cursor-pointer"

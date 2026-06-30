@@ -5,7 +5,7 @@ import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import StarRating from '../../components/ui/StarRating';
-import { MapPin, Star, Loader2, Calendar, X, Eye, Heart, MessageCircle, ChevronLeft, ChevronRight, Instagram, Play, Volume2, VolumeX } from 'lucide-react';
+import { MapPin, Star, Loader2, Calendar, X, Eye, Heart, MessageCircle, ChevronLeft, ChevronRight, Instagram, Play, Volume2, VolumeX, Users } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '../../utils/api';
 import Lightbox from '../../components/ui/Lightbox';
@@ -38,13 +38,14 @@ const PublicPortfolio = () => {
         budget: ''
     });
     const [slideDirection, setSlideDirection] = useState(''); // 'slide-left', 'slide-right', or ''
+    const [activeTab, setActiveTab] = useState('cities');
     const modalTimeoutRef = useRef(null);
     const trackedIdRef = useRef(null);
 
     // Custom Video Player States & Refs
     const videoRef = useRef(null);
     const [isPlaying, setIsPlaying] = useState(true);
-    const [isMuted, setIsMuted] = useState(false);
+    const [isMuted, setIsMuted] = useState(true);
     const [videoProgress, setVideoProgress] = useState(0);
 
     const togglePlay = (e) => {
@@ -87,7 +88,7 @@ const PublicPortfolio = () => {
     // Reset video player states when selectedMedia changes
     useEffect(() => {
         setIsPlaying(true);
-        setIsMuted(false);
+        setIsMuted(true);
         setVideoProgress(0);
     }, [selectedMedia]);
 
@@ -565,49 +566,119 @@ const PublicPortfolio = () => {
                 </div>
 
                 {/* Audience Demographics */}
-                {instaMetrics?.engaged_audience_demographics_city && instaMetrics.engaged_audience_demographics_city.length > 0 && (
+                {(instaMetrics?.engaged_audience_demographics_city || instaMetrics?.engaged_audience_age_demographics) && (
                     <div>
                         <h2 className="text-3xl font-bebas tracking-wide text-deep-black mb-6">Audience Demographics</h2>
                         <Card className="p-6 md:p-8 border border-gray-100 bg-white shadow-sm hover:shadow-md transition-shadow rounded-2xl">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 bg-gradient-to-tr from-primary-orange to-pink-500 rounded-xl flex items-center justify-center text-white shadow-md shadow-orange-500/10">
-                                    <MapPin size={20} />
+                            {/* Tab Switcher Header */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-100 pb-4 mb-6 gap-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-gradient-to-tr from-primary-orange to-pink-500 rounded-xl flex items-center justify-center text-white shadow-md shadow-orange-500/10">
+                                        <Users size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bebas tracking-wide text-deep-black text-xl leading-tight">Audience Insights</h3>
+                                        <p className="text-xs text-gray-500">Engaged audience breakdown and demographics</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="font-bebas tracking-wide text-deep-black text-xl leading-tight">Top Engaged Cities</h3>
-                                    <p className="text-xs text-gray-500">Distribution of engaged audience by city location</p>
+                                
+                                {/* Toggle buttons */}
+                                <div className="flex bg-gray-100 p-1 rounded-xl self-start sm:self-auto">
+                                    <button
+                                        onClick={() => setActiveTab('cities')}
+                                        className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                                            activeTab === 'cities' 
+                                                ? 'bg-white text-primary-orange shadow-sm font-bold' 
+                                                : 'text-gray-500 hover:text-gray-800'
+                                        }`}
+                                    >
+                                        <MapPin size={13} />
+                                        <span>Top Cities</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('age')}
+                                        className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                                            activeTab === 'age' 
+                                                ? 'bg-white text-primary-orange shadow-sm font-bold' 
+                                                : 'text-gray-500 hover:text-gray-800'
+                                        }`}
+                                    >
+                                        <Users size={13} />
+                                        <span>Age Groups</span>
+                                    </button>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-5">
-                                {instaMetrics.engaged_audience_demographics_city.map((item, idx) => {
-                                    const gradients = [
-                                        'from-orange-500 to-amber-500',
-                                        'from-pink-500 to-rose-500',
-                                        'from-purple-500 to-indigo-500',
-                                        'from-blue-500 to-cyan-500',
-                                        'from-teal-500 to-emerald-500'
-                                    ];
-                                    const gradClass = gradients[idx % gradients.length];
-                                    
-                                    return (
-                                        <div key={idx} className="space-y-1.5">
-                                            <div className="flex justify-between items-center text-xs">
-                                                <span className="font-semibold text-gray-700 flex items-center gap-1.5">
-                                                    <span className={`inline-block w-2.5 h-2.5 rounded-full bg-gradient-to-r ${gradClass}`}></span>
-                                                    {item.city}
-                                                </span>
-                                                <span className="font-bold text-gray-800">{item.percentage}%</span>
+
+                            {/* Tab Content: Top Cities */}
+                            {activeTab === 'cities' && instaMetrics?.engaged_audience_demographics_city && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-5 animate-fadeIn">
+                                    {instaMetrics.engaged_audience_demographics_city.map((item, idx) => {
+                                        const gradients = [
+                                            'from-orange-500 to-amber-500',
+                                            'from-pink-500 to-rose-500',
+                                            'from-purple-500 to-indigo-500',
+                                            'from-blue-500 to-cyan-500',
+                                            'from-teal-500 to-emerald-500'
+                                        ];
+                                        const gradClass = gradients[idx % gradients.length];
+                                        
+                                        return (
+                                            <div key={idx} className="space-y-1.5">
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="font-semibold text-gray-700 flex items-center gap-1.5">
+                                                        <span className={`inline-block w-2.5 h-2.5 rounded-full bg-gradient-to-r ${gradClass}`}></span>
+                                                        {item.city}
+                                                    </span>
+                                                    <span className="font-bold text-gray-800">{item.percentage}%</span>
+                                                </div>
+                                                <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+                                                    <div
+                                                        className={`h-full bg-gradient-to-r ${gradClass} rounded-full transition-all duration-1000 ease-out`}
+                                                        style={{ width: `${item.percentage}%` }}
+                                                    />
+                                                </div>
                                             </div>
-                                            <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner">
-                                                <div
-                                                    className={`h-full bg-gradient-to-r ${gradClass} rounded-full transition-all duration-1000 ease-out`}
-                                                    style={{ width: `${item.percentage}%` }}
-                                                />
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {/* Tab Content: Age Groups */}
+                            {activeTab === 'age' && instaMetrics?.engaged_audience_age_demographics?.age_distribution && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-5 animate-fadeIn">
+                                    {instaMetrics.engaged_audience_age_demographics.age_distribution.map((item, idx) => {
+                                        const gradients = [
+                                            'from-purple-500 to-indigo-500',
+                                            'from-pink-500 to-rose-500',
+                                            'from-orange-500 to-amber-500',
+                                            'from-teal-500 to-emerald-500',
+                                            'from-blue-500 to-cyan-500',
+                                            'from-gray-500 to-slate-500'
+                                        ];
+                                        const gradClass = gradients[idx % gradients.length];
+
+                                        return (
+                                            <div key={idx} className="space-y-1.5">
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="font-semibold text-gray-700 flex items-center gap-1.5">
+                                                        <span className={`inline-block w-2.5 h-2.5 rounded-full bg-gradient-to-r ${gradClass}`}></span>
+                                                        Age {item.age}
+                                                    </span>
+                                                    <span className="font-bold text-gray-800">
+                                                        {item.percentage}% <span className="text-[10px] text-gray-400 font-normal">({item.count} views)</span>
+                                                    </span>
+                                                </div>
+                                                <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+                                                    <div
+                                                        className={`h-full bg-gradient-to-r ${gradClass} rounded-full transition-all duration-1000 ease-out`}
+                                                        style={{ width: `${item.percentage}%` }}
+                                                    />
+                                                </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </Card>
                     </div>
                 )}
@@ -924,6 +995,8 @@ const PublicPortfolio = () => {
                                                     controls={false}
                                                     autoPlay
                                                     loop
+                                                    muted={isMuted}
+                                                    playsInline
                                                     onTimeUpdate={handleTimeUpdate}
                                                     onClick={togglePlay}
                                                     className="w-full h-full object-contain cursor-pointer"

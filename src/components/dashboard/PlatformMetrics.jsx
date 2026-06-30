@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../ui/Card';
-import { Instagram } from 'lucide-react';
+import { Instagram, MapPin, Users } from 'lucide-react';
 import api from '../../utils/api';
 
 const PlatformMetrics = () => {
@@ -8,6 +8,8 @@ const PlatformMetrics = () => {
     const [loading, setLoading] = useState(true);
     const [needsConnection, setNeedsConnection] = useState(false);
     const [error, setError] = useState(null);
+    const [activeDemographicsTab, setActiveDemographicsTab] = useState('cities');
+
 
     useEffect(() => {
         const fetchInstaData = async () => {
@@ -147,86 +149,142 @@ const PlatformMetrics = () => {
                         </div>
                     </div>
 
-                    {/* Audience Demographics by City */}
-                    {instaData?.engaged_audience_demographics_city && instaData.engaged_audience_demographics_city.length > 0 && (
+                    {/* Audience Demographics Section */}
+                    {(instaData?.engaged_audience_demographics_city || instaData?.engaged_audience_age_demographics) && (
                         <div className="mt-6 pt-6 border-t border-gray-100 animate-fadeIn">
-                            <div className="flex items-center justify-between mb-4">
-                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Audience Top Cities</h4>
-                                <span className="text-xs text-gray-500">Engaged Audience</span>
-                            </div>
-                            {/* Desktop View: Grid of 5 Cards */}
-                            <div className="hidden lg:grid grid-cols-5 gap-3">
-                                {instaData.engaged_audience_demographics_city.map((item, index) => (
-                                    <div 
-                                        key={index} 
-                                        className={`border rounded-xl p-4 flex flex-col justify-between hover:shadow-sm hover:border-pink-300 transition-all text-center relative overflow-hidden group ${
-                                            index === 0 
-                                                ? 'border-pink-200 bg-gradient-to-br from-pink-50/20 to-white' 
-                                                : 'border-gray-200 bg-white'
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+                                <div className="flex items-center gap-2">
+                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Audience Demographics</h4>
+                                </div>
+                                
+                                {/* Tabs */}
+                                <div className="flex bg-gray-100 p-0.5 rounded-lg self-start sm:self-auto">
+                                    <button
+                                        onClick={() => setActiveDemographicsTab('cities')}
+                                        className={`px-3 py-1 rounded-md text-[10px] sm:text-xs font-semibold transition-all ${
+                                            activeDemographicsTab === 'cities' 
+                                                ? 'bg-white text-pink-600 shadow-sm' 
+                                                : 'text-gray-500 hover:text-gray-800'
                                         }`}
                                     >
-                                        {/* Rank Number watermark */}
-                                        <div className="text-[10px] font-bold text-gray-300 group-hover:text-pink-300 transition-colors text-left mb-1">
-                                            #{index + 1}
-                                        </div>
-                                        {/* City Name details */}
-                                        <div className="flex-1 flex flex-col justify-center min-h-[44px]">
-                                            <div className="text-sm font-semibold text-deep-black truncate">
-                                                {item.city.split(',')[0]}
-                                            </div>
-                                            <div className="text-[10px] text-gray-400 truncate mt-0.5">
-                                                {item.city.split(',')[1] || ''}
-                                            </div>
-                                        </div>
-                                        {/* Percentage badge */}
-                                        <div className={`text-base font-bebas tracking-wide font-bold rounded-lg py-1.5 mt-3 ${
-                                            index === 0 
-                                                ? 'bg-pink-100/60 text-pink-600' 
-                                                : 'bg-gray-50 text-pink-600 border border-gray-100'
-                                        }`}>
-                                            {item.percentage}%
-                                        </div>
-                                    </div>
-                                ))}
+                                        Top Cities
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveDemographicsTab('age')}
+                                        className={`px-3 py-1 rounded-md text-[10px] sm:text-xs font-semibold transition-all ${
+                                            activeDemographicsTab === 'age' 
+                                                ? 'bg-white text-pink-600 shadow-sm' 
+                                                : 'text-gray-500 hover:text-gray-800'
+                                        }`}
+                                    >
+                                        Age Groups
+                                    </button>
+                                </div>
                             </div>
 
-                            {/* Mobile/Tablet View: Vertical Ranked List Items */}
-                            <div className="lg:hidden space-y-2">
-                                {instaData.engaged_audience_demographics_city.map((item, index) => (
-                                    <div 
-                                        key={index} 
-                                        className={`flex items-center justify-between p-3 border rounded-xl hover:border-pink-200 transition-colors ${
-                                            index === 0 
-                                                ? 'border-pink-100 bg-pink-50/10' 
-                                                : 'border-gray-100 bg-gray-50/50'
-                                        }`}
-                                    >
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            {/* Rank Circle */}
-                                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                                                index === 0 ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-500'
-                                            }`}>
-                                                {index + 1}
-                                            </span>
-                                            {/* City text details */}
-                                            <div className="min-w-0">
-                                                <span className="text-sm font-semibold text-deep-black block truncate">
-                                                    {item.city.split(',')[0]}
-                                                </span>
-                                                <span className="text-[10px] text-gray-400 block truncate">
-                                                    {item.city.split(',')[1] || ''}
+                            {/* Tab Content: Top Cities */}
+                            {activeDemographicsTab === 'cities' && instaData?.engaged_audience_demographics_city && instaData.engaged_audience_demographics_city.length > 0 && (
+                                <div className="animate-fadeIn">
+                                    {/* Desktop View: Grid of 5 Cards */}
+                                    <div className="hidden lg:grid grid-cols-5 gap-3">
+                                        {instaData.engaged_audience_demographics_city.map((item, index) => (
+                                            <div 
+                                                key={index} 
+                                                className={`border rounded-xl p-4 flex flex-col justify-between hover:shadow-sm hover:border-pink-300 transition-all text-center relative overflow-hidden group ${
+                                                    index === 0 
+                                                        ? 'border-pink-200 bg-gradient-to-br from-pink-50/20 to-white' 
+                                                        : 'border-gray-200 bg-white'
+                                                }`}
+                                            >
+                                                {/* Rank Number watermark */}
+                                                <div className="text-[10px] font-bold text-gray-300 group-hover:text-pink-300 transition-colors text-left mb-1">
+                                                    #{index + 1}
+                                                </div>
+                                                {/* City Name details */}
+                                                <div className="flex-1 flex flex-col justify-center min-h-[44px]">
+                                                    <div className="text-sm font-semibold text-deep-black truncate">
+                                                        {item.city.split(',')[0]}
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-400 truncate mt-0.5">
+                                                        {item.city.split(',')[1] || ''}
+                                                    </div>
+                                                </div>
+                                                {/* Percentage badge */}
+                                                <div className={`text-base font-bebas tracking-wide font-bold rounded-lg py-1.5 mt-3 ${
+                                                    index === 0 
+                                                        ? 'bg-pink-100/60 text-pink-600' 
+                                                        : 'bg-gray-50 text-pink-600 border border-gray-100'
+                                                }`}>
+                                                    {item.percentage}%
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Mobile/Tablet View: Vertical Ranked List Items */}
+                                    <div className="lg:hidden space-y-2">
+                                        {instaData.engaged_audience_demographics_city.map((item, index) => (
+                                            <div 
+                                                key={index} 
+                                                className={`flex items-center justify-between p-3 border rounded-xl hover:border-pink-200 transition-colors ${
+                                                    index === 0 
+                                                        ? 'border-pink-100 bg-pink-50/10' 
+                                                        : 'border-gray-100 bg-gray-50/50'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    {/* Rank Circle */}
+                                                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                                        index === 0 ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-500'
+                                                    }`}>
+                                                        {index + 1}
+                                                    </span>
+                                                    {/* City text details */}
+                                                    <div className="min-w-0">
+                                                        <span className="text-sm font-semibold text-deep-black block truncate">
+                                                            {item.city.split(',')[0]}
+                                                        </span>
+                                                        <span className="text-[10px] text-gray-400 block truncate">
+                                                            {item.city.split(',')[1] || ''}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                {/* Percentage Badge */}
+                                                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                                                    index === 0 ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-600'
+                                                }`}>
+                                                    {item.percentage}%
                                                 </span>
                                             </div>
-                                        </div>
-                                        {/* Percentage Badge */}
-                                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                                            index === 0 ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-600'
-                                        }`}>
-                                            {item.percentage}%
-                                        </span>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
+                                </div>
+                            )}
+
+                            {/* Tab Content: Age Groups */}
+                            {activeDemographicsTab === 'age' && instaData?.engaged_audience_age_demographics?.age_distribution && instaData.engaged_audience_age_demographics.age_distribution.length > 0 && (
+                                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 animate-fadeIn">
+                                    {instaData.engaged_audience_age_demographics.age_distribution.map((item, index) => (
+                                        <div 
+                                            key={index} 
+                                            className="border border-gray-200 rounded-xl p-3 bg-white hover:shadow-sm hover:border-pink-300 transition-all text-center relative overflow-hidden group"
+                                        >
+                                            <div className="text-[10px] font-bold text-gray-400 mb-1">
+                                                Age Group
+                                            </div>
+                                            <div className="text-sm font-semibold text-deep-black">
+                                                {item.age}
+                                            </div>
+                                            <div className="text-xs font-bebas tracking-wide font-bold bg-pink-50 text-pink-600 rounded-lg py-1.5 mt-2 transition-colors group-hover:bg-pink-100/80">
+                                                {item.percentage}%
+                                            </div>
+                                            <div className="text-[9px] text-gray-400 mt-1 animate-fadeIn">
+                                                {item.count} views
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
                 </>

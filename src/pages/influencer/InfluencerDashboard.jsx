@@ -12,6 +12,7 @@ import api from '../../utils/api';
 import AddEventModal from '../../components/dashboard/AddEventModal';
 import CreateReviewModal from '../../components/dashboard/CreateReviewModal';
 import SuccessAlert from '../../components/ui/SuccessAlert';
+import PortfolioAnalytics from '../../components/dashboard/PortfolioAnalytics';
 
 const InfluencerDashboard = () => {
     const [copied, setCopied] = useState(false);
@@ -30,6 +31,7 @@ const InfluencerDashboard = () => {
     const [completedUploads, setCompletedUploads] = useState([]);
     const [recentReviews, setRecentReviews] = useState([]);
     const authUser = useSelector(state => state.auth.user);
+    const token = useSelector(state => state.auth.token);
     const [statsData, setStatsData] = useState({
         upcomingCount: 0,
         completedCount: 0,
@@ -433,6 +435,11 @@ const InfluencerDashboard = () => {
                             {/* Platform Metrics (Instagram) */}
                             <div className="hover:shadow-md transition-all duration-300 rounded-xl overflow-hidden">
                                 <PlatformMetrics />
+                            </div>
+
+                            {/* Portfolio Analytics Section */}
+                            <div className="hover:shadow-md transition-all duration-300 rounded-xl overflow-hidden">
+                                <PortfolioAnalytics profileId={influencerId} token={token} />
                             </div>
 
                             {/* Today's Agenda: Schedule & Completed Shoots side-by-side */}
