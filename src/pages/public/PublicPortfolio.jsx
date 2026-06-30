@@ -665,7 +665,7 @@ const PublicPortfolio = () => {
                                                         Age {item.age}
                                                     </span>
                                                     <span className="font-bold text-gray-800">
-                                                        {item.percentage}% <span className="text-[10px] text-gray-400 font-normal">({item.count} views)</span>
+                                                        {item.percentage}% <span className="text-[10px] text-gray-500 font-medium">({item.count} views)</span>
                                                     </span>
                                                 </div>
                                                 <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner">

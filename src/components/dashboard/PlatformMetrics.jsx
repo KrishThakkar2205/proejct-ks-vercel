@@ -205,7 +205,7 @@ const PlatformMetrics = () => {
                                                     <div className="text-sm font-semibold text-deep-black truncate">
                                                         {item.city.split(',')[0]}
                                                     </div>
-                                                    <div className="text-[10px] text-gray-400 truncate mt-0.5">
+                                                    <div className="text-[10px] text-gray-500 truncate mt-0.5 font-medium">
                                                         {item.city.split(',')[1] || ''}
                                                     </div>
                                                 </div>
@@ -244,7 +244,7 @@ const PlatformMetrics = () => {
                                                         <span className="text-sm font-semibold text-deep-black block truncate">
                                                             {item.city.split(',')[0]}
                                                         </span>
-                                                        <span className="text-[10px] text-gray-400 block truncate">
+                                                        <span className="text-[10px] text-gray-500 font-medium block truncate">
                                                             {item.city.split(',')[1] || ''}
                                                         </span>
                                                     </div>
@@ -269,7 +269,7 @@ const PlatformMetrics = () => {
                                             key={index} 
                                             className="border border-gray-200 rounded-xl p-3 bg-white hover:shadow-sm hover:border-pink-300 transition-all text-center relative overflow-hidden group"
                                         >
-                                            <div className="text-[10px] font-bold text-gray-400 mb-1">
+                                            <div className="text-[10px] font-bold text-gray-500 mb-1">
                                                 Age Group
                                             </div>
                                             <div className="text-sm font-semibold text-deep-black">
@@ -278,7 +278,7 @@ const PlatformMetrics = () => {
                                             <div className="text-xs font-bebas tracking-wide font-bold bg-pink-50 text-pink-600 rounded-lg py-1.5 mt-2 transition-colors group-hover:bg-pink-100/80">
                                                 {item.percentage}%
                                             </div>
-                                            <div className="text-[9px] text-gray-400 mt-1 animate-fadeIn">
+                                            <div className="text-[10px] font-semibold text-slate-700 mt-1.5 animate-fadeIn">
                                                 {item.count} views
                                             </div>
                                         </div>

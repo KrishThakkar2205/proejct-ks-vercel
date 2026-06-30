@@ -1,15 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { LayoutDashboard, Search, Users, Briefcase, MessageSquare, Heart, Bell, LogOut, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Search, Briefcase, MessageSquare, Bell, LogOut } from 'lucide-react';
 import { logout } from '../store/slices/authSlice';
 
 const DashboardLayout = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const dispatch = useDispatch();
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const isActive = (path) => location.pathname === path;
 
     const navItems = [
@@ -20,98 +18,11 @@ const DashboardLayout = () => {
         { icon: <MessageSquare size={20} />, label: 'Messages', path: '/brand/messages' },
     ];
 
-    const SidebarContent = ({ showBrand = true, isCollapsed = false }) => (
-        <>
-            {showBrand && (
-                <div className="p-6 border-b border-gray-100">
-                    <Link to="/brand" className="flex items-center">
-                        <img src="/logo.png" alt="InfluRunner Logo" className="h-8 w-auto px-6 cursor-pointer" />
-                    </Link>
-                </div>
-            )}
-
-            <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
-                {navItems.map((item) => (
-                    <Link
-                        key={item.path}
-                        to={item.path}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive(item.path)
-                            ? 'bg-orange-50 text-primary-orange'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                            }`}
-                        title={isCollapsed ? item.label : ''}
-                    >
-                        {item.icon}
-                        {!isCollapsed && <span>{item.label}</span>}
-                    </Link>
-                ))}
-            </nav>
-
-            <div className="p-4 border-t border-gray-100">
-                <button
-                    onClick={() => {
-                        dispatch(logout());
-                        navigate('/login');
-                    }}
-                    className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 w-full text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors`}
-                    title={isCollapsed ? 'Logout' : ''}
-                >
-                    <LogOut size={20} />
-                    {!isCollapsed && <span>Logout</span>}
-                </button>
-            </div>
-        </>
-    );
-
     return (
-        <div className="flex h-screen bg-light-gray font-sans">
-            {/* Desktop Sidebar */}
-            <aside className={`${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 hidden md:flex flex-col transition-all duration-300 relative`}>
-                <SidebarContent showBrand={false} isCollapsed={isSidebarCollapsed} />
-                {/* Toggle Button */}
-                <button
-                    onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                    className="absolute -right-3 top-8 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:text-primary-orange hover:border-primary-orange transition-colors shadow-sm z-10"
-                    aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                >
-                    {isSidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-                </button>
-            </aside>
-
-            {/* Mobile Sidebar Overlay */}
-            {/* Backdrop */}
-            <div
-                className={`fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 md:hidden z-50 ${isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
-                    }`}
-                onClick={() => setIsMobileMenuOpen(false)}
-            />
-
-            {/* Drawer */}
-            <aside
-                className={`fixed top-0 left-0 h-full w-64 bg-white shadow-xl flex flex-col transform transition-transform duration-300 ease-in-out md:hidden z-[60] ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-                    }`}
-            >
-                <SidebarContent showBrand={true} />
-            </aside>
-
-            <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Fixed Mobile Toggle Button */}
-                <button
-                    className="fixed top-5 right-6 z-50 md:hidden text-deep-black hover:text-primary-orange focus:outline-none w-6 h-6"
-                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    aria-label="Toggle menu"
-                >
-                    <div className={`absolute inset-0 transition-all duration-300 transform ${isMobileMenuOpen ? 'opacity-0 rotate-90 scale-50' : 'opacity-100 rotate-0 scale-100'}`}>
-                        <Menu size={24} />
-                    </div>
-                    <div className={`absolute inset-0 transition-all duration-300 transform ${isMobileMenuOpen ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-50'}`}>
-                        <X size={24} />
-                    </div>
-                </button>
-
+        <div className="flex h-screen bg-light-gray font-sans overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden relative">
                 {/* Top Header - Fixed */}
-                <header className={`fixed top-0 left-0 ${isSidebarCollapsed ? 'md:left-20' : 'md:left-64'} right-0 bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shadow-sm z-40 transition-all duration-300`}>
+                <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shadow-sm z-40">
                     <div className="flex items-center gap-4">
                         <Link to="/brand" className="hidden md:flex items-center cursor-pointer">
                             <img src="/logo.png" alt="InfluRunner Logo" className="h-8 w-auto" />
@@ -135,15 +46,56 @@ const DashboardLayout = () => {
                                 AB
                             </div>
                         </div>
-                        {/* Placeholder to maintain spacing */}
-                        <div className="w-6 h-6 ml-2 md:hidden"></div>
+                        <button
+                            onClick={() => {
+                                dispatch(logout());
+                                navigate('/login');
+                            }}
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors rounded-full border-l border-gray-100 pl-4"
+                            title="Logout"
+                        >
+                            <LogOut size={20} />
+                        </button>
                     </div>
                 </header>
 
                 {/* Main Content */}
-                <main className="flex-1 overflow-y-auto p-6 bg-gray-50/50 pt-[88px]">
+                <main className="flex-1 overflow-y-auto p-6 pb-28 bg-gray-50/50 pt-[88px]">
                     <Outlet />
                 </main>
+
+                {/* Floating iOS-Style Dark Navigation Dock */}
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-max max-w-[94%] bg-deep-black/95 backdrop-blur-lg border border-neutral-800 shadow-[0_12px_40px_rgba(0,0,0,0.4)] z-50 px-3 py-2 flex items-center gap-3 rounded-full transition-all duration-300">
+                    {navItems.map((item) => {
+                        const isCurrentActive = isActive(item.path);
+                        const displayLabel = 
+                            item.label === 'Previously Closed Deals' ? 'Closed' : 
+                            item.label === 'Active Deals' ? 'Active' : 
+                            item.label;
+                        
+                        return (
+                            <Link
+                                key={item.path}
+                                to={item.path}
+                                className={`transition-all duration-300 ${
+                                    isCurrentActive
+                                        ? 'bg-primary-orange text-white px-4 py-2.5 rounded-full flex items-center gap-2 font-semibold scale-105 shadow-md shadow-orange-500/20'
+                                        : 'w-10 h-10 rounded-full bg-neutral-800/40 text-gray-400 hover:text-white hover:bg-neutral-800 flex items-center justify-center'
+                                }`}
+                                title={!isCurrentActive ? displayLabel : ''}
+                            >
+                                <div className="flex-shrink-0">
+                                    {React.cloneElement(item.icon, { size: 18 })}
+                                </div>
+                                {isCurrentActive && (
+                                    <span className="text-xs tracking-wide whitespace-nowrap animate-fadeIn font-semibold">
+                                        {displayLabel}
+                                    </span>
+                                )}
+                            </Link>
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );

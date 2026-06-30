@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { LayoutDashboard, User, Calendar, ClipboardList, CheckCircle, Star, Bell, LogOut, Menu, X, ChevronLeft, ChevronRight, AlertTriangle, Instagram } from 'lucide-react';
+import { LayoutDashboard, Calendar, ClipboardList, Star, Bell, LogOut, Instagram } from 'lucide-react';
 import { logout } from '../store/slices/authSlice';
 import { API_BASE_URL } from '../utils/api';
 
@@ -9,8 +9,6 @@ const InfluencerLayout = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const dispatch = useDispatch();
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
     const isActive = (path) => location.pathname === path;
 
@@ -20,110 +18,14 @@ const InfluencerLayout = () => {
         { icon: <Calendar size={20} />, label: 'Calendar', path: '/influencer/calendar' },
         { icon: <ClipboardList size={20} />, label: 'Work Tracker', path: '/influencer/schedule' },
         { icon: <Star size={20} />, label: 'Reviews', path: '/influencer/reviews' },
-        { icon: <Bell size={20} />, label: 'Notifications', path: '/influencer/notifications' },
     ];
-
-    const SidebarContent = ({ showBrand = true, isCollapsed = false }) => (
-        <>
-            {showBrand && (
-                <div className="p-6 border-b border-gray-100">
-                    <Link to="/influencer" className="flex items-center" onClick={() => setIsMobileMenuOpen(false)}>
-                        <img src="/logo.png" alt="InfluRunner Logo" className="h-8 w-auto px-6 cursor-pointer" />
-                    </Link>
-                </div>
-            )}
-
-            <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
-                {navItems.map((item) => (
-                    <Link
-                        key={item.path}
-                        to={item.path}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive(item.path)
-                            ? 'bg-orange-50 text-primary-orange'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                            }`}
-                        title={isCollapsed ? item.label : ''}
-                    >
-                        <span className={!isCollapsed ? 'animate-icon-bounce' : ''}>
-                            {item.icon}
-                        </span>
-                        {!isCollapsed && (
-                            <span className="animate-fade-in-slide whitespace-nowrap">
-                                {item.label}
-                            </span>
-                        )}
-                    </Link>
-                ))}
-            </nav>
-
-            <div className="p-4 border-t border-gray-100">
-                <button
-                    onClick={() => {
-                        dispatch(logout());
-                        navigate('/login');
-                    }}
-                    className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 w-full text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors`}
-                    title={isCollapsed ? 'Logout' : ''}
-                >
-                    <span className={!isCollapsed ? 'animate-icon-bounce' : ''}>
-                        <LogOut size={20} />
-                    </span>
-                    {!isCollapsed && (
-                        <span className="animate-fade-in-slide whitespace-nowrap">
-                            Logout
-                        </span>
-                    )}
-                </button>
-            </div>
-        </>
-    );
 
     // Get current user from localStorage
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
     return (
-        <div className="flex h-screen bg-light-gray font-sans">
-            {/* Desktop Sidebar */}
-            <aside
-                className={`${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 hidden md:flex flex-col transition-all duration-300 relative`}
-                onMouseEnter={() => setIsSidebarCollapsed(false)}
-                onMouseLeave={() => setIsSidebarCollapsed(true)}
-            >
-                <SidebarContent showBrand={false} isCollapsed={isSidebarCollapsed} />
-            </aside>
-
-            {/* Mobile Sidebar Overlay */}
-            {/* Backdrop */}
-            <div
-                className={`fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 md:hidden z-50 ${isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
-                    }`}
-                onClick={() => setIsMobileMenuOpen(false)}
-            />
-
-            {/* Drawer */}
-            <aside
-                className={`fixed top-0 left-0 h-full w-64 bg-white shadow-xl flex flex-col transform transition-transform duration-300 ease-in-out md:hidden z-[60] ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-                    }`}
-            >
-                <SidebarContent showBrand={true} />
-            </aside>
-
-            <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Fixed Mobile Toggle Button */}
-                <button
-                    className="fixed top-5 right-6 z-50 md:hidden text-deep-black hover:text-primary-orange focus:outline-none w-6 h-6"
-                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    aria-label="Toggle menu"
-                >
-                    <div className={`absolute inset-0 transition-all duration-300 transform ${isMobileMenuOpen ? 'opacity-0 rotate-90 scale-50' : 'opacity-100 rotate-0 scale-100'}`}>
-                        <Menu size={24} />
-                    </div>
-                    <div className={`absolute inset-0 transition-all duration-300 transform ${isMobileMenuOpen ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-50'}`}>
-                        <X size={24} />
-                    </div>
-                </button>
-
+        <div className="flex h-screen bg-light-gray font-sans overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden relative">
                 {/* Top Header */}
                 <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 md:px-6 shadow-sm z-40 flex-shrink-0">
                     <div className="flex items-center gap-4">
@@ -168,15 +70,56 @@ const InfluencerLayout = () => {
                                 )}
                             </div>
                         </Link>
-                        {/* Placeholder to maintain spacing */}
-                        <div className="w-6 h-6 ml-2 md:hidden"></div>
+                        <button
+                            onClick={() => {
+                                dispatch(logout());
+                                navigate('/login');
+                            }}
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors rounded-full border-l border-gray-100 pl-4"
+                            title="Logout"
+                        >
+                            <LogOut size={20} />
+                        </button>
                     </div>
                 </header>
 
                 {/* Main Content */}
-                <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50/50">
+                <main className="flex-1 overflow-y-auto p-4 pb-28 md:p-6 md:pb-28 bg-gray-50/50">
                     <Outlet />
                 </main>
+
+                {/* Floating iOS-Style Dark Navigation Dock */}
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-max max-w-[94%] bg-deep-black/95 backdrop-blur-lg border border-neutral-800 shadow-[0_12px_40px_rgba(0,0,0,0.4)] z-50 px-3 py-2 flex items-center gap-3 rounded-full transition-all duration-300">
+                    {navItems.map((item) => {
+                        const isCurrentActive = isActive(item.path);
+                        const displayLabel = 
+                            item.label === 'Instagram Reports' ? 'Reports' : 
+                            item.label === 'Work Tracker' ? 'Tracker' : 
+                            item.label;
+                        
+                        return (
+                            <Link
+                                key={item.path}
+                                to={item.path}
+                                className={`transition-all duration-300 ${
+                                    isCurrentActive
+                                        ? 'bg-primary-orange text-white px-4 py-2.5 rounded-full flex items-center gap-2 font-semibold scale-105 shadow-md shadow-orange-500/20'
+                                        : 'w-10 h-10 rounded-full bg-neutral-800/40 text-gray-400 hover:text-white hover:bg-neutral-800 flex items-center justify-center'
+                                }`}
+                                title={!isCurrentActive ? displayLabel : ''}
+                            >
+                                <div className="flex-shrink-0">
+                                    {React.cloneElement(item.icon, { size: 18 })}
+                                </div>
+                                {isCurrentActive && (
+                                    <span className="text-xs tracking-wide whitespace-nowrap animate-fadeIn font-semibold">
+                                        {displayLabel}
+                                    </span>
+                                )}
+                            </Link>
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );
