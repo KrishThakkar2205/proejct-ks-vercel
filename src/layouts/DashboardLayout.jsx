@@ -23,12 +23,11 @@ const DashboardLayout = () => {
             <div className="flex-1 flex flex-col overflow-hidden relative">
                 {/* Top Header - Fixed */}
                 <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shadow-sm z-40">
-                    <div className="flex items-center gap-4">
-                        <Link to="/brand" className="hidden md:flex items-center cursor-pointer">
-                            <img src="/logo.png" alt="InfluRunner Logo" className="h-8 w-auto" />
-                        </Link>
-                        <Link to="/brand" className="md:hidden flex items-center cursor-pointer">
-                            <img src="/logo.png" alt="InfluRunner Logo" className="h-6 w-auto" />
+                    <div className="flex items-center gap-4 select-none">
+                        <Link to="/brand" className="flex items-center cursor-pointer">
+                            <span className="font-extrabold text-lg tracking-tight text-deep-black" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                                INFLU<span className="text-primary-orange">RUNNER</span>
+                            </span>
                         </Link>
                     </div>
 

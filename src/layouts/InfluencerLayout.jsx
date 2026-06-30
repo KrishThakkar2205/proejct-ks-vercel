@@ -29,8 +29,10 @@ const InfluencerLayout = () => {
                 {/* Top Header */}
                 <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 md:px-6 shadow-sm z-40 flex-shrink-0">
                     <div className="flex items-center gap-4">
-                        <Link to="/influencer" className="flex items-center">
-                            <img src="/logo.png" alt="InfluRunner Logo" className="h-8 w-auto" />
+                        <Link to="/influencer" className="flex items-center select-none">
+                            <span className="font-extrabold text-lg tracking-tight text-deep-black" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                                INFLU<span className="text-primary-orange">RUNNER</span>
+                            </span>
                         </Link>
                     </div>
 
