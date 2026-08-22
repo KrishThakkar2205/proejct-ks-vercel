@@ -71,6 +71,7 @@ const NavBar = ({ onClaim }) => {
         <a href="#portfolio" style={{ color: C.muted, textDecoration: 'none', transition: 'color 0.2s' }} className="nav-link-item">Portfolio</a>
         <a href="#features" style={{ color: C.muted, textDecoration: 'none', transition: 'color 0.2s' }} className="nav-link-item">For Brands</a>
         <a href="#pricing" style={{ color: C.muted, textDecoration: 'none', transition: 'color 0.2s' }} className="nav-link-item">Pricing</a>
+        <a href="#contact" style={{ color: C.muted, textDecoration: 'none', transition: 'color 0.2s' }} className="nav-link-item">Contact</a>
       </div>
       <button
         style={{
@@ -1128,40 +1129,352 @@ const FinalCTA = ({ onClaim }) => {
   );
 };
 
-const Footer = () => {
+const ContactSection = () => {
   return (
-    <footer
+    <section
+      id="contact"
       style={{
+        padding: '80px 32px',
         maxWidth: '860px',
         margin: '0 auto',
-        padding: '24px 32px',
-        borderTop: '1px solid rgba(255, 255, 255, 0.05)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '12px',
       }}
     >
       <div
         style={{
           fontFamily: 'Space Grotesk, sans-serif',
           fontWeight: 700,
-          fontSize: '14px',
-          color: 'rgba(245, 240, 235, 0.4)',
+          fontSize: '11px',
+          letterSpacing: '2px',
+          textTransform: 'uppercase',
+          color: 'rgba(245, 240, 235, 0.3)',
+          marginBottom: '16px',
         }}
       >
-        INFLU<span style={{ color: C.orange }}>RUNNER</span>
+        GET IN TOUCH
       </div>
-      <div
+      <h2
+        style={{
+          fontFamily: 'Space Grotesk, sans-serif',
+          fontWeight: 800,
+          fontSize: '44px',
+          letterSpacing: '-1.5px',
+          lineHeight: 1.1,
+          color: '#F5F0EB',
+          marginBottom: '12px',
+        }}
+      >
+        Have questions? <span style={{ color: C.orange }}>Reach out to us.</span>
+      </h2>
+      <p
         style={{
           fontFamily: 'Inter, sans-serif',
-          fontSize: '12px',
-          color: 'rgba(245, 240, 235, 0.25)',
-          textAlign: 'right',
+          fontSize: '15px',
+          color: C.muted,
+          marginBottom: '40px',
+          maxWidth: '520px',
         }}
       >
-        Where creators run the show. · Built in Ahmedabad 🇮🇳
+        Whether you're a creator ready to scale or a brand looking for collaborations, we're here to assist you.
+      </p>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gap: '16px',
+        }}
+      >
+        {/* Phone Card */}
+        <a
+          href="tel:9099368070"
+          style={{ textDecoration: 'none' }}
+        >
+          <div
+            style={{
+              background: C.card,
+              border: C.border,
+              borderRadius: '12px',
+              padding: '24px',
+              transition: 'border-color 0.2s, transform 0.2s',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = C.orange;
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '8px',
+                background: 'rgba(232, 80, 10, 0.12)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '20px',
+                marginBottom: '16px',
+              }}
+            >
+              📞
+            </div>
+            <div
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '12px',
+                color: C.muted,
+                marginBottom: '4px',
+                fontWeight: 500,
+              }}
+            >
+              Phone / WhatsApp
+            </div>
+            <div
+              style={{
+                fontFamily: 'Space Grotesk, sans-serif',
+                fontWeight: 700,
+                fontSize: '18px',
+                color: '#F5F0EB',
+              }}
+            >
+              +91 9099368070
+            </div>
+          </div>
+        </a>
+
+        {/* Email Card */}
+        <a
+          href="mailto:business@influrunner.com"
+          style={{ textDecoration: 'none' }}
+        >
+          <div
+            style={{
+              background: C.card,
+              border: C.border,
+              borderRadius: '12px',
+              padding: '24px',
+              transition: 'border-color 0.2s, transform 0.2s',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = C.orange;
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '8px',
+                background: 'rgba(232, 80, 10, 0.12)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '20px',
+                marginBottom: '16px',
+              }}
+            >
+              ✉️
+            </div>
+            <div
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '12px',
+                color: C.muted,
+                marginBottom: '4px',
+                fontWeight: 500,
+              }}
+            >
+              Email Support
+            </div>
+            <div
+              style={{
+                fontFamily: 'Space Grotesk, sans-serif',
+                fontWeight: 700,
+                fontSize: '18px',
+                color: '#F5F0EB',
+                wordBreak: 'break-all',
+              }}
+            >
+              business@influrunner.com
+            </div>
+          </div>
+        </a>
+
+        {/* Contact Portal Card */}
+        <a
+          href="https://contact.influrunner.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ textDecoration: 'none' }}
+        >
+          <div
+            style={{
+              background: C.card,
+              border: C.border,
+              borderRadius: '12px',
+              padding: '24px',
+              transition: 'border-color 0.2s, transform 0.2s',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = C.orange;
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '8px',
+                background: 'rgba(232, 80, 10, 0.12)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '20px',
+                marginBottom: '16px',
+              }}
+            >
+              🌐
+            </div>
+            <div
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '12px',
+                color: C.muted,
+                marginBottom: '4px',
+                fontWeight: 500,
+              }}
+            >
+              Contact Portal
+            </div>
+            <div
+              style={{
+                fontFamily: 'Space Grotesk, sans-serif',
+                fontWeight: 700,
+                fontSize: '18px',
+                color: C.orange,
+              }}
+            >
+              contact.influrunner.com ↗
+            </div>
+          </div>
+        </a>
+      </div>
+    </section>
+  );
+};
+
+const Footer = () => {
+  return (
+    <footer
+      style={{
+        maxWidth: '860px',
+        margin: '0 auto',
+        padding: '32px 32px',
+        borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '16px',
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontFamily: 'Space Grotesk, sans-serif',
+              fontWeight: 700,
+              fontSize: '16px',
+              color: '#FFFFFF',
+              marginBottom: '4px',
+            }}
+          >
+            INFLU<span style={{ color: C.orange }}>RUNNER</span>
+          </div>
+          <div
+            style={{
+              fontFamily: 'Inter, sans-serif',
+              fontSize: '12px',
+              color: 'rgba(245, 240, 235, 0.4)',
+            }}
+          >
+            Where creators run the show. · Built in Ahmedabad 🇮🇳
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '20px',
+            fontFamily: 'Inter, sans-serif',
+            fontSize: '13px',
+            color: C.muted,
+          }}
+        >
+          <a
+            href="tel:9099368070"
+            style={{ color: C.muted, textDecoration: 'none', transition: 'color 0.2s' }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#F5F0EB')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}
+          >
+            📞 9099368070
+          </a>
+          <a
+            href="mailto:business@influrunner.com"
+            style={{ color: C.muted, textDecoration: 'none', transition: 'color 0.2s' }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#F5F0EB')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}
+          >
+            ✉️ business@influrunner.com
+          </a>
+          <a
+            href="https://contact.influrunner.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: C.orange, textDecoration: 'none', fontWeight: 600, transition: 'opacity 0.2s' }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+          >
+            🌐 contact.influrunner.com
+          </a>
+        </div>
+      </div>
+
+      <div
+        style={{
+          borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+          paddingTop: '16px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px',
+          fontSize: '12px',
+          color: 'rgba(245, 240, 235, 0.25)',
+        }}
+      >
+        <span>© {new Date().getFullYear()} InfluRunner Technologies LLP. All rights reserved.</span>
       </div>
     </footer>
   );
@@ -1273,6 +1586,7 @@ export default function LandingPage() {
       <StatsStrip />
       <PortfolioMockup />
       <Testimonials />
+      <ContactSection />
       <FinalCTA onClaim={handleClaimProfile} />
       <Footer />
     </div>

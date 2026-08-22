@@ -42,9 +42,15 @@ const Footer = () => {
                     <p className="text-gray-500 text-sm">
                         © {currentYear} InfluRunner Technologies LLP. All rights reserved.
                     </p>
-                    <div className="flex items-center space-x-6">
+                    <div className="flex flex-wrap items-center gap-6">
+                        <a href="tel:9099368070" className="text-gray-500 hover:text-primary-orange transition-colors text-sm">
+                            📞 +91 9099368070
+                        </a>
                         <a href="mailto:business@influrunner.com" className="text-gray-500 hover:text-primary-orange transition-colors text-sm">
-                            Contact Us
+                            ✉️ business@influrunner.com
+                        </a>
+                        <a href="https://contact.influrunner.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary-orange transition-colors text-sm font-medium">
+                            🌐 contact.influrunner.com
                         </a>
                     </div>
                 </div>
