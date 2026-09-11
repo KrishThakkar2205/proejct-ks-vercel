@@ -1,24 +1,37 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { LayoutDashboard, Calendar, ClipboardList, Star, Bell, LogOut, Instagram } from 'lucide-react';
+import { LayoutDashboard, Calendar, ClipboardList, Star, Bell, LogOut, Instagram, HelpCircle } from 'lucide-react';
 import { logout } from '../store/slices/authSlice';
 import { API_BASE_URL } from '../utils/api';
+import OnboardingTour from '../components/onboarding/OnboardingTour';
 
 const InfluencerLayout = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const dispatch = useDispatch();
+    const [isTourOpen, setIsTourOpen] = useState(false);
 
     const isActive = (path) => location.pathname === path;
 
     const navItems = [
-        { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/influencer' },
-        { icon: <Instagram size={20} />, label: 'Instagram Reports', path: '/influencer/media-reports' },
-        { icon: <Calendar size={20} />, label: 'Calendar', path: '/influencer/calendar' },
-        { icon: <ClipboardList size={20} />, label: 'Work Tracker', path: '/influencer/schedule' },
-        { icon: <Star size={20} />, label: 'Reviews', path: '/influencer/reviews' },
+        { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/influencer', tourId: 'nav-dashboard' },
+        { icon: <Instagram size={20} />, label: 'Instagram Reports', path: '/influencer/media-reports', tourId: 'nav-reports' },
+        { icon: <Calendar size={20} />, label: 'Calendar', path: '/influencer/calendar', tourId: 'nav-calendar' },
+        { icon: <ClipboardList size={20} />, label: 'Work Tracker', path: '/influencer/schedule', tourId: 'nav-tracker' },
+        { icon: <Star size={20} />, label: 'Reviews', path: '/influencer/reviews', tourId: 'nav-reviews' },
     ];
+
+    // Check if new user tour should launch automatically
+    useEffect(() => {
+        const isNewUserSignup = sessionStorage.getItem('show_onboarding_tour') === 'true';
+        const hasSeenTour = localStorage.getItem('has_seen_onboarding_tour') === 'true';
+
+        if (isNewUserSignup || !hasSeenTour) {
+            const timer = setTimeout(() => setIsTourOpen(true), 800);
+            return () => clearTimeout(timer);
+        }
+    }, [location.pathname]);
 
     // Get current user from localStorage
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -36,17 +49,30 @@ const InfluencerLayout = () => {
                         </Link>
                     </div>
 
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-3 sm:space-x-4">
+                        {/* Help / Take Tour Button */}
+                        <button
+                            onClick={() => setIsTourOpen(true)}
+                            className="p-2 text-gray-400 hover:text-primary-orange hover:bg-orange-50 transition-colors rounded-full flex items-center gap-1.5 text-xs font-semibold"
+                            title="Take Guided Tour"
+                            data-tour="help-tour"
+                        >
+                            <HelpCircle size={18} />
+                            <span className="hidden md:inline">Tour</span>
+                        </button>
+
                         <Link 
                             to="/influencer/notifications"
                             className={`p-2 transition-colors relative rounded-full ${isActive('/influencer/notifications') ? 'text-primary-orange bg-orange-50' : 'text-gray-400 hover:text-primary-orange hover:bg-gray-50'}`}
                             title="Notifications"
+                            data-tour="notification-bell"
                         >
                             <Bell size={20} />
                             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white animate-pulse"></span>
                         </Link>
-                        <Link to="/influencer/profile">
-                            <div className="flex items-center gap-3 pl-4 border-l border-gray-100 cursor-pointer hover:opacity-80 transition-opacity">
+
+                        <Link to="/influencer/profile" data-tour="profile-button">
+                            <div className="flex items-center gap-3 pl-3 sm:pl-4 border-l border-gray-100 cursor-pointer hover:opacity-80 transition-opacity">
                                 <div className="text-right hidden sm:block">
                                     <div className="text-sm font-medium text-deep-black">{currentUser?.name || 'Influencer'}</div>
                                     <div className="text-xs text-gray-500">Influencer Account</div>
@@ -77,7 +103,7 @@ const InfluencerLayout = () => {
                                 dispatch(logout());
                                 navigate('/login');
                             }}
-                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors rounded-full border-l border-gray-100 pl-4"
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors rounded-full border-l border-gray-100 pl-3 sm:pl-4"
                             title="Logout"
                         >
                             <LogOut size={20} />
@@ -103,6 +129,7 @@ const InfluencerLayout = () => {
                             <Link
                                 key={item.path}
                                 to={item.path}
+                                data-tour={item.tourId}
                                 className={`transition-all duration-300 ${
                                     isCurrentActive
                                         ? 'bg-primary-orange text-white px-4 py-2.5 rounded-full flex items-center gap-2 font-semibold scale-105 shadow-md shadow-orange-500/20'
@@ -123,8 +150,15 @@ const InfluencerLayout = () => {
                     })}
                 </div>
             </div>
+
+            {/* Onboarding Tour Overlay Component */}
+            <OnboardingTour
+                isOpen={isTourOpen}
+                onClose={() => setIsTourOpen(false)}
+            />
         </div>
     );
 };
 
 export default InfluencerLayout;
+

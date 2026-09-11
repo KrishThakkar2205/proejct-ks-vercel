@@ -208,9 +208,9 @@ const PublicPortfolio = () => {
                 notes: collaborationFormData.notes,
                 influencer_id: influencerId
             };
-            
+
             await axios.post(`${API_BASE_URL}/api/collab-notification`, payload);
-            
+
             alert('Collaboration request sent successfully!');
             closeCollaborationModal();
         } catch (err) {
@@ -423,7 +423,7 @@ const PublicPortfolio = () => {
                         {/* Profile Image with animated gradient ring */}
                         <div className="relative group shrink-0">
                             <div className="absolute -inset-1 bg-gradient-to-r from-primary-orange via-pink-500 to-purple-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-500"></div>
-                            <div 
+                            <div
                                 className={`relative w-36 h-36 bg-gray-950 rounded-full flex items-center justify-center text-primary-orange text-5xl font-bold shadow-2xl overflow-hidden cursor-pointer hover:scale-[1.03] active:scale-95 transition-all duration-300`}
                                 onClick={() => profilePicture && setIsProfilePicLightboxOpen(true)}
                             >
@@ -446,14 +446,14 @@ const PublicPortfolio = () => {
                                     ))}
                                 </div>
                                 <h1 className="text-4xl md:text-6xl font-bebas tracking-wide text-white mb-2 leading-none">{name}</h1>
-                                
+
                                 {location && (
                                     <div className="flex items-center justify-center md:justify-start gap-1.5 text-gray-300 text-sm mb-3">
                                         <MapPin size={15} className="text-primary-orange" />
                                         <span>{location}</span>
                                     </div>
                                 )}
-                                
+
                                 {bio && <p className="text-gray-300 text-sm md:text-base max-w-2xl font-light leading-relaxed">{bio}</p>}
                             </div>
 
@@ -581,27 +581,25 @@ const PublicPortfolio = () => {
                                         <p className="text-xs text-gray-500">Engaged audience breakdown and demographics</p>
                                     </div>
                                 </div>
-                                
+
                                 {/* Toggle buttons */}
                                 <div className="flex bg-gray-100 p-1 rounded-xl self-start sm:self-auto">
                                     <button
                                         onClick={() => setActiveTab('cities')}
-                                        className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                                            activeTab === 'cities' 
-                                                ? 'bg-white text-primary-orange shadow-sm font-bold' 
+                                        className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${activeTab === 'cities'
+                                                ? 'bg-white text-primary-orange shadow-sm font-bold'
                                                 : 'text-gray-500 hover:text-gray-800'
-                                        }`}
+                                            }`}
                                     >
                                         <MapPin size={13} />
                                         <span>Top Cities</span>
                                     </button>
                                     <button
                                         onClick={() => setActiveTab('age')}
-                                        className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                                            activeTab === 'age' 
-                                                ? 'bg-white text-primary-orange shadow-sm font-bold' 
+                                        className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${activeTab === 'age'
+                                                ? 'bg-white text-primary-orange shadow-sm font-bold'
                                                 : 'text-gray-500 hover:text-gray-800'
-                                        }`}
+                                            }`}
                                     >
                                         <Users size={13} />
                                         <span>Age Groups</span>
@@ -621,7 +619,7 @@ const PublicPortfolio = () => {
                                             'from-teal-500 to-emerald-500'
                                         ];
                                         const gradClass = gradients[idx % gradients.length];
-                                        
+
                                         return (
                                             <div key={idx} className="space-y-1.5">
                                                 <div className="flex justify-between items-center text-xs">
@@ -759,7 +757,7 @@ const PublicPortfolio = () => {
                                         </div>
                                     ))}
                                 </div>
-                                
+
                                 {visibleCount < instaMedia.length && (
                                     <div className="flex justify-center mt-8">
                                         <Button
@@ -895,7 +893,7 @@ const PublicPortfolio = () => {
                 <Card className="p-8 md:p-12 bg-gradient-to-r from-deep-black via-gray-900 to-deep-black text-white text-center rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-primary-orange/10 rounded-full blur-[80px] pointer-events-none" />
                     <div className="absolute bottom-0 left-0 w-[200px] h-[200px] bg-pink-500/5 rounded-full blur-[60px] pointer-events-none" />
-                    
+
                     <div className="relative z-10 space-y-4">
                         <h2 className="text-3xl md:text-5xl font-bebas tracking-wide leading-none">Interested in Collaborating?</h2>
                         <p className="text-gray-300 text-xs sm:text-sm max-w-2xl mx-auto leading-relaxed font-light">
@@ -1013,7 +1011,7 @@ const PublicPortfolio = () => {
 
                                         {/* Custom Center Play/Pause Overlay Button */}
                                         {selectedMedia?.media_type === 'VIDEO' && (
-                                            <button 
+                                            <button
                                                 onClick={togglePlay}
                                                 className={`absolute inset-0 m-auto w-14 h-14 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center transition-all duration-300 transform backdrop-blur-[2px] z-10 ${isPlaying ? 'opacity-0 scale-75 pointer-events-none' : 'opacity-100 scale-100 shadow-lg'}`}
                                             >
@@ -1023,7 +1021,7 @@ const PublicPortfolio = () => {
 
                                         {/* Custom Floating Volume/Speaker Control */}
                                         {selectedMedia?.media_type === 'VIDEO' && (
-                                            <button 
+                                            <button
                                                 onClick={toggleMute}
                                                 className="absolute top-4 left-4 z-10 bg-black/50 hover:bg-black/75 text-white p-2 rounded-full backdrop-blur-sm transition-colors shadow-md border border-white/10"
                                                 title={isMuted ? "Unmute" : "Mute"}
@@ -1053,11 +1051,11 @@ const PublicPortfolio = () => {
 
                                         {/* Custom Progress Bar at the very bottom of the media player container */}
                                         {selectedMedia?.media_type === 'VIDEO' && (
-                                            <div 
+                                            <div
                                                 className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/25 cursor-pointer overflow-hidden backdrop-blur-[1px] hover:h-2 transition-all duration-200 z-10"
                                                 onClick={handleProgressClick}
                                             >
-                                                <div 
+                                                <div
                                                     className="h-full bg-gradient-to-r from-pink-500 via-rose-500 to-orange-500 transition-all duration-75"
                                                     style={{ width: `${videoProgress}%` }}
                                                 />

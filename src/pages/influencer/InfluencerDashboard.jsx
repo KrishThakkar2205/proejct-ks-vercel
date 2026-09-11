@@ -242,7 +242,7 @@ const InfluencerDashboard = () => {
             {/* Top Greeting & Portfolio Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
                 {/* Greeting Card */}
-                <div className="lg:col-span-2 relative overflow-hidden bg-gradient-to-r from-deep-black to-gray-800 rounded-3xl p-6 text-white shadow-xl flex flex-col justify-between">
+                <div data-tour="dashboard-welcome" className="lg:col-span-2 relative overflow-hidden bg-gradient-to-r from-deep-black to-gray-800 rounded-3xl p-6 text-white shadow-xl flex flex-col justify-between">
                     {/* Background patterns */}
                     <div className="absolute top-0 right-0 w-64 h-64 bg-primary-orange/10 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none" />
                     <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl -ml-12 -mb-12 pointer-events-none" />
@@ -275,6 +275,7 @@ const InfluencerDashboard = () => {
 
                 {/* Dedicated Portfolio Card with Clean URL & Silent UTM Share Options */}
                 <Card 
+                    data-tour="portfolio-card"
                     className="flex flex-col justify-between p-6 border-2 border-orange-100 bg-[#F5F0EB]/30 hover:border-[#E8500A]/50 transition-all duration-300"
                     style={{ fontFamily: "'Inter', sans-serif" }}
                 >

@@ -258,7 +258,7 @@ const InfluencerProfile = () => {
     if (!formData) return null;
 
     return (
-        <div className="space-y-8">
+        <div data-tour="profile-header" className="space-y-8">
             {/* Header - Mobile Only */}
             <div className="md:hidden">
                 <h1 className="text-3xl font-bebas tracking-wide text-deep-black">Profile</h1>

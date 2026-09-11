@@ -94,7 +94,7 @@ const NotificationsPage = () => {
     return (
         <div className="space-y-4 md:space-y-6">
             {/* Page Header */}
-            <div className="relative overflow-hidden bg-gradient-to-r from-deep-black to-gray-800 rounded-3xl p-6 md:p-8 text-white shadow-xl">
+            <div data-tour="notifications-header" className="relative overflow-hidden bg-gradient-to-r from-deep-black to-gray-800 rounded-3xl p-6 md:p-8 text-white shadow-xl">
                 {/* Background patterns */}
                 <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
                 <div className="absolute bottom-0 left-0 w-60 h-60 bg-pink-500/10 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />

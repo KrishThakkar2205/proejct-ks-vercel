@@ -288,9 +288,11 @@ const SignupPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (validateStep3()) {
-            // Set flag BEFORE dispatch — once signupFinal sets isAuthenticated,
+            // Set flags BEFORE dispatch — once signupFinal sets isAuthenticated,
             // RedirectIfAuthenticated unmounts this component immediately.
             sessionStorage.setItem('show_whatsapp_prompt', 'true');
+            sessionStorage.setItem('show_onboarding_tour', 'true');
+            localStorage.removeItem('has_seen_onboarding_tour');
 
             const result = await dispatch(signupFinal({
                 email: formData.email,
@@ -301,8 +303,9 @@ const SignupPage = () => {
             }));
 
             if (result.error) {
-                // Signup failed — remove the flag we just set
+                // Signup failed — remove the flags we set
                 sessionStorage.removeItem('show_whatsapp_prompt');
+                sessionStorage.removeItem('show_onboarding_tour');
             }
             // On success, RedirectIfAuthenticated auto-navigates to /influencer
             // where InfluencerDashboard picks up the flag and shows the modal.
