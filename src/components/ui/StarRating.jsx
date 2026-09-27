@@ -10,6 +10,7 @@ import { Star } from 'lucide-react';
  * @param {boolean} showNumber - Whether to show the numeric rating
  */
 const StarRating = ({ rating = 0, size = 'md', showNumber = false }) => {
+    const numRating = Number(rating) || 0;
     const sizeClasses = {
         sm: 'w-4 h-4',
         md: 'w-5 h-5',
@@ -23,7 +24,7 @@ const StarRating = ({ rating = 0, size = 'md', showNumber = false }) => {
         const stars = [];
 
         for (let i = 1; i <= maxStars; i++) {
-            const fillPercentage = Math.min(Math.max(rating - (i - 1), 0), 1) * 100;
+            const fillPercentage = Math.min(Math.max(numRating - (i - 1), 0), 1) * 100;
 
             stars.push(
                 <div key={i} className="relative inline-block">
@@ -51,7 +52,7 @@ const StarRating = ({ rating = 0, size = 'md', showNumber = false }) => {
             </div>
             {showNumber && (
                 <span className="text-sm font-medium text-gray-700 ml-1">
-                    {rating.toFixed(1)}
+                    {numRating.toFixed(1)}
                 </span>
             )}
         </div>

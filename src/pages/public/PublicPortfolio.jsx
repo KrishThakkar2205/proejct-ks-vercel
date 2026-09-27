@@ -389,8 +389,20 @@ const PublicPortfolio = () => {
     const profilePicture = portfolio.profile_picture || null;
     const reviews = portfolio.reviews || [];
 
-    // Use server-provided stats
-    const averageRating = portfolio.avg_rating || 0;
+    // Compute average rating safely from reviews if server avg_rating is missing or 0
+    const validRatings = reviews
+        .map(r => Number(r.rating))
+        .filter(r => !isNaN(r) && r > 0);
+
+    const computedAvg = validRatings.length > 0
+        ? validRatings.reduce((sum, val) => sum + val, 0) / validRatings.length
+        : 0;
+
+    const serverAvg = Number(portfolio.avg_rating);
+    const averageRating = (!isNaN(serverAvg) && serverAvg > 0)
+        ? serverAvg
+        : computedAvg;
+
     const totalReviews = portfolio.total_reviews || reviews.length;
 
     return (
@@ -818,7 +830,7 @@ const PublicPortfolio = () => {
                                 </h3>
                                 <div className="space-y-2.5">
                                     {[5, 4, 3, 2, 1].map((stars) => {
-                                        const count = reviews.filter(r => r.rating === stars).length;
+                                        const count = reviews.filter(r => Math.round(Number(r.rating)) === stars).length;
                                         const percentage = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
 
                                         return (
