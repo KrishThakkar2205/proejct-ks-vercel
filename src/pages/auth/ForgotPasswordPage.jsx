@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Card from '../../components/ui/Card';
 import { ArrowLeft, Mail, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react';
-import { forgetPassword, verifyForgetOtp, resetPassword } from '../../store/slices/authSlice';
+import api from '../../utils/api';
 
 const ForgotPasswordPage = () => {
     const [step, setStep] = useState(1); // 1: Email, 2: OTP, 3: New Password, 4: Success
@@ -20,7 +19,6 @@ const ForgotPasswordPage = () => {
     const [loading, setLoading] = useState(false);
     const [resendLoading, setResendLoading] = useState(false);
     const navigate = useNavigate();
-    const dispatch = useDispatch();
 
     // Step 1: Send OTP to email (/api/forget-password)
     const handleSendOTP = async (e) => {
@@ -36,12 +34,33 @@ const ForgotPasswordPage = () => {
         setLoading(true);
 
         try {
-            await dispatch(forgetPassword({ email })).unwrap();
+            console.log('Sending OTP request to /api/forget-password for:', email);
+            const response = await api.post('/api/forget-password', { email });
+            console.log('Response from /api/forget-password:', response);
+            
+            const dataStr = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+            if (dataStr.toLowerCase().includes('user not found')) {
+                setError('User not found. Please check your email address.');
+                setLoading(false);
+                return;
+            }
+
             setLoading(false);
             setStep(2);
         } catch (err) {
+            console.error('Error from /api/forget-password:', err);
+            const errorStr = typeof err.response?.data === 'string'
+                ? err.response.data
+                : (err.response?.data?.detail?.[0]?.msg || err.response?.data?.detail || err.response?.data?.message || err.message || '');
+
+            if (errorStr.toLowerCase().includes('otp sent')) {
+                setLoading(false);
+                setStep(2);
+                return;
+            }
+
             setLoading(false);
-            setError(typeof err === 'string' ? err : 'Failed to send OTP. Please try again.');
+            setError(errorStr || 'Failed to send OTP. Please try again.');
         }
     };
 
@@ -84,12 +103,33 @@ const ForgotPasswordPage = () => {
         setLoading(true);
 
         try {
-            await dispatch(verifyForgetOtp({ email, otp: enteredOTP })).unwrap();
+            console.log('Verifying OTP via /api/verify-forget-otp:', { email, otp: enteredOTP });
+            const response = await api.post('/api/verify-forget-otp', {
+                email: email,
+                otp: enteredOTP,
+            });
+            console.log('Response from /api/verify-forget-otp:', response);
+
+            const dataStr = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+            if (dataStr.toLowerCase().includes('not verified')) {
+                setError('Invalid or expired OTP. Please try again.');
+                setLoading(false);
+                return;
+            }
+
             setLoading(false);
             setStep(3);
         } catch (err) {
+            console.error('Error from /api/verify-forget-otp:', err);
+            const message =
+                err.response?.data?.detail?.[0]?.msg ||
+                err.response?.data?.detail ||
+                err.response?.data?.message ||
+                (typeof err.response?.data === 'string' ? err.response.data : null) ||
+                'OTP verification failed. Please try again.';
+
             setLoading(false);
-            setError(typeof err === 'string' ? err : 'Invalid OTP. Please try again.');
+            setError(message);
         }
     };
 
@@ -111,12 +151,33 @@ const ForgotPasswordPage = () => {
         setLoading(true);
 
         try {
-            await dispatch(resetPassword({ email, password: newPassword })).unwrap();
+            console.log('Resetting password via /api/reset-password:', { email, password: newPassword });
+            const response = await api.post('/api/reset-password', {
+                email: email,
+                password: newPassword,
+            });
+            console.log('Response from /api/reset-password:', response);
+
+            const dataStr = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+            if (dataStr.toLowerCase().includes('failed')) {
+                setError('Password reset failed. Please try again.');
+                setLoading(false);
+                return;
+            }
+
             setLoading(false);
             setStep(4);
         } catch (err) {
+            console.error('Error from /api/reset-password:', err);
+            const message =
+                err.response?.data?.detail?.[0]?.msg ||
+                err.response?.data?.detail ||
+                err.response?.data?.message ||
+                (typeof err.response?.data === 'string' ? err.response.data : null) ||
+                'Password reset failed. Please try again.';
+
             setLoading(false);
-            setError(typeof err === 'string' ? err : 'Password reset failed. Please try again.');
+            setError(message);
         }
     };
 
@@ -128,12 +189,26 @@ const ForgotPasswordPage = () => {
         setResendLoading(true);
 
         try {
-            await dispatch(forgetPassword({ email })).unwrap();
+            console.log('Resending OTP to /api/forget-password for:', email);
+            const response = await api.post('/api/forget-password', { email });
+            console.log('Resend response:', response);
+
             setResendLoading(false);
             setSuccessMessage('OTP has been resent to your email address.');
         } catch (err) {
+            console.error('Resend error:', err);
+            const errorStr = typeof err.response?.data === 'string'
+                ? err.response.data
+                : (err.response?.data?.detail?.[0]?.msg || err.response?.data?.detail || err.response?.data?.message || err.message || '');
+
+            if (errorStr.toLowerCase().includes('otp sent')) {
+                setResendLoading(false);
+                setSuccessMessage('OTP has been resent to your email address.');
+                return;
+            }
+
             setResendLoading(false);
-            setError(typeof err === 'string' ? err : 'Failed to resend OTP.');
+            setError(errorStr || 'Failed to resend OTP.');
         }
     };
 
