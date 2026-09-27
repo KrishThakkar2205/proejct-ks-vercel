@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Card from '../../components/ui/Card';
 import { ArrowLeft, Mail, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { forgetPassword, verifyForgetOtp, resetPassword } from '../../store/slices/authSlice';
 
 const ForgotPasswordPage = () => {
     const [step, setStep] = useState(1); // 1: Email, 2: OTP, 3: New Password, 4: Success
@@ -14,25 +16,33 @@ const ForgotPasswordPage = () => {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
     const [loading, setLoading] = useState(false);
+    const [resendLoading, setResendLoading] = useState(false);
     const navigate = useNavigate();
+    const dispatch = useDispatch();
 
-    // Mock OTP for demo (in production, this would be sent via email)
-    const MOCK_OTP = '123456';
-
-    // Step 1: Send OTP to email
-    const handleSendOTP = (e) => {
+    // Step 1: Send OTP to email (/api/forget-password)
+    const handleSendOTP = async (e) => {
         e.preventDefault();
         setError('');
+        setSuccessMessage('');
+        
+        if (!email) {
+            setError('Please enter your email address');
+            return;
+        }
+
         setLoading(true);
 
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            await dispatch(forgetPassword({ email })).unwrap();
             setLoading(false);
             setStep(2);
-            // In production, this would trigger an email with OTP
-            console.log('OTP sent to:', email, 'OTP:', MOCK_OTP);
-        }, 1000);
+        } catch (err) {
+            setLoading(false);
+            setError(typeof err === 'string' ? err : 'Failed to send OTP. Please try again.');
+        }
     };
 
     // Handle OTP input
@@ -59,27 +69,32 @@ const ForgotPasswordPage = () => {
         }
     };
 
-    // Step 2: Verify OTP
-    const handleVerifyOTP = (e) => {
+    // Step 2: Verify OTP (/api/verify-forget-otp)
+    const handleVerifyOTP = async (e) => {
         e.preventDefault();
         setError('');
+        setSuccessMessage('');
         const enteredOTP = otp.join('');
 
         if (enteredOTP.length !== 6) {
-            setError('Please enter complete OTP');
+            setError('Please enter complete 6-digit OTP');
             return;
         }
 
-        if (enteredOTP !== MOCK_OTP) {
-            setError('Invalid OTP. Please try again.');
-            return;
-        }
+        setLoading(true);
 
-        setStep(3);
+        try {
+            await dispatch(verifyForgetOtp({ email, otp: enteredOTP })).unwrap();
+            setLoading(false);
+            setStep(3);
+        } catch (err) {
+            setLoading(false);
+            setError(typeof err === 'string' ? err : 'Invalid OTP. Please try again.');
+        }
     };
 
-    // Step 3: Reset Password
-    const handleResetPassword = (e) => {
+    // Step 3: Reset Password (/api/reset-password)
+    const handleResetPassword = async (e) => {
         e.preventDefault();
         setError('');
 
@@ -95,21 +110,31 @@ const ForgotPasswordPage = () => {
 
         setLoading(true);
 
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            await dispatch(resetPassword({ email, password: newPassword })).unwrap();
             setLoading(false);
             setStep(4);
-            // In production, this would update the password in the database
-            console.log('Password reset successful for:', email);
-        }, 1000);
+        } catch (err) {
+            setLoading(false);
+            setError(typeof err === 'string' ? err : 'Password reset failed. Please try again.');
+        }
     };
 
-    // Resend OTP
-    const handleResendOTP = () => {
+    // Resend OTP (/api/forget-password)
+    const handleResendOTP = async () => {
         setOtp(['', '', '', '', '', '']);
         setError('');
-        console.log('OTP resent to:', email, 'OTP:', MOCK_OTP);
-        // Show success message (you could add a toast notification here)
+        setSuccessMessage('');
+        setResendLoading(true);
+
+        try {
+            await dispatch(forgetPassword({ email })).unwrap();
+            setResendLoading(false);
+            setSuccessMessage('OTP has been resent to your email address.');
+        } catch (err) {
+            setResendLoading(false);
+            setError(typeof err === 'string' ? err : 'Failed to resend OTP.');
+        }
     };
 
     return (
@@ -184,11 +209,11 @@ const ForgotPasswordPage = () => {
                                 </div>
                             )}
 
-                            {/* OTP Demo Hint */}
-                            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-center">
-                                <p className="font-semibold text-blue-900 mb-1">Demo OTP:</p>
-                                <p className="text-blue-700 font-mono text-lg">{MOCK_OTP}</p>
-                            </div>
+                            {successMessage && (
+                                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                                    {successMessage}
+                                </div>
+                            )}
 
                             {/* OTP Input */}
                             <div className="flex gap-2 justify-center">
@@ -207,24 +232,29 @@ const ForgotPasswordPage = () => {
                                 ))}
                             </div>
 
-                            <Button type="submit" className="w-full">
-                                Verify OTP
+                            <Button type="submit" className="w-full" disabled={loading}>
+                                {loading ? 'Verifying OTP...' : 'Verify OTP'}
                             </Button>
 
                             <div className="text-center">
                                 <button
                                     type="button"
                                     onClick={handleResendOTP}
-                                    className="text-sm font-medium text-primary-orange hover:text-orange-600"
+                                    disabled={resendLoading}
+                                    className="text-sm font-medium text-primary-orange hover:text-orange-600 disabled:opacity-50"
                                 >
-                                    Resend OTP
+                                    {resendLoading ? 'Resending OTP...' : 'Resend OTP'}
                                 </button>
                             </div>
 
                             <div className="text-center">
                                 <button
                                     type="button"
-                                    onClick={() => setStep(1)}
+                                    onClick={() => {
+                                        setError('');
+                                        setSuccessMessage('');
+                                        setStep(1);
+                                    }}
                                     className="text-sm font-medium text-gray-600 hover:text-gray-900 inline-flex items-center gap-2"
                                 >
                                     <ArrowLeft size={16} />

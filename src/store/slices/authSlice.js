@@ -92,6 +92,87 @@ export const login = createAsyncThunk(
     }
 );
 
+// Step 1: Forget password (send OTP)
+export const forgetPassword = createAsyncThunk(
+    'auth/forgetPassword',
+    async (payload, { rejectWithValue }) => {
+        try {
+            const response = await api.post('/api/forget-password', {
+                email: payload.email,
+            });
+            const dataStr = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+            if (dataStr.toLowerCase().includes('user not found')) {
+                return rejectWithValue('User not found. Please check your email address.');
+            }
+            return response.data;
+        } catch (error) {
+            const errorStr = typeof error.response?.data === 'string'
+                ? error.response.data
+                : (error.response?.data?.detail?.[0]?.msg || error.response?.data?.detail || error.response?.data?.message || '');
+
+            if (errorStr.toLowerCase().includes('otp sent')) {
+                return { message: errorStr };
+            }
+
+            const message = errorStr || 'Failed to send OTP. Please try again.';
+            return rejectWithValue(message);
+        }
+    }
+);
+
+// Step 2: Verify Forget OTP
+export const verifyForgetOtp = createAsyncThunk(
+    'auth/verifyForgetOtp',
+    async (payload, { rejectWithValue }) => {
+        try {
+            const response = await api.post('/api/verify-forget-otp', {
+                email: payload.email,
+                otp: payload.otp,
+            });
+            const dataStr = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+            if (dataStr.toLowerCase().includes('not verified')) {
+                return rejectWithValue('Invalid or expired OTP. Please try again.');
+            }
+            return response.data;
+        } catch (error) {
+            const message =
+                error.response?.data?.detail?.[0]?.msg ||
+                error.response?.data?.detail ||
+                error.response?.data?.message ||
+                (typeof error.response?.data === 'string' ? error.response.data : null) ||
+                'OTP verification failed. Please try again.';
+            return rejectWithValue(message);
+        }
+    }
+);
+
+// Step 3: Reset Password
+export const resetPassword = createAsyncThunk(
+    'auth/resetPassword',
+    async (payload, { rejectWithValue }) => {
+        try {
+            const response = await api.post('/api/reset-password', {
+                email: payload.email,
+                password: payload.password,
+            });
+            const dataStr = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+            if (dataStr.toLowerCase().includes('failed')) {
+                return rejectWithValue('Password reset failed. Please try again.');
+            }
+            return response.data;
+        } catch (error) {
+            const message =
+                error.response?.data?.detail?.[0]?.msg ||
+                error.response?.data?.detail ||
+                error.response?.data?.message ||
+                (typeof error.response?.data === 'string' ? error.response.data : null) ||
+                'Password reset failed. Please try again.';
+            return rejectWithValue(message);
+        }
+    }
+);
+
+
 // --- Slice ---
 
 const initialState = {
